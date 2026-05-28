@@ -466,7 +466,14 @@ export default function InputData() {
         denominator_value: finalDen,
         target: selectedIndikatorProfile?.target || null,
         achievement_percentage: data.kategori === "IKP" ? null : persentase,
-        notes: data.keterangan || "",
+        notes: data.kategori === "IKP" ? JSON.stringify({
+          kpc: payload.kpc,
+          knc: payload.knc,
+          ktc: payload.ktc,
+          ktd: payload.ktd,
+          sentinel: payload.sentinel,
+          keterangan: payload.keterangan
+        }) : (data.keterangan || ""),
         attachment_url: uploadedProofName || null,
         created_at: new Date().toISOString(),
       });

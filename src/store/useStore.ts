@@ -82,6 +82,7 @@ interface RootState {
   setHospitalLogo: (logo: string) => void;
   dataMutuList: DataMutuPayload[];
   addDataMutu: (data: DataMutuPayload) => void;
+  setDataMutuList: (data: DataMutuPayload[]) => void;
   indicatorProfiles: IndicatorProfile[];
   setIndicatorProfiles: (data: IndicatorProfile[]) => void;
   addIndicatorProfile: (data: IndicatorProfile) => void;
@@ -122,6 +123,7 @@ export const useStore = create<RootState>((set) => ({
   setHospitalLogo: (logo) => set({ hospitalLogo: logo }),
   dataMutuList: [],
   addDataMutu: (data) => set((state) => ({ dataMutuList: [...state.dataMutuList, data] })),
+  setDataMutuList: (data) => set({ dataMutuList: data }),
   indicatorProfiles: [],
   setIndicatorProfiles: (data) => set({ indicatorProfiles: data }),
   addIndicatorProfile: (data) => set((state) => ({ indicatorProfiles: [...state.indicatorProfiles, data] })),
