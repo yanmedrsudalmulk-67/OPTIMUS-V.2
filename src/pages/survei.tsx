@@ -1,0 +1,84 @@
+import React from "react";
+import {
+  ResponsiveContainer,
+  RadarChart,
+  PolarGrid,
+  PolarAngleAxis,
+  PolarRadiusAxis,
+  Radar,
+  Legend,
+} from "recharts";
+import { Activity } from "lucide-react";
+
+const dataSurvei = [
+  { subject: "Teamwork", A: 85, B: 65, fullMark: 100 },
+  { subject: "Komunikasi", A: 78, B: 70, fullMark: 100 },
+  { subject: "Leadership", A: 82, B: 75, fullMark: 100 },
+  { subject: "Staffing", A: 60, B: 85, fullMark: 100 },
+  { subject: "Handoff", A: 88, B: 80, fullMark: 100 },
+  { subject: "Incident Reporting", A: 90, B: 85, fullMark: 100 },
+];
+
+export default function SurveiBudaya() {
+  return (
+    <div className="animate-in fade-in slide-in-from-bottom-4 duration-700 space-y-6">
+      <div className="flex justify-between items-end">
+        <div>
+          <h1 className="text-3xl font-bold text-[#10a37f] tracking-tight">
+            Survei Budaya Keselamatan Pasien
+          </h1>
+          <p className="text-gray-900 mt-1 text-sm font-semibold">
+            Evaluasi budaya keselamatan pasien per dimensi.
+          </p>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+          <h3 className="text-lg font-semibold text-gray-900 mb-6 flex items-center gap-2">
+            <Activity className="text-emerald-500" size={20} />
+            Radar Capaian Dimensi
+          </h3>
+          <div className="h-80 w-full flex justify-center items-center">
+            <ResponsiveContainer width="100%" height="100%">
+              <RadarChart cx="50%" cy="50%" outerRadius="70%" data={dataSurvei}>
+                <PolarGrid stroke="#e5e7eb" />
+                <PolarAngleAxis
+                  dataKey="subject"
+                  tick={{ fill: "#4b5563", fontSize: 12 }}
+                />
+                <PolarRadiusAxis
+                  angle={30}
+                  domain={[0, 100]}
+                  tick={{ fill: "#9ca3af", fontSize: 10 }}
+                />
+                <Radar
+                  name="Skor RS"
+                  dataKey="A"
+                  stroke="#10b981"
+                  fill="#10b981"
+                  fillOpacity={0.5}
+                />
+                <Legend />
+              </RadarChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+
+        <div className="bg-white text-emerald-950 rounded-2xl shadow-sm border border-emerald-100 p-8 flex flex-col justify-center items-center text-center">
+          <h3 className="text-2xl font-bold mb-2">Nilai Rata-Rata Budaya</h3>
+          <div className="text-6xl font-black text-emerald-600 mb-4 drop-shadow-sm">
+            80.5%
+          </div>
+          <p className="text-emerald-800 font-medium max-w-sm">
+            Budaya keselamatan pasien berada pada kategori{" "}
+            <span className="font-bold underline decoration-2 underline-offset-4 decoration-emerald-500">
+              BAIK
+            </span>
+            . Perlu peningkatan pada area Staffing.
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+}

@@ -1,0 +1,6 @@
+{
+  "name": "UOBK RSUD AL-MULK",
+  "description": "Sistem informasi pemantauan indikator mutu nasional, keselamatan pasien, manajemen risiko dan survei budaya mutu RSUD Al-Mulk Kota Sukabumi.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
