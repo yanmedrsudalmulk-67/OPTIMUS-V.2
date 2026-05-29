@@ -162,16 +162,18 @@ const FormattedDocumentText = ({ content }: { content: string }) => {
 };
 
 const DetailRow = ({ label, value, id }: { label: string, value: React.ReactNode, id?: string }) => (
-  <div id={id} className="flex flex-col md:flex-row overflow-hidden border-b border-gray-200 last:border-b-0 transition-colors hover:bg-slate-50/50">
-    <div className="w-full md:w-[30%] bg-[#10a37f] p-5 md:p-6 flex items-start shrink-0 border-b md:border-b-0 md:border-r border-gray-200">
-      <span className="text-white font-extrabold text-[11px] md:text-sm leading-snug block tracking-wider uppercase">{label}</span>
+  <div id={id} className="flex flex-col md:flex-row items-stretch overflow-hidden border-b border-gray-200 last:border-b-0 transition-colors hover:bg-slate-50/50">
+    <div className="w-full md:w-[30%] bg-[#10a37f] p-5 md:p-6 flex items-center shrink-0 border-b md:border-b-0 md:border-r border-gray-200">
+      <span className="text-white font-semibold text-[11px] md:text-sm leading-normal tracking-wider uppercase">{label}</span>
     </div>
-    <div className="w-full md:w-[70%] bg-white p-5 md:p-6 text-gray-700 text-sm">
-      {typeof value === 'string' ? (
-        <FormattedDocumentText content={value} />
-      ) : (
-        <div className="font-medium text-[13px] md:text-[14px] text-gray-600 whitespace-pre-wrap">{value}</div>
-      )}
+    <div className="w-full md:w-[70%] bg-white p-5 md:p-6 flex items-center text-gray-700 text-sm">
+      <div className="w-full font-medium text-[13px] md:text-[14px] text-gray-600">
+        {typeof value === 'string' ? (
+          <FormattedDocumentText content={value} />
+        ) : (
+          value
+        )}
+      </div>
     </div>
   </div>
 );
@@ -974,18 +976,12 @@ export default function ProfilIndikator() {
                   {/* Field 3: Dimensi Mutu */}
                   <div>
                     <label className="block text-xs font-black text-gray-900 mb-1.5 uppercase tracking-wide">3. Dimensi Mutu *</label>
-                    <select 
-                      id="input-quality-dimension"
-                      {...register("quality_dimension")} 
-                      className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 focus:bg-white outline-none text-xs font-bold text-gray-900 transition-all cursor-pointer shadow-3xs"
-                    >
-                      <option value="Keselamatan">Keselamatan (Safety)</option>
-                      <option value="Efektif">Efektif (Effective)</option>
-                      <option value="Efisien">Efisien (Efficient)</option>
-                      <option value="Tepat Waktu">Tepat Waktu (Timely)</option>
-                      <option value="Berorientasi Pasien">Berorientasi Pasien (Patient-oriented)</option>
-                      <option value="Adil">Adil (Equitable)</option>
-                    </select>
+                    <MultiSelect
+                      options={["Keselamatan", "Efektivitas", "Efisiensi", "Berorientasi Pasien", "Tepat Waktu", "Adil"]}
+                      selected={watch("quality_dimension") ? watch("quality_dimension").split(",").map((s: string) => s.trim()).filter(Boolean) : []}
+                      onChange={(val) => setValue("quality_dimension", val.join(", "), { shouldValidate: true })}
+                      placeholder="Pilih dimensi mutu..."
+                    />
                     {errors.quality_dimension && <p className="text-red-500 text-[10px] uppercase font-black mt-1">{errors.quality_dimension.message}</p>}
                   </div>
 
@@ -1136,37 +1132,37 @@ export default function ProfilIndikator() {
 
                     {/* Premium Centered Formula Visual Container Box with divisions */}
                     <div id="formula-preview-wrapper" className="pt-2">
-                      <span className="text-[9px] font-black uppercase text-emerald-800 tracking-wider block mb-2 align-middle">
+                      <span className="text-[9px] font-black uppercase text-gray-500 tracking-wider block mb-2 align-middle">
                         🔬 Preview Penulisan Formula Dokumen Mutu (Realtime)
                       </span>
                       <div 
                         id="formula-preview-card"
-                        className="p-6 bg-[#ECFDF5]/30 border border-emerald-500/10 rounded-2xl relative shadow-3xs group flex flex-col md:flex-row items-center justify-between gap-4"
+                        className="p-5 md:p-6 bg-white border border-gray-200 rounded-2xl relative shadow-sm group flex flex-col items-center justify-center min-h-[140px] w-full"
                       >
                         {/* Interactive dynamic preview container */}
-                        <div className="flex flex-col md:flex-row items-center gap-4 text-slate-900 w-full md:w-auto">
-                          <span className="text-base font-black font-sans text-emerald-950">(</span>
-                          <div className="flex flex-col items-center">
+                        <div className="flex items-center gap-4 text-emerald-950 w-full max-w-full">
+                          <div className="flex flex-col items-center flex-1 min-w-0">
                             {/* Numerator fraction division */}
                             <span 
                               id="preview-numerator"
-                              className="text-xs font-mono font-bold text-[#059669] border-b-2 border-slate-400 pb-1 text-center max-w-lg break-words"
+                              className="text-[10px] md:text-[11px] font-semibold text-center w-full px-4 pb-2.5 leading-relaxed text-gray-700 break-words whitespace-normal [word-break:break-word] [overflow-wrap:break-word]"
                             >
-                              {watchNum ? `"${watchNum.trim()}"` : "Numerator (Pembilang)"}
+                              {watchNum ? watchNum.trim() : "Numerator (Pembilang)"}
                             </span>
+                            {/* Division line */}
+                            <div className="w-full border-t border-gray-300 my-0.5"></div>
                             {/* Denominator fraction division */}
                             <span 
                               id="preview-denominator"
-                              className="text-xs font-mono font-bold text-emerald-900 pt-1 text-center max-w-lg break-words"
+                              className="text-[10px] md:text-[11px] font-semibold text-center w-full px-4 pt-2.5 leading-relaxed text-emerald-800 break-words whitespace-normal [word-break:break-word] [overflow-wrap:break-word]"
                             >
-                              {watchDen ? `"${watchDen.trim()}"` : "Denominator (Penyebut)"}
+                              {watchDen ? watchDen.trim() : "Denominator (Penyebut)"}
                             </span>
                           </div>
-                          <span className="text-base font-black font-sans text-emerald-955">)</span>
                           
                           {/* Unit automatically suffix multiply */}
-                          <span className="text-xs font-black text-[#059669] bg-emerald-100/50 px-2 py-0.5 rounded border border-emerald-200 uppercase tracking-widest leading-none">
-                            {watchUnit?.includes("%") ? "× 100%" : "kali satuan"}
+                          <span className="text-xs md:text-sm font-black shrink-0 text-emerald-700 select-none pb-0.5">
+                            {watchUnit?.includes("%") ? "× 100%" : (watchUnit ? `× ${watchUnit}` : "× 100%")}
                           </span>
                         </div>
 
@@ -1422,7 +1418,13 @@ export default function ProfilIndikator() {
                     
                     <DetailRow 
                       label="Dimensi Mutu" 
-                      value={viewingProfile.quality_dimension || "—"} 
+                      value={
+                        viewingProfile.quality_dimension && viewingProfile.quality_dimension !== "—" ? (
+                          viewingProfile.quality_dimension.split(",").map(dim => dim.trim()).join(", ")
+                        ) : (
+                          "—"
+                        )
+                      } 
                       id="dimension-row"
                     />
                     <DetailRow 
@@ -1466,8 +1468,25 @@ export default function ProfilIndikator() {
                       id="denominator-row"
                     />
                     <DetailRow 
-                      label="Formula Perhitungan" 
-                      value={viewingProfile.formula || "—"} 
+                      label="Formula" 
+                      value={
+                        <div className="flex items-center justify-center py-5 w-full bg-white border border-gray-200 rounded-2xl p-4 md:p-6 shadow-sm">
+                          <div className="flex items-center gap-4 text-slate-900 w-full max-w-full">
+                            <div className="flex flex-col items-center flex-1 min-w-0 select-text">
+                              <span className="text-[9px] font-semibold text-center w-full px-4 pb-2.5 leading-relaxed text-gray-700 break-words whitespace-normal [word-break:break-word] [overflow-wrap:break-word]">
+                                {viewingProfile.numerator || "—"}
+                              </span>
+                              <div className="w-full border-t border-gray-300 my-0.5"></div>
+                              <span className="text-[9px] font-semibold text-center w-full px-4 pt-2.5 leading-relaxed text-emerald-800 break-words whitespace-normal [word-break:break-word] [overflow-wrap:break-word]">
+                                {viewingProfile.denominator || "—"}
+                              </span>
+                            </div>
+                            <span className="text-xs md:text-sm font-black shrink-0 text-emerald-700 select-none pb-0.5">
+                              {viewingProfile.measurement_unit?.includes("%") ? "× 100%" : (viewingProfile.measurement_unit ? `× ${viewingProfile.measurement_unit}` : "× 100%")}
+                            </span>
+                          </div>
+                        </div>
+                      } 
                       id="formula-row"
                     />
                      <DetailRow 

@@ -49,12 +49,12 @@ export function MultiSelect({ options, selected, onChange, placeholder = 'Pilih 
           <span className="text-gray-400 text-xs font-semibold px-1">{placeholder}</span>
         ) : (
           selected.map(item => (
-            <span key={item} className="inline-flex items-center gap-1 px-2.5 py-1 bg-emerald-50 text-emerald-700 border border-emerald-100 rounded-md text-[11px] font-bold">
+            <span key={item} className="inline-flex items-center gap-1.5 px-3 py-1 bg-emerald-50 text-emerald-800 border border-emerald-200 rounded-full text-[11px] font-bold shadow-sm">
               {item}
               <button 
                 type="button"
                 onClick={(e) => removeOption(e, item)}
-                className="hover:bg-emerald-200/50 p-0.5 rounded-sm transition-colors text-emerald-600 hover:text-emerald-900"
+                className="hover:bg-emerald-200/60 p-0.5 rounded-full transition-colors text-emerald-600 hover:text-emerald-950"
               >
                 <X size={10} strokeWidth={3} />
               </button>
