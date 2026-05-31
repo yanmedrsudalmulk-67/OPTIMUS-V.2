@@ -56,7 +56,7 @@ export default function Layout({ children, router }: LayoutProps) {
   }
 
   return (
-    <div className="flex min-h-screen bg-gray-50 pb-20 md:pb-0">
+    <div className="flex min-h-screen w-full overflow-x-hidden bg-gray-50 pb-20 md:pb-0">
       {/* Nav Sidebar component handles both desktop and mobile bottom bar */}
       <Sidebar />
 
@@ -76,8 +76,8 @@ export default function Layout({ children, router }: LayoutProps) {
                   fontStyle: "italic",
                   fontSize: "40px",
                   display: "inline-block",
-                  textDecorationLine: "underline",
-                  marginBottom: "-1px",
+                  textDecorationLine: "none",
+                  marginBottom: "-6px",
                   marginTop: "-12px",
                   height: "40px",
                   paddingBottom: "0px",

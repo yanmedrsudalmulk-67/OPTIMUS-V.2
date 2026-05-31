@@ -163,19 +163,30 @@ export default function IKP() {
       {/* SummaryCardsIKP should be here */}
 
       {!showInput ? (
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 animate-in fade-in slide-in-from-bottom-2 duration-500">
+        <div className="flex flex-col gap-6 animate-in fade-in slide-in-from-bottom-2 duration-500">
+          <div className="w-full">
+            <IKPHistory
+              dataList={ikpDataRaw}
+              onEdit={(data: any) => {
+                setEditData(data.fullFormData || data);
+                setShowInput(true);
+              }}
+            />
+          </div>
+
           {/* Incident Grading Chart */}
-          <div className="bg-white/90 backdrop-blur-md p-6 rounded-3xl border border-gray-100 shadow-sm flex flex-col justify-between hover:shadow-md transition-all duration-300">
+          <div className="bg-white/90 backdrop-blur-md p-6 rounded-3xl border border-gray-100 shadow-sm flex flex-col justify-between hover:shadow-md transition-all duration-300 w-full lg:w-1/3">
             <div>
               <span className="text-xs font-black text-slate-400 uppercase tracking-widest block mb-4 flex items-center gap-1.5">
                 <PieIcon size={16} className="text-[#10a37f]" /> Persentase Data
                 IKP
               </span>
             </div>
-            <div className="h-64 w-full flex items-center justify-center relative">
-              <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <Pie
+            <div className="relative w-full h-[280px] shrink-0 mt-4">
+              <div className="absolute inset-0">
+                <ResponsiveContainer width="99%" height="100%" debounce={0}>
+                  <PieChart>
+                    <Pie
                     data={gradingStats}
                     cx="50%"
                     cy="50%"
@@ -184,6 +195,7 @@ export default function IKP() {
                     paddingAngle={4}
                     stroke="none"
                     dataKey="value"
+                    isAnimationActive={false}
                     labelLine={false}
                     label={({
                       cx,
@@ -289,17 +301,8 @@ export default function IKP() {
                   />
                 </PieChart>
               </ResponsiveContainer>
+              </div>
             </div>
-          </div>
-
-          <div className="lg:col-span-2">
-            <IKPHistory
-              dataList={ikpDataRaw}
-              onEdit={(data: any) => {
-                setEditData(data.fullFormData || data);
-                setShowInput(true);
-              }}
-            />
           </div>
         </div>
       ) : (

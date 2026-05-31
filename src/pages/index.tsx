@@ -205,7 +205,7 @@ export default function WelcomePage() {
             <span className="font-extrabold text-sm tracking-tight text-white leading-tight truncate drop-shadow-md">
               UOBK RSUD AL-MULK
             </span>
-            <span className="text-[12px] text-[#5ff14d] font-bold leading-none mt-1 drop-shadow-md">
+            <span className="text-[12px] text-slate-200 font-bold leading-none mt-1 drop-shadow-md">
               Kota Sukabumi
             </span>
           </div>

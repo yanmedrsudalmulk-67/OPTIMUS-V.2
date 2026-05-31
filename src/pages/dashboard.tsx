@@ -49,10 +49,18 @@ const CustomTooltip = ({ active, payload, label }: any) => {
       <div className="bg-white p-3 border border-gray-100 shadow-xl rounded-xl">
         <p className="text-xs font-bold text-gray-800 mb-2">{label}</p>
         {payload.map((entry: any, index: number) => (
-          <div key={index} className="flex flex-row items-center justify-between gap-4 mb-1">
+          <div
+            key={index}
+            className="flex flex-row items-center justify-between gap-4 mb-1"
+          >
             <div className="flex items-center gap-1.5">
-              <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: entry.color }} />
-              <span className="text-[10px] font-semibold text-gray-500 uppercase">{entry.name}</span>
+              <div
+                className="w-2.5 h-2.5 rounded-full"
+                style={{ backgroundColor: entry.color }}
+              />
+              <span className="text-[10px] font-semibold text-gray-500 uppercase">
+                {entry.name}
+              </span>
             </div>
             <span className="text-xs font-black" style={{ color: entry.color }}>
               {entry.value}%
@@ -67,9 +75,9 @@ const CustomTooltip = ({ active, payload, label }: any) => {
 
 const TwoDShadowBar = (props: any) => {
   const { fill, x, y, width, height } = props;
-  
+
   if (height === undefined || height <= 0 || Number.isNaN(height)) {
-     return <rect x={x} y={y} width={width} height={0} fill={fill} />;
+    return <rect x={x} y={y} width={width} height={0} fill={fill} />;
   }
 
   const radius = Math.min(6, width / 2);
@@ -85,11 +93,11 @@ const TwoDShadowBar = (props: any) => {
 
   return (
     <g>
-      <path 
-        d={path} 
-        fill="#000000" 
-        opacity="0.18" 
-        style={{ transform: 'translate(3px, 3px)', filter: 'blur(1.5px)' }}
+      <path
+        d={path}
+        fill="#000000"
+        opacity="0.18"
+        style={{ transform: "translate(3px, 3px)", filter: "blur(1.5px)" }}
       />
       <path d={path} fill={fill} />
     </g>
@@ -113,8 +121,12 @@ export default function Dashboard() {
   const indicatorProfiles = useStore((state) => state.indicatorProfiles);
 
   const inmCount = indicatorProfiles.filter((p) => p.category === "INM").length;
-  const impRsCount = indicatorProfiles.filter((p) => p.category === "IMP-RS").length;
-  const impUnitCount = indicatorProfiles.filter((p) => p.category === "IMP-Unit").length;
+  const impRsCount = indicatorProfiles.filter(
+    (p) => p.category === "IMP-RS",
+  ).length;
+  const impUnitCount = indicatorProfiles.filter(
+    (p) => p.category === "IMP-Unit",
+  ).length;
   const spmCount = indicatorProfiles.filter((p) => p.category === "SPM").length;
 
   const [selectedIndikatorId, setSelectedIndikatorId] = useState("");
@@ -124,19 +136,22 @@ export default function Dashboard() {
   // Filter Period State
   const [periodeMode, setPeriodeMode] = useState("Bulanan");
   const [selectedBulan, setSelectedBulan] = useState(
-    new Date().toLocaleString("id-ID", { month: "long" })
+    new Date().toLocaleString("id-ID", { month: "long" }),
   );
   const [selectedTahun, setSelectedTahun] = useState(
-    String(new Date().getFullYear())
+    String(new Date().getFullYear()),
   );
   const [selectedTriwulan, setSelectedTriwulan] = useState("Triwulan 1");
   const [selectedSemester, setSelectedSemester] = useState("Semester 1");
 
   // Modal State
-  const [activeModal, setActiveModal] = useState<"TERCAPAI" | "BELUM_TERCAPAI" | "IKP" | "ALL" | null>(null);
+  const [activeModal, setActiveModal] = useState<
+    "TERCAPAI" | "BELUM_TERCAPAI" | "IKP" | "ALL" | null
+  >(null);
   const [modalSearch, setModalSearch] = useState("");
 
-  const activeIndikatorId = selectedIndikatorId || (indicatorProfiles[0]?.id || "");
+  const activeIndikatorId =
+    selectedIndikatorId || indicatorProfiles[0]?.id || "";
 
   // Fetch inputs from Supabase on mount to show correct user inputs in real-time
   useEffect(() => {
@@ -149,15 +164,21 @@ export default function Dashboard() {
 
         if (data && data.length >= 0) {
           const newDataList = data.map((dbInput: any) => {
-            const matchedProfile = indicatorProfiles.find((p) => p.id === dbInput.indicator_id);
+            const matchedProfile = indicatorProfiles.find(
+              (p) => p.id === dbInput.indicator_id,
+            );
             const persentase = dbInput.achievement_percentage || 0;
             const rawTarget = dbInput.target || matchedProfile?.target || 80;
-            const target = parseFloat(String(rawTarget).replace(/[^0-9.]/g, '')) || 80;
-            
+            const target =
+              parseFloat(String(rawTarget).replace(/[^0-9.]/g, "")) || 80;
+
             // Determine achievement status
             const isReverse = matchedProfile?.reverse || false;
-            let computedStatus: "Tercapai" | "Mendekati" | "Tidak Tercapai" = "Tidak Tercapai";
-            const isSuccess = isReverse ? persentase <= target : persentase >= target;
+            let computedStatus: "Tercapai" | "Mendekati" | "Tidak Tercapai" =
+              "Tidak Tercapai";
+            const isSuccess = isReverse
+              ? persentase <= target
+              : persentase >= target;
             if (isSuccess) {
               computedStatus = "Tercapai";
             } else {
@@ -169,7 +190,11 @@ export default function Dashboard() {
             if (dbInput.category_id === "IKP" && dbInput.notes) {
               try {
                 const parsed = JSON.parse(dbInput.notes);
-                if (typeof parsed === 'object' && parsed !== null && ('kpc' in parsed || 'knc' in parsed)) {
+                if (
+                  typeof parsed === "object" &&
+                  parsed !== null &&
+                  ("kpc" in parsed || "knc" in parsed)
+                ) {
                   ikpData = parsed;
                 }
               } catch (e) {
@@ -188,8 +213,10 @@ export default function Dashboard() {
               denominator: dbInput.denominator_value || 1,
               target: target,
               capaian: persentase,
-              status: (dbInput.category_id === "IKP" ? "N/A" : computedStatus) as any,
-              keterangan: ikpData ? ikpData.keterangan : (dbInput.notes || ""),
+              status: (dbInput.category_id === "IKP"
+                ? "N/A"
+                : computedStatus) as any,
+              keterangan: ikpData ? ikpData.keterangan : dbInput.notes || "",
               kpc: ikpData ? ikpData.kpc : 0,
               knc: ikpData ? ikpData.knc : 0,
               ktc: ikpData ? ikpData.ktc : 0,
@@ -200,7 +227,10 @@ export default function Dashboard() {
           setDataMutuList(newDataList);
         }
       } catch (err) {
-        console.warn("Supabase load skipped or delayed, relying on client memory", err);
+        console.warn(
+          "Supabase load skipped or delayed, relying on client memory",
+          err,
+        );
       }
     };
     fetchSupabaseInputs();
@@ -213,7 +243,7 @@ export default function Dashboard() {
         { event: "*", schema: "public", table: "indicator_inputs" },
         () => {
           fetchSupabaseInputs();
-        }
+        },
       )
       .subscribe();
 
@@ -237,38 +267,57 @@ export default function Dashboard() {
         return mMonthName === selectedBulan;
       }
       if (periodeMode === "Triwulan") {
-        if (selectedTriwulan === "Triwulan 1") return monthIndex >= 0 && monthIndex <= 2;
-        if (selectedTriwulan === "Triwulan 2") return monthIndex >= 3 && monthIndex <= 5;
-        if (selectedTriwulan === "Triwulan 3") return monthIndex >= 6 && monthIndex <= 8;
-        if (selectedTriwulan === "Triwulan 4") return monthIndex >= 9 && monthIndex <= 11;
+        if (selectedTriwulan === "Triwulan 1")
+          return monthIndex >= 0 && monthIndex <= 2;
+        if (selectedTriwulan === "Triwulan 2")
+          return monthIndex >= 3 && monthIndex <= 5;
+        if (selectedTriwulan === "Triwulan 3")
+          return monthIndex >= 6 && monthIndex <= 8;
+        if (selectedTriwulan === "Triwulan 4")
+          return monthIndex >= 9 && monthIndex <= 11;
       }
       if (periodeMode === "Semester") {
-        if (selectedSemester === "Semester 1") return monthIndex >= 0 && monthIndex <= 5;
-        if (selectedSemester === "Semester 2") return monthIndex >= 6 && monthIndex <= 11;
+        if (selectedSemester === "Semester 1")
+          return monthIndex >= 0 && monthIndex <= 5;
+        if (selectedSemester === "Semester 2")
+          return monthIndex >= 6 && monthIndex <= 11;
       }
       if (periodeMode === "Tahunan") {
-        return true; 
+        return true;
       }
       return true;
     });
-  }, [dataMutuList, periodeMode, selectedBulan, selectedTahun, selectedTriwulan, selectedSemester]);
+  }, [
+    dataMutuList,
+    periodeMode,
+    selectedBulan,
+    selectedTahun,
+    selectedTriwulan,
+    selectedSemester,
+  ]);
 
   // Map 13 indicators table data based on dynamic input records
   const inmTableData = indicatorProfiles.map((item, index) => {
     const matchingEntries = filteredDataMutu.filter(
-      (d) => d.indikator_id === item.id
+      (d) => d.indikator_id === item.id,
     );
     let capaianVal = 0;
     let status = "red";
 
     if (matchingEntries.length > 0) {
-      const totalCapaian = matchingEntries.reduce((sum, entry) => sum + (entry.capaian || 0), 0);
+      const totalCapaian = matchingEntries.reduce(
+        (sum, entry) => sum + (entry.capaian || 0),
+        0,
+      );
       capaianVal = totalCapaian / matchingEntries.length;
-      
+
       const rawTarget = matchingEntries[0]?.target || item.target || 80;
-      const targetVal = parseFloat(String(rawTarget).replace(/[^0-9.]/g, '')) || 80;
+      const targetVal =
+        parseFloat(String(rawTarget).replace(/[^0-9.]/g, "")) || 80;
       const isReverse = item.reverse || false;
-      const isSuccess = isReverse ? capaianVal <= targetVal : capaianVal >= targetVal;
+      const isSuccess = isReverse
+        ? capaianVal <= targetVal
+        : capaianVal >= targetVal;
 
       if (isSuccess) {
         status = "green";
@@ -279,7 +328,11 @@ export default function Dashboard() {
       }
     }
 
-    const formattedTarget = formatTarget(item.target, item.measurement_unit, item.reverse);
+    const formattedTarget = formatTarget(
+      item.target,
+      item.measurement_unit,
+      item.reverse,
+    );
 
     return {
       no: index + 1,
@@ -289,14 +342,20 @@ export default function Dashboard() {
       targetNum: item.target,
       capaian: matchingEntries.length > 0 ? `${capaianVal.toFixed(1)}%` : "0%",
       status: matchingEntries.length > 0 ? status : "red",
-      unit_id: matchingEntries.length > 0 ? matchingEntries[matchingEntries.length - 1].unit : "-",
-      tanggal: matchingEntries.length > 0 ? matchingEntries[matchingEntries.length - 1].tanggal : "-"
+      unit_id:
+        matchingEntries.length > 0
+          ? matchingEntries[matchingEntries.length - 1].unit
+          : "-",
+      tanggal:
+        matchingEntries.length > 0
+          ? matchingEntries[matchingEntries.length - 1].tanggal
+          : "-",
     };
   });
 
   const tercapaiCount = inmTableData.filter((i) => i.status === "green").length;
   const belumTercapaiCount = inmTableData.filter(
-    (i) => i.status === "red" || i.status === "orange"
+    (i) => i.status === "red" || i.status === "orange",
   ).length;
 
   // IKP (Insiden Keselamatan Pasien) Aggregation Logic
@@ -306,7 +365,10 @@ export default function Dashboard() {
     KNC: ikpDataRaw.reduce((sum, item) => sum + (Number(item.knc) || 0), 0),
     KTC: ikpDataRaw.reduce((sum, item) => sum + (Number(item.ktc) || 0), 0),
     KTD: ikpDataRaw.reduce((sum, item) => sum + (Number(item.ktd) || 0), 0),
-    Sentinel: ikpDataRaw.reduce((sum, item) => sum + (Number(item.sentinel) || 0), 0),
+    Sentinel: ikpDataRaw.reduce(
+      (sum, item) => sum + (Number(item.sentinel) || 0),
+      0,
+    ),
   };
 
   // Convert to clean list of records with count > 0 for Pie Chart representation (Diagram Lingkaran saja)
@@ -320,7 +382,7 @@ export default function Dashboard() {
 
   const totalIncidentCount = ikpPieData.reduce(
     (sum, item) => sum + item.value,
-    0
+    0,
   );
 
   // Find detail setup of chosen indicator
@@ -331,13 +393,13 @@ export default function Dashboard() {
   // Compute real-time monthly performance for chosen indicator based strictly on standard input records
   const selectedChartData = useMemo(() => {
     const matching = filteredDataMutu.filter(
-      (d) => d.indikator_id === activeIndikatorId
+      (d) => d.indikator_id === activeIndikatorId,
     );
     if (matching.length === 0) return [];
 
     // Sort chronologically based on input date
     const sorted = [...matching].sort(
-      (a, b) => new Date(a.tanggal).getTime() - new Date(b.tanggal).getTime()
+      (a, b) => new Date(a.tanggal).getTime() - new Date(b.tanggal).getTime(),
     );
 
     // Group actual records by Month & Year to yield authentic progress statistics without dummy data
@@ -350,7 +412,8 @@ export default function Dashboard() {
 
       if (!monthlyGroups[mLabel]) {
         const rawTarget = item.target || selectedIndikatorProfile?.target || 80;
-        const numTarget = parseFloat(String(rawTarget).replace(/[^0-9.]/g, '')) || 80;
+        const numTarget =
+          parseFloat(String(rawTarget).replace(/[^0-9.]/g, "")) || 80;
         monthlyGroups[mLabel] = {
           totalCapaian: 0,
           count: 0,
@@ -369,16 +432,24 @@ export default function Dashboard() {
         Target: val.target,
       };
     });
-  }, [filteredDataMutu, activeIndikatorId, selectedIndikatorProfile, periodeMode]);
+  }, [filteredDataMutu, activeIndikatorId, selectedIndikatorProfile]);
 
   const selectedChartAnalysis = useMemo(() => {
-    if (!selectedChartData || selectedChartData.length === 0 || !selectedIndikatorProfile) return null;
-    
+    if (
+      !selectedChartData ||
+      selectedChartData.length === 0 ||
+      !selectedIndikatorProfile
+    )
+      return null;
+
     let totalCap = 0;
-    selectedChartData.forEach(d => totalCap += d.Capaian);
-    const avgCap = selectedChartData.length > 0 ? parseFloat((totalCap / selectedChartData.length).toFixed(2)) : 0;
+    selectedChartData.forEach((d) => (totalCap += d.Capaian));
+    const avgCap =
+      selectedChartData.length > 0
+        ? parseFloat((totalCap / selectedChartData.length).toFixed(2))
+        : 0;
     const target = selectedChartData[0]?.Target || 80;
-    
+
     const isReverse = selectedIndikatorProfile?.reverse || false;
     const isSuccess = isReverse ? avgCap <= target : avgCap >= target;
 
@@ -387,20 +458,41 @@ export default function Dashboard() {
     else if (Math.abs(avgCap - target) <= 10) status = "Mendekati Target";
 
     let longPeriodName = `Periode Tahun ${selectedTahun}`;
-    if (periodeMode === "Bulanan") longPeriodName = `Periode Bulan ${selectedBulan} Tahun ${selectedTahun}`;
+    if (periodeMode === "Bulanan")
+      longPeriodName = `Periode Bulan ${selectedBulan} Tahun ${selectedTahun}`;
     if (periodeMode === "Triwulan") {
-        if (selectedTriwulan.includes("1")) longPeriodName = `Periode Triwulan I (Januari - Maret) Tahun ${selectedTahun}`;
-        if (selectedTriwulan.includes("2")) longPeriodName = `Periode Triwulan II (April - Juni) Tahun ${selectedTahun}`;
-        if (selectedTriwulan.includes("3")) longPeriodName = `Periode Triwulan III (Juli - September) Tahun ${selectedTahun}`;
-        if (selectedTriwulan.includes("4")) longPeriodName = `Periode Triwulan IV (Oktober - Desember) Tahun ${selectedTahun}`;
+      if (selectedTriwulan.includes("1"))
+        longPeriodName = `Periode Triwulan I (Januari - Maret) Tahun ${selectedTahun}`;
+      if (selectedTriwulan.includes("2"))
+        longPeriodName = `Periode Triwulan II (April - Juni) Tahun ${selectedTahun}`;
+      if (selectedTriwulan.includes("3"))
+        longPeriodName = `Periode Triwulan III (Juli - September) Tahun ${selectedTahun}`;
+      if (selectedTriwulan.includes("4"))
+        longPeriodName = `Periode Triwulan IV (Oktober - Desember) Tahun ${selectedTahun}`;
     }
     if (periodeMode === "Semester") {
-        if (selectedSemester.includes("1")) longPeriodName = `Periode Semester I (Januari - Juni) Tahun ${selectedTahun}`;
-        if (selectedSemester.includes("2")) longPeriodName = `Periode Semester II (Juli - Desember) Tahun ${selectedTahun}`;
+      if (selectedSemester.includes("1"))
+        longPeriodName = `Periode Semester I (Januari - Juni) Tahun ${selectedTahun}`;
+      if (selectedSemester.includes("2"))
+        longPeriodName = `Periode Semester II (Juli - Desember) Tahun ${selectedTahun}`;
     }
 
-    return { avgCap, target, status, longPeriodName, indicatorTitle: selectedIndikatorProfile.indicator_title };
-  }, [selectedChartData, selectedIndikatorProfile, periodeMode, selectedBulan, selectedTriwulan, selectedSemester, selectedTahun]);
+    return {
+      avgCap,
+      target,
+      status,
+      longPeriodName,
+      indicatorTitle: selectedIndikatorProfile.indicator_title,
+    };
+  }, [
+    selectedChartData,
+    selectedIndikatorProfile,
+    periodeMode,
+    selectedBulan,
+    selectedTriwulan,
+    selectedSemester,
+    selectedTahun,
+  ]);
 
   return (
     <div className="space-y-10 animate-in fade-in slide-in-from-bottom-4 duration-700 pb-16">
@@ -412,7 +504,10 @@ export default function Dashboard() {
               Dashboard Mutu Rumah Sakit
             </h1>
           </div>
-          <p style={{ color: "#4a5565" }} className="mt-2 text-[9px] sm:text-[10px] md:text-sm font-semibold whitespace-nowrap leading-relaxed">
+          <p
+            style={{ color: "#4a5565" }}
+            className="mt-2 text-[9px] sm:text-[10px] md:text-sm font-semibold whitespace-nowrap leading-relaxed"
+          >
             Pemantauan Indikator Mutu & Keselamatan Pasien UOBK RSUD AL-MULK
           </p>
         </div>
@@ -420,7 +515,7 @@ export default function Dashboard() {
         <div className="flex flex-wrap items-center gap-2 md:gap-3 w-full xl:w-auto justify-start md:justify-end xl:justify-start mt-2 xl:mt-0">
           <div className="flex items-center gap-1.5 bg-white border border-gray-200 rounded-lg md:rounded-xl px-2.5 md:px-2 lg:px-2.5 shadow-sm shrink-0">
             <Filter size={14} className="text-emerald-600 hidden md:block" />
-            <select 
+            <select
               value={periodeMode}
               onChange={(e) => setPeriodeMode(e.target.value)}
               className="py-2.5 md:py-1.5 lg:py-2.5 bg-transparent outline-none focus:ring-0 text-xs md:text-[11px] lg:text-xs font-bold text-gray-700 cursor-pointer w-full"
@@ -438,8 +533,23 @@ export default function Dashboard() {
               onChange={(e) => setSelectedBulan(e.target.value)}
               className="px-4 md:px-2.5 lg:px-4 py-2.5 md:py-1.5 lg:py-2.5 border border-gray-200 rounded-lg md:rounded-xl bg-white outline-none focus:ring-2 focus:ring-emerald-500 transition-all text-xs md:text-[11px] lg:text-xs font-bold text-gray-700 shadow-sm cursor-pointer"
             >
-              {["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"].map(m => (
-                <option key={m} value={m}>{m}</option>
+              {[
+                "Januari",
+                "Februari",
+                "Maret",
+                "April",
+                "Mei",
+                "Juni",
+                "Juli",
+                "Agustus",
+                "September",
+                "Oktober",
+                "November",
+                "Desember",
+              ].map((m) => (
+                <option key={m} value={m}>
+                  {m}
+                </option>
               ))}
             </select>
           )}
@@ -473,9 +583,13 @@ export default function Dashboard() {
             onChange={(e) => setSelectedTahun(e.target.value)}
             className="px-4 md:px-2.5 lg:px-4 py-2.5 md:py-1.5 lg:py-2.5 border border-gray-200 rounded-lg md:rounded-xl bg-white outline-none focus:ring-2 focus:ring-emerald-500 transition-all text-xs md:text-[11px] lg:text-xs font-bold text-gray-700 shadow-sm cursor-pointer"
           >
-            {Array.from({length: 5}).map((_, i) => {
+            {Array.from({ length: 5 }).map((_, i) => {
               const y = new Date().getFullYear() - i;
-              return <option key={y} value={y}>{y}</option>;
+              return (
+                <option key={y} value={y}>
+                  {y}
+                </option>
+              );
             })}
           </select>
         </div>
@@ -484,39 +598,41 @@ export default function Dashboard() {
       {/* KPI Overview Cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3 lg:gap-4 xl:gap-6">
         {/* Card 1: Pemenuhan Target INM */}
-        <div 
+        <div
           onClick={() => setActiveModal("TERCAPAI")}
-          className="bg-white rounded-[20px] md:rounded-[24px] lg:rounded-[28px] p-3 md:p-4 lg:p-6 shadow-[0_8px_30px_rgb(0,0,0,0.04),_0_8px_20px_-8px_rgba(16,163,127,0.25)] border border-emerald-100/30 border-b-[4px] border-b-emerald-100 flex flex-col hover:-translate-y-1.5 hover:shadow-[0_12px_40px_rgb(16,163,127,0.15)] hover:border-emerald-200 hover:border-b-emerald-300 cursor-pointer transition-all duration-300 relative overflow-hidden group"
+          className="bg-white rounded-[24px] p-6 shadow-[0_8px_24px_rgba(0,0,0,0.05)] border border-emerald-100 flex flex-col hover:-translate-y-1 transition-all duration-250 cursor-pointer relative overflow-hidden group h-full"
         >
           <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-50 rounded-full blur-3xl opacity-50 group-hover:opacity-80 transition-opacity pointer-events-none" />
-          <div className="relative z-10 flex flex-col h-full gap-2 lg:gap-4">
+          <div className="relative z-10 flex flex-col h-full">
             <div className="flex items-start justify-between">
-              <div className="flex flex-col items-start gap-2 lg:gap-4">
-                <div className="p-2 md:p-2.5 lg:p-3.5 rounded-[12px] lg:rounded-[16px] bg-gradient-to-br from-emerald-400 to-emerald-600 text-white shadow-lg shadow-emerald-200/50 flex-shrink-0">
-                  <Target className="h-4 w-4 md:h-5 md:w-5 lg:h-6 lg:w-6" strokeWidth={2.5} />
-                </div>
-                <div>
-                  <p className="text-[9px] md:text-[9.5px] lg:text-xs font-bold text-gray-500 mb-0.5 lg:mb-1 leading-snug tracking-wide">
-                    Pemenuhan Target INM
-                  </p>
-                  <h3 className="text-2xl md:text-3xl lg:text-[44px] font-extrabold text-emerald-600 lg:text-slate-800 leading-none tracking-tight">
-                    {tercapaiCount}
-                    <span className="text-sm md:text-base lg:text-2xl text-gray-400 font-bold ml-1.5">/ 13</span>
-                  </h3>
-                </div>
+              <div className="p-3.5 rounded-[16px] bg-gradient-to-br from-emerald-400 to-emerald-600 text-white shadow-lg shadow-emerald-200/50 flex-shrink-0">
+                <Target className="h-6 w-6" strokeWidth={2.5} />
               </div>
-              <div className="p-1.5 lg:p-2 bg-emerald-50 rounded-lg lg:rounded-xl text-emerald-600 shrink-0 hidden md:block">
-                <TrendingUp className="w-4 h-4 lg:w-5 lg:h-5" strokeWidth={2.5} />
+              <div className="p-2 bg-emerald-50 rounded-xl text-emerald-600 shrink-0">
+                <TrendingUp className="w-5 h-5" strokeWidth={2.5} />
               </div>
             </div>
+
+            <div className="mt-4">
+              <p className="text-[15px] font-semibold text-gray-500 leading-[1.4] mb-0">
+                Pemenuhan Target INM
+              </p>
+              <h3 className="text-[48px] font-extrabold text-slate-800 leading-none mt-[12px] mb-[12px] flex items-baseline italic">
+                {tercapaiCount}
+                <span className="text-2xl text-gray-400 font-bold ml-1.5">
+                  / 13
+                </span>
+              </h3>
+            </div>
+
             {/* Progress bar */}
             <div className="space-y-1.5 mt-1">
-              <div className="flex items-center justify-between text-[8px] lg:text-xs font-bold text-gray-400">
+              <div className="flex items-center justify-between text-xs font-bold text-gray-400">
                 <span>0%</span>
                 <span>{((tercapaiCount / 13) * 100).toFixed(0)}%</span>
               </div>
-              <div className="h-1 lg:h-1.5 w-full bg-gray-100 rounded-full overflow-hidden">
-                <div 
+              <div className="h-1.5 w-full bg-gray-100 rounded-full overflow-hidden">
+                <div
                   className="h-full bg-gradient-to-r from-emerald-400 to-emerald-500 rounded-full relative overflow-hidden"
                   style={{ width: `${(tercapaiCount / 13) * 100}%` }}
                 >
@@ -524,165 +640,185 @@ export default function Dashboard() {
                 </div>
               </div>
             </div>
-          </div>
-          <div className="relative z-10 mt-auto pt-3 md:pt-4 border-t border-gray-100/80">
-            <span className="px-2 lg:px-4 py-1.5 lg:py-2.5 rounded-full bg-emerald-50/80 text-emerald-600 text-[8px] md:text-[9px] lg:text-xs font-bold flex items-center justify-center gap-1.5 w-full transition-colors group-hover:bg-emerald-100/80">
-              <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0" />
-              {tercapaiCount > 0 ? "Target INM Tercapai" : "Belum Ada Indikator Tercapai"}
-            </span>
+
+            <div className="relative z-10 mt-auto pt-4 border-t border-gray-100/80">
+              <span className="px-4 py-2.5 rounded-full bg-emerald-50/80 text-emerald-600 text-xs font-bold flex items-center justify-center gap-1.5 w-full transition-colors group-hover:bg-emerald-100/80">
+                <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0" />
+                {tercapaiCount > 0
+                  ? "Target INM Tercapai"
+                  : "Belum Ada Indikator Tercapai"}
+              </span>
+            </div>
           </div>
         </div>
 
         {/* Card 2: Indikator Belum Tercapai */}
-        <div 
+        <div
           onClick={() => setActiveModal("BELUM_TERCAPAI")}
-          className="bg-white rounded-[20px] md:rounded-[24px] lg:rounded-[28px] p-3 md:p-4 lg:p-6 shadow-[0_8px_30px_rgb(0,0,0,0.04),_0_8px_20px_-8px_rgba(239,68,68,0.25)] border border-red-100/30 border-b-[4px] border-b-red-100 flex flex-col hover:-translate-y-1.5 hover:shadow-[0_12px_40px_rgba(239,68,68,0.15)] hover:border-red-200 hover:border-b-red-300 cursor-pointer transition-all duration-300 relative overflow-hidden group"
+          className="bg-white rounded-[24px] p-6 shadow-[0_8px_24px_rgba(0,0,0,0.05)] border border-red-100 flex flex-col hover:-translate-y-1 transition-all duration-250 cursor-pointer relative overflow-hidden group h-full"
         >
           <div className="absolute top-0 right-0 w-32 h-32 bg-red-50 rounded-full blur-3xl opacity-50 group-hover:opacity-80 transition-opacity pointer-events-none" />
-          <div className="relative z-10 flex flex-col h-full gap-2 lg:gap-4">
+          <div className="relative z-10 flex flex-col h-full">
             <div className="flex items-start justify-between">
-              <div className="flex flex-col items-start gap-2 lg:gap-4">
-                <div className="p-2 md:p-2.5 lg:p-3.5 rounded-[12px] lg:rounded-[16px] bg-gradient-to-br from-red-400 to-red-500 text-white shadow-lg shadow-red-200/50 flex-shrink-0">
-                  <AlertTriangle className="h-4 w-4 md:h-5 md:w-5 lg:h-6 lg:w-6" strokeWidth={2.5} />
-                </div>
-                <div>
-                  <p className="text-[9px] md:text-[9.5px] lg:text-xs font-bold text-gray-500 mb-0.5 lg:mb-1 leading-snug tracking-wide">
-                    Indikator Belum Tercapai
-                  </p>
-                  <h3 className="text-2xl md:text-3xl lg:text-[44px] font-extrabold text-red-500 lg:text-slate-800 leading-none tracking-tight">
-                    {belumTercapaiCount}
-                  </h3>
-                </div>
+              <div className="p-3.5 rounded-[16px] bg-gradient-to-br from-red-400 to-red-500 text-white shadow-lg shadow-red-200/50 flex-shrink-0">
+                <AlertTriangle className="h-6 w-6" strokeWidth={2.5} />
               </div>
-              <div className="p-1.5 lg:p-2 bg-red-50 rounded-lg lg:rounded-xl text-red-500 shrink-0 hidden md:block">
-                <TrendingDown className="w-4 h-4 lg:w-5 lg:h-5" strokeWidth={2.5} />
+              <div className="p-2 bg-red-50 rounded-xl text-red-500 shrink-0">
+                <TrendingDown className="w-5 h-5" strokeWidth={2.5} />
               </div>
             </div>
-            
-            {/* Added spacer to match Card 1 layout height natively */}
-            <div className="space-y-1.5 mt-1 opacity-0 pointer-events-none flex-shrink-0">
-               <div className="flex items-center justify-between text-[8px] lg:text-xs font-bold text-gray-400"><span>0%</span></div>
-               <div className="h-1 lg:h-1.5 w-full bg-gray-100 rounded-full overflow-hidden" />
+
+            <div className="mt-4">
+              <p className="text-[14px] font-semibold text-gray-500 leading-[1.4] mb-0">
+                Indikator Belum Tercapai
+              </p>
+              <h3 className="text-[48px] font-extrabold text-slate-800 leading-none mt-[12px] mb-[12px] italic">
+                {belumTercapaiCount}
+              </h3>
             </div>
-          </div>
-          <div className="relative z-10 mt-auto pt-3 md:pt-4 border-t border-gray-100/80">
-            <span className="px-2 lg:px-4 py-1.5 lg:py-2.5 rounded-full bg-red-50/80 text-red-600 text-[8px] md:text-[9px] lg:text-xs font-bold flex items-center justify-center gap-1.5 w-full transition-colors group-hover:bg-red-100/80">
-              <div className="w-1.5 h-1.5 rounded-full bg-red-500 shrink-0" />
-              Perlu Perbaikan Mutu
-            </span>
+
+            <div className="relative z-10 mt-auto pt-4 border-t border-gray-100/80">
+              <span className="px-4 py-2.5 rounded-full bg-red-50/80 text-red-600 text-xs font-bold flex items-center justify-center gap-1.5 w-full transition-colors group-hover:bg-red-100/80">
+                <div className="w-1.5 h-1.5 rounded-full bg-red-500 shrink-0" />
+                Perlu Perbaikan Mutu
+              </span>
+            </div>
           </div>
         </div>
 
         {/* Card 3: Kejadian IKP */}
-        <div 
+        <div
           onClick={() => setActiveModal("IKP")}
-          className="bg-white rounded-[20px] md:rounded-[24px] lg:rounded-[28px] p-3 md:p-4 lg:p-6 shadow-[0_8px_30px_rgb(0,0,0,0.04),_0_8px_20px_-8px_rgba(59,130,246,0.25)] border border-blue-100/30 border-b-[4px] border-b-blue-100 flex flex-col hover:-translate-y-1.5 hover:shadow-[0_12px_40px_rgba(59,130,246,0.15)] hover:border-blue-200 hover:border-b-blue-300 cursor-pointer transition-all duration-300 relative overflow-hidden group"
+          className="bg-white rounded-[24px] p-6 shadow-[0_8px_24px_rgba(0,0,0,0.05)] border border-blue-100 flex flex-col hover:-translate-y-1 transition-all duration-250 cursor-pointer relative overflow-hidden group h-full"
         >
           <div className="absolute top-0 right-0 w-32 h-32 bg-blue-50 rounded-full blur-3xl opacity-50 group-hover:opacity-80 transition-opacity pointer-events-none" />
-          <div className="relative z-10 flex flex-col h-full gap-2 lg:gap-4">
+          <div className="relative z-10 flex flex-col h-full">
             <div className="flex items-start justify-between">
-              <div className="flex flex-col items-start gap-2 lg:gap-4">
-                <div className="p-2 md:p-2.5 lg:p-3.5 rounded-[12px] lg:rounded-[16px] bg-gradient-to-br from-blue-400 to-blue-500 text-white shadow-lg shadow-blue-200/50 flex-shrink-0">
-                  <ShieldAlert className="h-4 w-4 md:h-5 md:w-5 lg:h-6 lg:w-6" strokeWidth={2.5} />
-                </div>
-                <div>
-                  <p className="text-[9px] md:text-[9.5px] lg:text-xs font-bold text-gray-500 mb-0.5 lg:mb-1 leading-snug tracking-wide">
-                    Kejadian IKP Tercatat
-                  </p>
-                  <h3 className="text-2xl md:text-3xl lg:text-[44px] font-extrabold text-blue-500 lg:text-slate-800 leading-none tracking-tight flex items-baseline gap-1.5">
-                    {totalIncidentCount}
-                    <span className="text-xs md:text-sm lg:text-xl text-gray-400 font-bold">Laporan</span>
-                  </h3>
-                </div>
+              <div className="p-3.5 rounded-[16px] bg-gradient-to-br from-blue-400 to-blue-500 text-white shadow-lg shadow-blue-200/50 flex-shrink-0">
+                <ShieldAlert className="h-6 w-6" strokeWidth={2.5} />
               </div>
-              <div 
-                className="p-1.5 lg:p-2 bg-blue-50 rounded-lg lg:rounded-xl text-blue-500 shrink-0 hidden md:block"
-                style={{ paddingBottom: "8px", marginLeft: "-20px" }}
-              >
-                <FileText className="w-4 h-4 lg:w-5 lg:h-5" strokeWidth={2.5} />
+              <div className="p-2 bg-blue-50 rounded-xl text-blue-500 shrink-0">
+                <FileText className="w-5 h-5" strokeWidth={2.5} />
               </div>
             </div>
 
-            {/* Added spacer to match Card 1 layout height natively */}
-            <div className="space-y-1.5 mt-1 opacity-0 pointer-events-none flex-shrink-0">
-               <div className="flex items-center justify-between text-[8px] lg:text-xs font-bold text-gray-400"><span>0%</span></div>
-               <div className="h-1 lg:h-1.5 w-full bg-gray-100 rounded-full overflow-hidden" />
+            <div className="mt-4">
+              <p className="text-[15px] font-semibold text-gray-500 leading-[1.4] mb-0">
+                Kejadian IKP Tercatat
+              </p>
+              <div className="flex items-end gap-[8px] mt-[12px] mb-[12px]">
+                <h3 className="text-[48px] font-extrabold text-slate-800 leading-none italic">
+                  {totalIncidentCount}
+                </h3>
+                <span className="text-xl text-gray-400 font-bold mb-1.5 italic">
+                  Laporan
+                </span>
+              </div>
             </div>
-          </div>
-          <div className="relative z-10 mt-auto pt-3 md:pt-4 border-t border-gray-100/80">
-            <div className="flex flex-row md:flex-col items-center justify-between md:justify-center bg-gray-50/50 hover:bg-gray-100/50 transition-colors px-2 lg:px-4 py-1.5 lg:py-2.5 rounded-full md:rounded-xl w-full gap-1 md:gap-1.5">
-              <span className="text-blue-600 text-[8px] md:text-[9px] lg:text-[11px] xl:text-xs font-bold flex items-center gap-1.5 truncate">
-                <div className="w-1.5 h-1.5 rounded-full bg-blue-500 shrink-0" />
-                Laporan Masuk
-              </span>
-              <span className="px-1.5 md:px-2 lg:px-3 py-0.5 lg:py-1 rounded-full bg-blue-100/50 text-blue-700 text-[7px] md:text-[8px] lg:text-[9px] xl:text-[10px] font-extrabold uppercase flex items-center gap-1 shadow-sm border border-blue-200/30 flex-shrink-0">
-                Realtime <div className="w-1 h-1 lg:w-1.5 lg:h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-              </span>
+
+            <div className="relative z-10 mt-auto pt-4 border-t border-gray-100/80">
+              <div className="flex flex-row md:flex-col xl:flex-row items-center justify-center bg-gray-50/50 hover:bg-gray-100/50 transition-colors px-2 md:px-4 py-2 xl:py-2.5 rounded-full md:rounded-xl xl:rounded-full w-full gap-2 md:gap-1.5 xl:gap-2">
+                <span className="text-blue-600 text-xs md:text-[11px] xl:text-xs font-bold flex items-center gap-1.5 truncate">
+                  <div className="w-1.5 h-1.5 rounded-full bg-blue-500 shrink-0" />
+                  Laporan Masuk
+                </span>
+                <span className="px-3 md:px-2 xl:px-3 py-1 md:py-0.5 xl:py-1 rounded-full bg-blue-100/50 text-blue-700 text-[10px] md:text-[9px] xl:text-[10px] font-extrabold uppercase flex items-center gap-1 shadow-sm border border-blue-200/30 flex-shrink-0">
+                  Realtime{" "}
+                  <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                </span>
+              </div>
             </div>
           </div>
         </div>
 
         {/* Card 4: Total Indikator */}
-        <div 
+        <div
           onClick={() => setActiveModal("ALL")}
-          className="bg-white rounded-[20px] md:rounded-[24px] lg:rounded-[28px] p-3 md:p-4 lg:p-5 xl:p-6 shadow-[0_8px_30px_rgb(0,0,0,0.04),_0_8px_20px_-8px_rgba(249,115,22,0.25)] border border-orange-100/30 border-b-[4px] border-b-orange-100 flex flex-col hover:-translate-y-1.5 hover:shadow-[0_12px_40px_rgba(249,115,22,0.15)] hover:border-orange-200 hover:border-b-orange-300 cursor-pointer transition-all duration-300 relative overflow-hidden group"
+          className="bg-white rounded-[24px] p-6 shadow-[0_8px_24px_rgba(0,0,0,0.05)] border border-orange-100 flex flex-col hover:-translate-y-1 transition-all duration-250 cursor-pointer relative overflow-hidden group h-full"
         >
           <div className="absolute top-0 right-0 w-32 h-32 bg-orange-50 rounded-full blur-3xl opacity-50 group-hover:opacity-80 transition-opacity pointer-events-none" />
-          <div className="relative z-10 flex flex-col h-full gap-2 lg:gap-4">
+          <div className="relative z-10 flex flex-col h-full">
             <div className="flex items-start justify-between">
-              <div className="flex flex-col items-start gap-2 lg:gap-4">
-                <div className="p-2 md:p-2.5 lg:p-3.5 rounded-[12px] lg:rounded-[16px] bg-[#f97316] text-white shadow-lg shadow-orange-200/50 flex-shrink-0">
-                  <ListTodo className="h-5 w-5 md:h-6 md:w-6 lg:h-7 lg:w-7" strokeWidth={2.5} />
-                </div>
-                <div>
-                  <p className="text-[10px] md:text-[11px] lg:text-[13px] font-bold text-slate-500 mb-0.5 tracking-tight leading-snug">
-                    Total Indikator Aktif
-                  </p>
-                  <h3 className="text-[28px] md:text-[32px] lg:text-[44px] font-extrabold text-slate-800 leading-none tracking-tight">
-                    {indicatorProfiles.length}
-                  </h3>
-                </div>
+              <div className="p-3.5 rounded-[16px] bg-[#f97316] text-white shadow-lg shadow-orange-200/50 flex-shrink-0">
+                <ListTodo className="h-6 w-6" strokeWidth={2.5} />
               </div>
-              <div className="p-1.5 lg:p-2 bg-orange-50 rounded-lg lg:rounded-[14px] text-orange-600 shrink-0 hidden md:block">
-                <Users className="w-5 h-5 lg:w-6 lg:h-6" strokeWidth={2.5} />
+              <div className="p-2 bg-orange-50 rounded-xl text-orange-600 shrink-0">
+                <Users className="w-5 h-5" strokeWidth={2.5} />
               </div>
             </div>
 
-            <div className="grid grid-cols-2 lg:grid-cols-1 xl:grid-cols-2 gap-x-2 gap-y-2 lg:gap-y-2.5 xl:gap-y-2 mt-auto pt-3 md:pt-4 border-t border-gray-100/80">
-              <div className="flex items-center gap-1.5 lg:gap-2.5 xl:gap-1.5">
-                <ShieldCheck className="w-3.5 h-3.5 lg:w-[18px] lg:h-[18px] xl:w-4 xl:h-4 text-emerald-500 shrink-0" strokeWidth={2.5} />
-                <span className="text-[9px] md:text-[10px] lg:text-[13.5px] xl:text-[12px] font-semibold text-slate-600 truncate lg:overflow-visible lg:whitespace-normal xl:truncate">
-                  <span className="lg:inline-block lg:w-[70px] xl:w-auto">INM</span>
-                  <span className="hidden lg:inline xl:hidden px-0.5 md:px-1">:</span>
-                  <span className="lg:hidden xl:inline">: </span>
-                  <span className="text-slate-800">{inmCount}</span>
+            <div className="mt-4">
+              <p className="text-[15px] font-semibold text-gray-500 leading-[1.4] mb-0">
+                Total Indikator Aktif
+              </p>
+              <h3 className="text-[48px] font-extrabold text-slate-800 leading-none mt-[12px] mb-[12px] italic">
+                {indicatorProfiles.length}
+              </h3>
+            </div>
+
+            <div className="grid grid-cols-2 md:grid-cols-1 xl:grid-cols-2 gap-y-2 gap-x-[10px] mt-auto pt-4 border-t border-gray-100/80">
+              <div className="flex items-center gap-2">
+                <ShieldCheck
+                  className="w-4 h-4 text-emerald-500 shrink-0"
+                  strokeWidth={2.5}
+                />
+                <span className="text-[10px] md:text-[13px] xl:text-[11px] font-semibold text-slate-600 whitespace-nowrap">
+                  <span className="inline-block md:w-[68px] xl:w-auto">
+                    INM
+                  </span>
+                  <span className="hidden md:inline xl:hidden pr-1">:</span>
+                  <span className="md:hidden xl:inline"> :</span>
+                  <span className="text-slate-800 ml-1 md:ml-0 xl:ml-1">
+                    {inmCount}
+                  </span>
                 </span>
               </div>
-              <div className="flex items-center gap-1.5 lg:gap-2.5 xl:gap-1.5">
-                <Building className="w-3.5 h-3.5 lg:w-[18px] lg:h-[18px] xl:w-4 xl:h-4 text-blue-500 shrink-0" strokeWidth={2.5} />
-                <span className="text-[9px] md:text-[10px] lg:text-[13.5px] xl:text-[12px] font-semibold text-slate-600 truncate lg:overflow-visible lg:whitespace-normal xl:truncate">
-                  <span className="lg:inline-block lg:w-[70px] xl:w-auto">IMP-RS</span>
-                  <span className="hidden lg:inline xl:hidden px-0.5 md:px-1">:</span>
-                  <span className="lg:hidden xl:inline">: </span>
-                  <span className="text-slate-800">{impRsCount}</span>
+              <div className="flex items-center gap-2">
+                <Building
+                  className="w-4 h-4 text-blue-500 shrink-0"
+                  strokeWidth={2.5}
+                />
+                <span className="text-[10px] md:text-[13px] xl:text-[11px] font-semibold text-slate-600 whitespace-nowrap">
+                  <span className="inline-block md:w-[68px] xl:w-auto">
+                    IMP-RS
+                  </span>
+                  <span className="hidden md:inline xl:hidden pr-1">:</span>
+                  <span className="md:hidden xl:inline"> :</span>
+                  <span className="text-slate-800 ml-1 md:ml-0 xl:ml-1">
+                    {impRsCount}
+                  </span>
                 </span>
               </div>
-              <div className="flex items-center gap-1.5 lg:gap-2.5 xl:gap-1.5">
-                <Building2 className="w-3.5 h-3.5 lg:w-[18px] lg:h-[18px] xl:w-4 xl:h-4 text-purple-500 shrink-0" strokeWidth={2.5} />
-                <span className="text-[9px] md:text-[10px] lg:text-[13.5px] xl:text-[12px] font-semibold text-slate-600 truncate lg:overflow-visible lg:whitespace-normal xl:truncate">
-                  <span className="lg:inline-block lg:w-[70px] xl:w-auto">IMP-Unit</span>
-                  <span className="hidden lg:inline xl:hidden px-0.5 md:px-1">:</span>
-                  <span className="lg:hidden xl:inline">: </span>
-                  <span className="text-slate-800">{impUnitCount}</span>
+              <div className="flex items-center gap-2">
+                <Building2
+                  className="w-4 h-4 text-purple-500 shrink-0"
+                  strokeWidth={2.5}
+                />
+                <span className="text-[10px] md:text-[13px] xl:text-[11px] font-semibold text-slate-600 whitespace-nowrap">
+                  <span className="inline-block md:w-[68px] xl:w-auto">
+                    IMP-Unit
+                  </span>
+                  <span className="hidden md:inline xl:hidden pr-1">:</span>
+                  <span className="md:hidden xl:inline"> :</span>
+                  <span className="text-slate-800 ml-1 md:ml-0 xl:ml-1">
+                    {impUnitCount}
+                  </span>
                 </span>
               </div>
-              <div className="flex items-center gap-1.5 lg:gap-2.5 xl:gap-1.5">
-                <FileText className="w-3.5 h-3.5 lg:w-[18px] lg:h-[18px] xl:w-4 xl:h-4 text-orange-500 shrink-0" strokeWidth={2.5} />
-                <span className="text-[9px] md:text-[10px] lg:text-[13.5px] xl:text-[12px] font-semibold text-slate-600 truncate lg:overflow-visible lg:whitespace-normal xl:truncate">
-                  <span className="lg:inline-block lg:w-[70px] xl:w-auto">SPM</span>
-                  <span className="hidden lg:inline xl:hidden px-0.5 md:px-1">:</span>
-                  <span className="lg:hidden xl:inline">: </span>
-                  <span className="text-slate-800">{spmCount}</span>
+              <div className="flex items-center gap-2">
+                <FileText
+                  className="w-4 h-4 text-orange-500 shrink-0"
+                  strokeWidth={2.5}
+                />
+                <span className="text-[10px] md:text-[13px] xl:text-[11px] font-semibold text-slate-600 whitespace-nowrap">
+                  <span className="inline-block md:w-[68px] xl:w-auto">
+                    SPM
+                  </span>
+                  <span className="hidden md:inline xl:hidden pr-1">:</span>
+                  <span className="md:hidden xl:inline"> :</span>
+                  <span className="text-slate-800 ml-1 md:ml-0 xl:ml-1">
+                    {spmCount}
+                  </span>
                 </span>
               </div>
             </div>
@@ -716,7 +852,7 @@ export default function Dashboard() {
 
         <div className="overflow-hidden md:overflow-x-auto rounded-xl md:rounded-[20px] shadow-sm border border-emerald-50 bg-white">
           <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse min-w-0">
+            <table className="w-full min-w-[400px] md:min-w-[700px] text-left border-collapse table-fixed">
               <thead>
                 <tr className="bg-[#10a37f] text-white">
                   <th className="py-2 px-1.5 md:py-4 md:px-8 font-black text-[8px] md:text-xs border-r border-[#10a37f]/20 w-6 md:w-16 text-center">
@@ -756,10 +892,10 @@ export default function Dashboard() {
                           item.capaian === "0%"
                             ? "bg-slate-50 text-slate-400 border-slate-100"
                             : item.status === "red"
-                            ? "bg-red-50 text-red-600 border-red-100"
-                            : item.status === "orange"
-                            ? "bg-orange-50 text-orange-600 border-orange-100"
-                            : "bg-emerald-50 text-emerald-600 border-emerald-100"
+                              ? "bg-red-50 text-red-600 border-red-100"
+                              : item.status === "orange"
+                                ? "bg-orange-50 text-orange-600 border-orange-100"
+                                : "bg-emerald-50 text-emerald-600 border-emerald-100"
                         }`}
                       >
                         {item.capaian}
@@ -793,7 +929,8 @@ export default function Dashboard() {
               className="w-full flex items-center justify-between px-4 py-3 bg-white border border-[#10a37f]/30 hover:border-[#10a37f] rounded-xl outline-none focus:ring-2 focus:ring-[#10a37f] text-xs font-extrabold text-gray-700 shadow-sm transition-all duration-300 cursor-pointer"
             >
               <span className="truncate pr-2">
-                {selectedIndikatorProfile?.indicator_title || "Pilih Indikator Mutu"}
+                {selectedIndikatorProfile?.indicator_title ||
+                  "Pilih Indikator Mutu"}
               </span>
               <ChevronRight
                 size={16}
@@ -815,13 +952,25 @@ export default function Dashboard() {
                   />
                 </div>
                 <div className="max-h-60 overflow-y-auto scrollbar-thin scrollbar-thumb-emerald-200 scrollbar-track-transparent">
-                  {indicatorProfiles.filter(p => !dropdownSearch || p.indicator_title.toLowerCase().includes(dropdownSearch.toLowerCase())).length === 0 ? (
+                  {indicatorProfiles.filter(
+                    (p) =>
+                      !dropdownSearch ||
+                      p.indicator_title
+                        .toLowerCase()
+                        .includes(dropdownSearch.toLowerCase()),
+                  ).length === 0 ? (
                     <div className="p-4 text-center text-xs text-gray-400 font-bold">
                       Tidak ada hasil ditemukan
                     </div>
                   ) : (
                     indicatorProfiles
-                      .filter(p => !dropdownSearch || p.indicator_title.toLowerCase().includes(dropdownSearch.toLowerCase()))
+                      .filter(
+                        (p) =>
+                          !dropdownSearch ||
+                          p.indicator_title
+                            .toLowerCase()
+                            .includes(dropdownSearch.toLowerCase()),
+                      )
                       .map((p) => {
                         const isSelected = p.id === activeIndikatorId;
                         return (
@@ -839,9 +988,14 @@ export default function Dashboard() {
                                 : "text-gray-700"
                             }`}
                           >
-                            <span className="truncate leading-tight block pr-2">{p.indicator_title}</span>
+                            <span className="truncate leading-tight block pr-2">
+                              {p.indicator_title}
+                            </span>
                             {isSelected && (
-                              <CheckCircle2 size={14} className="text-[#10a37f] shrink-0 ml-2" />
+                              <CheckCircle2
+                                size={14}
+                                className="text-[#10a37f] shrink-0 ml-2"
+                              />
                             )}
                           </button>
                         );
@@ -864,7 +1018,10 @@ export default function Dashboard() {
               </p>
               <p className="text-[11px] text-gray-400 mt-2 max-w-xs text-center leading-relaxed font-semibold">
                 Silakan isi data laporan lewat tombol{" "}
-                <Link href="/input" className="font-extrabold text-[#10a37f] hover:underline">
+                <Link
+                  href="/input"
+                  className="font-extrabold text-[#10a37f] hover:underline"
+                >
                   Menu Input Data
                 </Link>{" "}
                 untuk merespons grafik progres riwayat mutu secara langsung.
@@ -874,128 +1031,279 @@ export default function Dashboard() {
         ) : (
           <div className="bg-white p-6 rounded-3xl border border-gray-100 shadow-[0_8px_30px_rgb(0,0,0,0.06)] hover:shadow-[0_20px_40px_rgb(0,0,0,0.12)] transition-all duration-300 flex flex-col items-center mt-3">
             <div className="text-center mb-6 w-full px-4">
-              <h3 className="text-lg font-bold text-slate-800 leading-tight">{selectedChartAnalysis?.indicatorTitle}</h3>
-              <p className="text-xs font-bold text-slate-500 mt-1.5 uppercase tracking-wider">UOBK RSUD AL-MULK KOTA SUKABUMI</p>
-              <p className="text-[11px] text-slate-400 mt-0.5">{selectedChartAnalysis?.longPeriodName}</p>
+              <h3 className="text-[16px] font-bold text-slate-800 leading-tight">
+                {selectedChartAnalysis?.indicatorTitle}
+              </h3>
+              <p className="text-xs font-bold text-slate-500 mt-1.5 uppercase tracking-wider">
+                UOBK RSUD AL-MULK KOTA SUKABUMI
+              </p>
+              <p className="text-[11px] text-slate-400 mt-0.5">
+                {selectedChartAnalysis?.longPeriodName}
+              </p>
             </div>
-            
-            <div className="h-[280px] w-full mt-auto">
-              <ResponsiveContainer width="100%" height="100%">
-                <ComposedChart data={selectedChartData} margin={{ top: 20, right: 10, left: -20, bottom: 0 }}>
-                  <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                  <XAxis 
-                    dataKey="name" 
-                    tick={{ fontSize: 11, fill: '#64748b', fontWeight: 600 }}
-                    axisLine={false}
-                    tickLine={false}
-                    dy={10}
-                  />
-                  <YAxis 
-                    domain={[0, 100]} 
-                    tickFormatter={(val) => val === 0 ? "0" : val}
-                    tick={{ fontSize: 10, fill: '#94a3b8', fontWeight: 600 }}
-                    axisLine={false}
-                    tickLine={false}
-                    tickCount={5}
-                  />
-                  <Tooltip content={<CustomTooltip />} cursor={{fill: 'transparent'}} />
-                  <Legend verticalAlign="bottom" align="center" iconType="circle" wrapperStyle={{ fontSize: '11px', fontWeight: 600, paddingTop: '15px' }} />
-                  <Bar shape={<TwoDShadowBar />} dataKey="Capaian" name="Capaian" fill="#2563EB" maxBarSize={48}>
-                    <LabelList dataKey="Capaian" position="top" offset={10} formatter={(val: number) => val + "%"} style={{ fontSize: '12px', fontWeight: 'bold', fill: '#2563EB' }} />
-                  </Bar>
-                  <Bar shape={<TwoDShadowBar />} dataKey="Target" name="Target" fill="#DC2626" maxBarSize={48}>
-                    <LabelList dataKey="Target" position="top" offset={10} formatter={(val: number) => val + "%"} style={{ fontSize: '12px', fontWeight: 'bold', fill: '#DC2626' }} />
-                  </Bar>
-                </ComposedChart>
-              </ResponsiveContainer>
+
+            <div className="relative w-full h-[280px] shrink-0 mt-4">
+              <div className="absolute inset-0">
+                <ResponsiveContainer width="99%" height="100%" debounce={0}>
+                  <ComposedChart
+                    data={selectedChartData}
+                    margin={{ top: 20, right: 10, left: -20, bottom: 0 }}
+                  >
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                    <XAxis
+                      dataKey="name"
+                      tick={{ fontSize: 11, fill: "#64748b", fontWeight: 600 }}
+                      axisLine={false}
+                      tickLine={false}
+                      dy={10}
+                    />
+                    <YAxis
+                      domain={[0, 100]}
+                      tickFormatter={(val) => (val === 0 ? "0" : val)}
+                      tick={{ fontSize: 10, fill: "#94a3b8", fontWeight: 600 }}
+                      axisLine={false}
+                      tickLine={false}
+                      tickCount={5}
+                    />
+                    <Tooltip
+                      content={<CustomTooltip />}
+                      cursor={{ fill: "transparent" }}
+                    />
+                    <Legend
+                      verticalAlign="bottom"
+                      align="center"
+                      iconType="circle"
+                      wrapperStyle={{
+                        fontSize: "11px",
+                        fontWeight: 600,
+                        paddingTop: "15px",
+                      }}
+                    />
+                    <Bar
+                      shape={<TwoDShadowBar />}
+                      dataKey="Capaian"
+                      name="Capaian"
+                      fill="#2563EB"
+                      maxBarSize={48}
+                      isAnimationActive={false}
+                    >
+                      <LabelList
+                        dataKey="Capaian"
+                        position="top"
+                        offset={10}
+                        formatter={(val: number) => val + "%"}
+                        style={{
+                          fontSize: "12px",
+                          fontWeight: "bold",
+                          fill: "#2563EB",
+                        }}
+                      />
+                    </Bar>
+                    <Bar
+                      shape={<TwoDShadowBar />}
+                      dataKey="Target"
+                      name="Target"
+                      fill="#DC2626"
+                      maxBarSize={48}
+                      isAnimationActive={false}
+                    >
+                      <LabelList
+                        dataKey="Target"
+                        position="top"
+                        offset={10}
+                        formatter={(val: number) => val + "%"}
+                        style={{
+                          fontSize: "12px",
+                          fontWeight: "bold",
+                          fill: "#DC2626",
+                        }}
+                      />
+                    </Bar>
+                  </ComposedChart>
+                </ResponsiveContainer>
+              </div>
             </div>
-            
+
             <div className="w-full mt-6 bg-slate-50 rounded-2xl p-4 border border-slate-100">
-                <h4 className="text-xs font-bold text-slate-800 mb-2">Analisa Capaian</h4>
-                <p className="text-xs text-slate-600 leading-relaxed">
-                    Dari grafik di atas terlihat bahwa capaian mutu <strong>{selectedChartAnalysis?.indicatorTitle}</strong> pada periode <strong>{selectedChartAnalysis?.longPeriodName}</strong> rata-rata mencapai <strong>{selectedChartAnalysis?.avgCap}%</strong>, dengan standar target <strong>{selectedChartAnalysis?.target}%</strong>.
-                </p>
+              <h4 className="text-xs font-bold text-slate-800 mb-2">
+                Analisa Capaian
+              </h4>
+              <p className="text-xs text-slate-600 leading-relaxed">
+                Dari grafik di atas terlihat bahwa capaian mutu{" "}
+                <strong>{selectedChartAnalysis?.indicatorTitle}</strong> pada
+                periode <strong>{selectedChartAnalysis?.longPeriodName}</strong>{" "}
+                rata-rata mencapai{" "}
+                <strong>{selectedChartAnalysis?.avgCap}%</strong>, dengan
+                standar target <strong>{selectedChartAnalysis?.target}%</strong>
+                .
+              </p>
             </div>
           </div>
         )}
       </div>
 
       {/* 3. Patients Safety Incident (IKP) Card - diagram lingkaran saja */}
-      <div className="bg-white/80 backdrop-blur-lg rounded-2xl p-4 lg:p-8 border border-white/60 shadow-[0_10px_35px_-5px_rgba(0,0,0,0.02)] space-y-4 md:space-y-6 hover:shadow-md transition-all duration-300">
-        <div className="flex items-center gap-3 border-b border-red-100/50 pb-3 md:pb-4">
-          <ShieldAlert className="text-red-500 h-5 w-5 md:h-7 md:w-7 animate-pulse shrink-0" />
-          <div>
-            <h2 className="text-sm md:text-xl font-bold text-[#10a37f] tracking-tight leading-normal">
-              Laporan Insiden Keselamatan Pasien (IKP)
-            </h2>
+      <div className="bg-white/80 backdrop-blur-lg rounded-[24px] p-6 lg:p-10 border border-white/60 shadow-[0_10px_40px_-10px_rgba(0,0,0,0.08)] transition-all duration-300">
+        
+        {/* Header IKP */}
+        <div className="flex flex-col items-center justify-center text-center mb-8 pb-6 border-b border-gray-100">
+          <h2 className="text-xl md:text-2xl font-black text-gray-800 tracking-tight leading-tight">
+            INSIDEN KESELAMATAN PASIEN (IKP)
+          </h2>
+          <h3 className="text-sm md:text-base font-bold text-gray-500 mt-1">
+            UOBK RSUD AL-MULK KOTA SUKABUMI
+          </h3>
+          <div className="mt-3 bg-emerald-50 text-emerald-700 px-4 py-1.5 rounded-full text-xs font-black tracking-wider uppercase border border-emerald-100/50 shadow-sm inline-block">
+            PERIODE : {
+              periodeMode === "Bulanan" ? `BULAN ${selectedBulan.toUpperCase()} ${selectedTahun}` :
+              periodeMode === "Triwulan" ? `${selectedTriwulan.toUpperCase().replace("TRIWULAN 1", "TRIWULAN I").replace("TRIWULAN 2", "TRIWULAN II").replace("TRIWULAN 3", "TRIWULAN III").replace("TRIWULAN 4", "TRIWULAN IV")} TAHUN ${selectedTahun}` :
+              periodeMode === "Semester" ? `${selectedSemester.toUpperCase().replace("SEMESTER 1", "SEMESTER I").replace("SEMESTER 2", "SEMESTER II")} TAHUN ${selectedTahun}` :
+              `TAHUN ${selectedTahun}`
+            }
           </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-1 lg:grid-cols-3 gap-6 md:gap-8 items-center bg-white rounded-xl md:rounded-3xl p-4 md:p-6 border border-gray-50 shadow-xs">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center bg-white/40 rounded-3xl p-2 md:p-4">
           {/* Pie chart representation */}
-          <div className="lg:col-span-2 flex justify-center items-center h-64 md:h-72">
+          <div className="lg:col-span-7 flex justify-center items-center h-80 md:h-[400px]">
             {ikpPieData.length === 0 ? (
-              <div className="flex flex-col items-center justify-center p-6 bg-emerald-50/10 rounded-2xl border border-dashed border-emerald-100/50 w-full h-full">
-                <div className="bg-emerald-50 text-[#10a37f] p-3 rounded-full mb-3">
-                  <CheckCircle2 size={24} />
+              <div className="flex flex-col items-center justify-center p-8 bg-slate-50/50 rounded-[20px] border border-dashed border-slate-200 w-full h-full max-w-md mx-auto">
+                <div className="bg-emerald-50 text-emerald-500 p-4 rounded-full mb-4 shadow-sm">
+                  <CheckCircle2 size={32} />
                 </div>
-                <p className="text-emerald-900 text-sm font-black text-center">
-                  Laporan Nihil — Kondisi Pasien Aman
+                <p className="text-slate-700 text-lg font-black text-center">
+                  Laporan Nihil
                 </p>
-                <p className="text-[10px] text-gray-400 mt-2 max-w-sm text-center leading-relaxed font-bold">
-                  Belum ada catatan laporan insiden keselamatan dari bangsal klinis (KPC, KNC, KTC, KTD, Sentinel).
+                <p className="text-sm text-slate-500 mt-2 max-w-sm text-center font-medium leading-relaxed">
+                  Tidak ada catatan laporan insiden keselamatan pada periode ini. Kondisi Pasien Aman.
                 </p>
               </div>
             ) : (
-              <div className="h-full w-full relative">
-                <ResponsiveContainer width="100%" height="100%">
+              <div className="relative w-full h-full shrink-0 flex justify-center items-center">
+                <ResponsiveContainer width="100%" height="100%" debounce={0}>
                   <PieChart>
                     <Pie
                       data={ikpPieData}
                       cx="50%"
                       cy="50%"
-                      innerRadius={70}
-                      outerRadius={105}
-                      paddingAngle={3}
+                      innerRadius={90}
+                      outerRadius={140}
+                      paddingAngle={6}
                       dataKey="value"
                       stroke="none"
+                      isAnimationActive={true}
+                      animationBegin={0}
+                      animationDuration={800}
+                      animationEasing="ease-out"
                       labelLine={false}
-                      label={({ cx, cy, midAngle, innerRadius, outerRadius, percent }) => {
+                      label={({
+                        cx,
+                        cy,
+                        midAngle,
+                        innerRadius,
+                        outerRadius,
+                        percent,
+                      }) => {
                         const RADIAN = Math.PI / 180;
-                        const radius = innerRadius + (outerRadius - innerRadius) * 0.5;
+                        const radius =
+                          innerRadius + (outerRadius - innerRadius) * 0.5;
                         const x = cx + radius * Math.cos(-midAngle * RADIAN);
                         const y = cy + radius * Math.sin(-midAngle * RADIAN);
                         if (percent < 0.03) return null;
                         return (
-                          <text x={x} y={y} fill="white" textAnchor="middle" dominantBaseline="central" fontSize={11} fontWeight={800} style={{ textShadow: "0px 1px 3px rgba(0,0,0,0.4)" }}>
+                          <text
+                            x={x}
+                            y={y}
+                            fill="white"
+                            textAnchor="middle"
+                            dominantBaseline="central"
+                            fontSize={12}
+                            fontWeight={800}
+                            style={{
+                              textShadow: "0px 1px 3px rgba(0,0,0,0.4)",
+                            }}
+                          >
                             {`${(percent * 100).toFixed(0)}%`}
                           </text>
                         );
                       }}
                     >
                       {ikpPieData.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={entry.color} style={{ filter: "drop-shadow(0px 2px 4px rgba(0,0,0,0.1))" }} />
+                        <Cell
+                          key={`cell-${index}`}
+                          fill={entry.color}
+                          className="hover:opacity-80 transition-opacity duration-300 outline-none"
+                          style={{
+                            filter: "drop-shadow(0px 8px 16px rgba(0,0,0,0.15)) inset 0px 4px 8px rgba(255,255,255,0.2)",
+                          }}
+                        />
                       ))}
                       <Label
                         content={({ viewBox }) => {
                           const { cx, cy } = viewBox as any;
+                          const sorted = [...ikpPieData].sort((a,b) => b.value - a.value);
+                          const dominant = sorted[0];
+                          const dominantPct = ((dominant.value / totalIncidentCount) * 100).toFixed(0);
+
                           return (
-                            <text x={cx} y={cy - 4} textAnchor="middle" dominantBaseline="central">
-                              <tspan x={cx} y={cy - 4} fill="#0f172a" fontSize="34" fontWeight="900" style={{ letterSpacing: "-0.05em" }}>
+                            <text
+                              x={cx}
+                              y={cy - 10}
+                              textAnchor="middle"
+                              dominantBaseline="central"
+                            >
+                              <tspan
+                                x={cx}
+                                y={cy - 15}
+                                fill="#0f172a"
+                                fontSize="48"
+                                fontWeight="900"
+                                style={{ letterSpacing: "-0.05em" }}
+                              >
                                 {totalIncidentCount}
                               </tspan>
-                              <tspan x={cx} dy="22" fill="#64748b" fontSize="10" fontWeight="800" style={{ letterSpacing: "0.08em" }} textAnchor="middle">
+                              <tspan
+                                x={cx}
+                                dy="30"
+                                fill="#64748b"
+                                fontSize="12"
+                                fontWeight="800"
+                                style={{ letterSpacing: "0.1em" }}
+                                textAnchor="middle"
+                              >
                                 INSIDEN
+                              </tspan>
+                              <tspan
+                                x={cx}
+                                dy="22"
+                                fill={dominant.color}
+                                fontSize="11"
+                                fontWeight="700"
+                                textAnchor="middle"
+                              >
+                                Dominan: {dominant.name} ({dominantPct}%)
                               </tspan>
                             </text>
                           );
                         }}
                       />
                     </Pie>
-                    <Tooltip 
-                      formatter={(value: any) => [`${value} Kejadian`, "Total"]}
-                      contentStyle={{ borderRadius: "12px", border: "none", boxShadow: "0 10px 25px rgba(0,0,0,0.1)", fontWeight: "bold", fontSize: "12px", padding: "8px 12px" }}
-                      itemStyle={{ color: "#0f172a", fontWeight: "900" }}
+                    <Tooltip
+                      formatter={(value: any, name: string) => [
+                        `${value} Kasus (${((Number(value) / totalIncidentCount) * 100).toFixed(0)}%)`,
+                        name,
+                      ]}
+                      contentStyle={{
+                        borderRadius: "16px",
+                        border: "none",
+                        boxShadow: "0 10px 40px -10px rgba(0,0,0,0.15)",
+                        fontWeight: "900",
+                        fontSize: "13px",
+                        padding: "10px 16px",
+                        backgroundColor: 'rgba(255, 255, 255, 0.95)',
+                        backdropFilter: 'blur(8px)',
+                      }}
+                      itemStyle={{ color: "#0f172a", fontWeight: "900", marginTop: "4px" }}
                     />
                   </PieChart>
                 </ResponsiveContainer>
@@ -1004,52 +1312,132 @@ export default function Dashboard() {
           </div>
 
           {/* Counts & Legends block */}
-          <div className="space-y-4">
-            <h4 className="text-xs font-black text-[#0c2415] uppercase tracking-wider">
-              Kejadian Terdaftar:
+          <div className="lg:col-span-5 space-y-4 px-2 md:px-0">
+            <h4 className="text-sm font-black text-slate-800 uppercase tracking-widest mb-6 px-1 border-b border-slate-100 pb-3">
+              Data Jumlah Insiden
             </h4>
-            
-            <div className="space-y-2.5">
+
+            <div className="space-y-3">
               {[
-                { name: "KPC", label: "Kondisi Potensial Cedera", val: totalIkp.KPC, color: "#10a37f" },
-                { name: "KNC", label: "Kejadian Nyaris Cedera", val: totalIkp.KNC, color: "#3b82f6" },
-                { name: "KTC", label: "Kejadian Tidak Cedera", val: totalIkp.KTC, color: "#eab308" },
-                { name: "KTD", label: "Kejadian Tidak Diharapkan", val: totalIkp.KTD, color: "#f97316" },
-                { name: "Sentinel", label: "", val: totalIkp.Sentinel, color: "#ef4444" },
-              ].map((item) => (
-                <div key={item.name} className="flex justify-between items-center bg-slate-50/50 p-3 rounded-xl border border-slate-100">
-                  <div className="flex items-center gap-2">
+                {
+                  name: "KPC",
+                  label: "Kondisi Potensial Cedera",
+                  val: totalIkp.KPC,
+                  color: "#10a37f",
+                },
+                {
+                  name: "KNC",
+                  label: "Kejadian Nyaris Cedera",
+                  val: totalIkp.KNC,
+                  color: "#3b82f6",
+                },
+                {
+                  name: "KTC",
+                  label: "Kejadian Tidak Cedera",
+                  val: totalIkp.KTC,
+                  color: "#eab308",
+                },
+                {
+                  name: "KTD",
+                  label: "Kejadian Tidak Diharapkan",
+                  val: totalIkp.KTD,
+                  color: "#f97316",
+                },
+                {
+                  name: "Sentinel",
+                  label: "Kejadian Sentinel",
+                  val: totalIkp.Sentinel,
+                  color: "#ef4444",
+                },
+              ].map((item) => {
+                 const pct = totalIncidentCount > 0 ? ((item.val / totalIncidentCount) * 100).toFixed(0) : "0";
+                 
+                 return (
+                <div
+                  key={item.name}
+                  className="group flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white hover:bg-slate-50 p-3.5 rounded-2xl border border-slate-100 shadow-[0_2px_8px_rgba(0,0,0,0.02)] hover:shadow-[0_4px_12px_rgba(0,0,0,0.05)] transition-all duration-300"
+                >
+                  <div className="flex items-center gap-3">
                     <div
-                      className="w-3 h-3 rounded-full flex-shrink-0"
+                      className="w-4 h-4 rounded-full flex-shrink-0 shadow-inner"
                       style={{ backgroundColor: item.color }}
                     />
-                    <div>
-                      <span className="text-xs font-black text-gray-800 block">
+                    <div className="flex flex-col">
+                      <span className="text-sm font-black text-slate-800 flex items-center gap-2">
                         {item.name}
+                        {item.val > 0 && <span className="bg-slate-100 text-slate-600 text-[10px] px-1.5 py-0.5 rounded font-bold">{pct}%</span>}
                       </span>
                       {item.label && (
-                        <span className="text-[10px] text-gray-400 font-semibold block leading-none mt-1">
+                        <span className="text-xs text-slate-500 font-medium">
                           {item.label}
                         </span>
                       )}
                     </div>
                   </div>
-                  <span className="text-sm font-black text-slate-900 bg-white px-2.5 py-1 rounded-md border border-slate-1 w-10 text-center">
-                    {item.val}
-                  </span>
+                  {item.val > 0 ? (
+                     <span className="text-sm font-bold text-white px-3 py-1.5 rounded-xl text-center min-w-[3rem] shadow-sm self-start sm:self-auto" style={{ backgroundColor: item.color }}>
+                       {item.val} <span className="text-[10px] font-medium opacity-90 hidden sm:inline">Kasus</span>
+                     </span>
+                  ) : (
+                     <span className="text-sm font-bold text-slate-400 bg-slate-50 px-3 py-1.5 rounded-xl border border-slate-100 text-center min-w-[3rem] self-start sm:self-auto">
+                       0
+                     </span>
+                  )}
                 </div>
-              ))}
-            </div>
-
-            <div className="pt-2">
-              <Link
-                href="/input"
-                className="w-full py-2.5 px-4 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 text-xs font-black rounded-lg border border-emerald-100 transition-colors flex items-center justify-center gap-1.5"
-              >
-                <PlusCircle size={14} /> Input Insiden Keselamatan
-              </Link>
+              )})}
             </div>
           </div>
+        </div>
+
+        {/* Automatic Analysis Section */}
+        <div className="mt-8 bg-slate-50/70 p-5 md:p-6 rounded-2xl border border-slate-100/80">
+          <h4 className="text-sm font-bold text-slate-800 mb-3 flex items-center gap-2">
+             <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span> Analisa Data Insiden Keselamatan Pasien
+          </h4>
+          <p className="text-sm text-slate-600 leading-relaxed font-medium">
+            {(() => {
+              if (totalIncidentCount === 0) {
+                return `Tidak terdapat laporan insiden keselamatan pasien pada ${periodeMode === "Bulanan" ? `bulan ${selectedBulan.toLowerCase()} ${selectedTahun}` : periodeMode === "Triwulan" ? `periode ${selectedTriwulan.toLowerCase().replace("triwulan 1", "triwulan I").replace("triwulan 2", "triwulan II").replace("triwulan 3", "triwulan III").replace("triwulan 4", "triwulan IV")} ${selectedTahun}` : periodeMode === "Semester" ? `periode ${selectedSemester.toLowerCase().replace("semester 1", "semester I").replace("semester 2", "semester II")} ${selectedTahun}` : `tahun ${selectedTahun}`}. Kondisi lingkungan klinis terpantau aman.`;
+              }
+
+              const sorted = [...ikpPieData].sort((a,b) => b.value - a.value);
+              const dominant = sorted[0];
+              const percentage = ((dominant.value / totalIncidentCount) * 100).toFixed(0);
+              
+              const labelMapping: Record<string, string> = {
+                KPC: "Kondisi Potensial Cedera",
+                KNC: "Kejadian Nyaris Cedera",
+                KTC: "Kejadian Tidak Cedera",
+                KTD: "Kejadian Tidak Diharapkan",
+                Sentinel: "Kejadian Sentinel"
+              };
+
+              const periodeText = periodeMode === "Bulanan" ? `bulan ${selectedBulan.toLowerCase()} ${selectedTahun}` : periodeMode === "Triwulan" ? `periode ${selectedTriwulan.toLowerCase().replace("triwulan 1", "triwulan I").replace("triwulan 2", "triwulan II").replace("triwulan 3", "triwulan III").replace("triwulan 4", "triwulan IV")} ${selectedTahun}` : periodeMode === "Semester" ? `periode ${selectedSemester.toLowerCase().replace("semester 1", "semester I").replace("semester 2", "semester II")} ${selectedTahun}` : `tahun ${selectedTahun}`;
+
+              let analysis = `Berdasarkan data ${periodeText}, tercatat ${totalIncidentCount} laporan insiden keselamatan pasien. Jenis insiden yang paling dominan adalah ${dominant.name} (${labelMapping[dominant.name] || dominant.name}) sebanyak ${dominant.value} kejadian atau ${percentage}% dari total laporan.`;
+              
+              if (sorted.length > 1) {
+                const second = sorted[1];
+                const secondPct = ((second.value / totalIncidentCount) * 100).toFixed(0);
+                analysis += ` ${second.name} menempati urutan kedua sebanyak ${second.value} kejadian (${secondPct}%).`;
+              }
+              
+              const rest = sorted.slice(2).map(i => i.name).join(", ");
+              if (rest.length > 0) {
+                 analysis += ` Kategori lainnya meliputi ${rest} yang berkontribusi pada sisa total insiden.`;
+              }
+
+              if (dominant.name === "KPC") {
+                analysis += ` Data ini menunjukkan bahwa potensi risiko masih menjadi kategori yang paling sering ditemukan dan memerlukan tindak lanjut pencegahan proaktif untuk mengurangi kemungkinan terjadinya cedera pada pasien.`;
+              } else if (dominant.name === "KTD" || dominant.name === "Sentinel") {
+                analysis += ` Tingginya angka ${dominant.name} memerlukan prioritas investigasi mendalam (Root Cause Analysis) dan perbaikan sistem secara komprehensif demi keselamatan pasien.`;
+              } else {
+                analysis += ` Evaluasi dan peningkatan standar prosedur keselamatan ruang rawat secara berkesinambungan tetap harus dijalankan.`;
+              }
+
+              return analysis;
+            })()}
+          </p>
         </div>
       </div>
 
@@ -1058,126 +1446,195 @@ export default function Dashboard() {
         {activeModal && (
           <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
             {/* Backdrop */}
-            <motion.div 
+            <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm"
               onClick={() => setActiveModal(null)}
             />
-            
+
             {/* Modern Premium Modal Content */}
-            <motion.div 
+            <motion.div
               initial={{ opacity: 0, scale: 0.95, y: 10 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 10 }}
               transition={{ duration: 0.2 }}
               className="relative w-full max-w-3xl max-h-[85vh] flex flex-col bg-white/95 backdrop-blur-xl rounded-3xl shadow-[0_20px_60px_-15px_rgba(0,0,0,0.3)] border border-white overflow-hidden"
             >
-               {/* Modal Header */}
-               <div className="flex items-center justify-between px-6 py-5 border-b border-gray-100 bg-white/50 shrink-0">
-                  <div className="flex items-center gap-3">
-                     <div className={`p-2 rounded-xl ${
-                       activeModal === "TERCAPAI" ? "bg-orange-50 text-orange-500" :
-                       activeModal === "BELUM_TERCAPAI" ? "bg-red-50 text-red-500" :
-                       activeModal === "IKP" ? "bg-blue-50 text-blue-500" :
-                       "bg-teal-50 text-teal-650"
-                     }`}>
-                       {activeModal === "TERCAPAI" && <Target size={24} strokeWidth={2.5} />}
-                       {activeModal === "BELUM_TERCAPAI" && <AlertTriangle size={24} strokeWidth={2.5} />}
-                       {activeModal === "IKP" && <ShieldAlert size={24} strokeWidth={2.5} />}
-                       {activeModal === "ALL" && <ListTodo size={24} strokeWidth={2.5} />}
-                     </div>
-                     <div>
-                       <h3 className="text-sm md:text-lg font-black text-slate-800 uppercase tracking-tight">
-                         {activeModal === "TERCAPAI" && "Pemenuhan Target INM Tercapai"}
-                         {activeModal === "BELUM_TERCAPAI" && "Indikator Belum Tercapai"}
-                         {activeModal === "IKP" && "Detail Laporan Kejadian IKP"}
-                         {activeModal === "ALL" && "Seluruh Daftar Indikator Mutu"}
-                       </h3>
-                       <p className="text-[10px] md:text-xs text-gray-500 font-bold mt-0.5">
-                         {activeModal === "IKP" 
-                            ? "Daftar Insiden Keselamatan Pasien Tercatat"
-                            : "Berdasarkan Periode Filter Saat Ini"
-                         }
-                       </p>
-                     </div>
-                  </div>
-                  <button 
-                    onClick={() => setActiveModal(null)} 
-                    className="p-2 bg-slate-50 hover:bg-red-50 hover:text-red-500 rounded-full transition-colors text-slate-400"
+              {/* Modal Header */}
+              <div className="flex items-center justify-between px-6 py-5 border-b border-gray-100 bg-white/50 shrink-0">
+                <div className="flex items-center gap-3">
+                  <div
+                    className={`p-2 rounded-xl ${
+                      activeModal === "TERCAPAI"
+                        ? "bg-orange-50 text-orange-500"
+                        : activeModal === "BELUM_TERCAPAI"
+                          ? "bg-red-50 text-red-500"
+                          : activeModal === "IKP"
+                            ? "bg-blue-50 text-blue-500"
+                            : "bg-teal-50 text-teal-650"
+                    }`}
                   >
-                    <X size={18}/>
-                  </button>
-               </div>
-               
-               {/* Search / Filter Section */}
-               <div className="px-6 py-3 border-b border-gray-100 bg-slate-50/50 shrink-0 flex gap-2">
-                 <div className="relative flex-1">
-                   <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-                   <input 
-                     type="text" 
-                     value={modalSearch} 
-                     onChange={e=>setModalSearch(e.target.value)} 
-                     placeholder="Cari indikator atau unit..." 
-                     className="w-full pl-9 pr-4 py-2 text-xs font-semibold border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-[#10a37f] transition-all bg-white text-gray-700"
-                   />
-                 </div>
-               </div>
-               
-               {/* List of items */}
-               <div className="flex-1 overflow-y-auto p-6 space-y-3 scrollbar-thin scrollbar-thumb-emerald-200 scrollbar-track-transparent">
-                  {activeModal !== "IKP" && inmTableData
-                    .filter(i => {
-                      if (activeModal === "TERCAPAI") return i.status === "green";
-                      if (activeModal === "BELUM_TERCAPAI") return i.status !== "green";
+                    {activeModal === "TERCAPAI" && (
+                      <Target size={24} strokeWidth={2.5} />
+                    )}
+                    {activeModal === "BELUM_TERCAPAI" && (
+                      <AlertTriangle size={24} strokeWidth={2.5} />
+                    )}
+                    {activeModal === "IKP" && (
+                      <ShieldAlert size={24} strokeWidth={2.5} />
+                    )}
+                    {activeModal === "ALL" && (
+                      <ListTodo size={24} strokeWidth={2.5} />
+                    )}
+                  </div>
+                  <div>
+                    <h3 className="text-sm md:text-lg font-black text-slate-800 uppercase tracking-tight">
+                      {activeModal === "TERCAPAI" &&
+                        "Pemenuhan Target INM Tercapai"}
+                      {activeModal === "BELUM_TERCAPAI" &&
+                        "Indikator Belum Tercapai"}
+                      {activeModal === "IKP" && "Detail Laporan Kejadian IKP"}
+                      {activeModal === "ALL" && "Seluruh Daftar Indikator Mutu"}
+                    </h3>
+                    <p className="text-[10px] md:text-xs text-gray-500 font-bold mt-0.5">
+                      {activeModal === "IKP"
+                        ? "Daftar Insiden Keselamatan Pasien Tercatat"
+                        : "Berdasarkan Periode Filter Saat Ini"}
+                    </p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setActiveModal(null)}
+                  className="p-2 bg-slate-50 hover:bg-red-50 hover:text-red-500 rounded-full transition-colors text-slate-400"
+                >
+                  <X size={18} />
+                </button>
+              </div>
+
+              {/* Search / Filter Section */}
+              <div className="px-6 py-3 border-b border-gray-100 bg-slate-50/50 shrink-0 flex gap-2">
+                <div className="relative flex-1">
+                  <Search
+                    size={14}
+                    className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
+                  />
+                  <input
+                    type="text"
+                    value={modalSearch}
+                    onChange={(e) => setModalSearch(e.target.value)}
+                    placeholder="Cari indikator atau unit..."
+                    className="w-full pl-9 pr-4 py-2 text-xs font-semibold border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-[#10a37f] transition-all bg-white text-gray-700"
+                  />
+                </div>
+              </div>
+
+              {/* List of items */}
+              <div className="flex-1 overflow-y-auto p-6 space-y-3 scrollbar-thin scrollbar-thumb-emerald-200 scrollbar-track-transparent">
+                {activeModal !== "IKP" &&
+                  inmTableData
+                    .filter((i) => {
+                      if (activeModal === "TERCAPAI")
+                        return i.status === "green";
+                      if (activeModal === "BELUM_TERCAPAI")
+                        return i.status !== "green";
                       return true;
                     })
-                    .filter(i => !modalSearch || i.name.toLowerCase().includes(modalSearch.toLowerCase()) || i.unit_id.toLowerCase().includes(modalSearch.toLowerCase()))
+                    .filter(
+                      (i) =>
+                        !modalSearch ||
+                        i.name
+                          .toLowerCase()
+                          .includes(modalSearch.toLowerCase()) ||
+                        i.unit_id
+                          .toLowerCase()
+                          .includes(modalSearch.toLowerCase()),
+                    )
                     .map((item, idx) => (
-                      <div key={idx} className="flex flex-col md:flex-row md:items-center justify-between p-4 bg-white border border-gray-100 rounded-2xl shadow-sm hover:shadow-md transition-shadow gap-4">
+                      <div
+                        key={idx}
+                        className="flex flex-col md:flex-row md:items-center justify-between p-4 bg-white border border-gray-100 rounded-2xl shadow-sm hover:shadow-md transition-shadow gap-4"
+                      >
                         <div className="flex-1">
-                          <h4 className="text-xs md:text-sm font-black text-gray-800 leading-snug">{item.name}</h4>
+                          <h4 className="text-xs md:text-sm font-black text-gray-800 leading-snug">
+                            {item.name}
+                          </h4>
                           <div className="flex items-center gap-2 mt-2">
                             <span className="text-[10px] font-bold text-gray-500 bg-slate-100 px-2 py-0.5 rounded-md">
                               {item.unit_id}
                             </span>
                             <span className="text-[10px] font-bold text-gray-400">
-                              Input: {item.tanggal ? new Date(item.tanggal).toLocaleDateString('id-ID') : '-'}
+                              Input:{" "}
+                              {item.tanggal
+                                ? new Date(item.tanggal).toLocaleDateString(
+                                    "id-ID",
+                                  )
+                                : "-"}
                             </span>
                           </div>
                         </div>
                         <div className="flex items-center gap-3 md:gap-5 shrink-0 bg-slate-50 p-2 md:p-3 rounded-xl border border-slate-100">
-                           <div className="text-center">
-                             <span className="block text-[9px] font-bold text-gray-400 uppercase mb-0.5">Target</span>
-                             <span className="text-xs font-black text-gray-700">{item.target}</span>
-                           </div>
-                           <div className="w-px h-8 bg-gray-200"></div>
-                           <div className="text-center">
-                             <span className="block text-[9px] font-bold text-gray-400 uppercase mb-0.5">Capaian</span>
-                             <span className={`inline-block px-2.5 py-0.5 rounded-full text-[10px] font-black border tracking-wide
-                                ${item.status === "red" ? "bg-red-50 text-red-600 border-red-100"
-                                : item.status === "orange" ? "bg-orange-50 text-orange-600 border-orange-100"
-                                : "bg-emerald-50 text-emerald-600 border-emerald-100"}
-                             `}>
-                               {item.capaian}
-                             </span>
-                           </div>
+                          <div className="text-center">
+                            <span className="block text-[9px] font-bold text-gray-400 uppercase mb-0.5">
+                              Target
+                            </span>
+                            <span className="text-xs font-black text-gray-700">
+                              {item.target}
+                            </span>
+                          </div>
+                          <div className="w-px h-8 bg-gray-200"></div>
+                          <div className="text-center">
+                            <span className="block text-[9px] font-bold text-gray-400 uppercase mb-0.5">
+                              Capaian
+                            </span>
+                            <span
+                              className={`inline-block px-2.5 py-0.5 rounded-full text-[10px] font-black border tracking-wide
+                                ${
+                                  item.status === "red"
+                                    ? "bg-red-50 text-red-600 border-red-100"
+                                    : item.status === "orange"
+                                      ? "bg-orange-50 text-orange-600 border-orange-100"
+                                      : "bg-emerald-50 text-emerald-600 border-emerald-100"
+                                }
+                             `}
+                            >
+                              {item.capaian}
+                            </span>
+                          </div>
                         </div>
                       </div>
-                  ))}
+                    ))}
 
-                  {activeModal === "IKP" && ikpDataRaw
-                    .filter(i => !modalSearch || i.keterangan?.toLowerCase().includes(modalSearch.toLowerCase()) || i.unit?.toLowerCase().includes(modalSearch.toLowerCase()))
+                {activeModal === "IKP" &&
+                  ikpDataRaw
+                    .filter(
+                      (i) =>
+                        !modalSearch ||
+                        i.keterangan
+                          ?.toLowerCase()
+                          .includes(modalSearch.toLowerCase()) ||
+                        i.unit
+                          ?.toLowerCase()
+                          .includes(modalSearch.toLowerCase()),
+                    )
                     .map((item, idx) => (
-                      <div key={idx} className="flex flex-col p-4 bg-white border border-red-50 rounded-2xl shadow-sm hover:shadow-md transition-shadow gap-2">
+                      <div
+                        key={idx}
+                        className="flex flex-col p-4 bg-white border border-red-50 rounded-2xl shadow-sm hover:shadow-md transition-shadow gap-2"
+                      >
                         <div className="flex items-center justify-between border-b border-gray-50 pb-2">
-                          <span className="text-xs font-black text-red-600 bg-red-50 px-2 py-0.5 rounded border border-red-100">Laporan IKP Pilihan</span>
-                          <span className="text-[10px] font-bold text-gray-400">{new Date(item.tanggal).toLocaleDateString('id-ID')}</span>
+                          <span className="text-xs font-black text-red-600 bg-red-50 px-2 py-0.5 rounded border border-red-100">
+                            Laporan IKP Pilihan
+                          </span>
+                          <span className="text-[10px] font-bold text-gray-400">
+                            {new Date(item.tanggal).toLocaleDateString("id-ID")}
+                          </span>
                         </div>
                         <div className="mt-1">
                           <p className="text-xs md:text-sm font-bold text-gray-800 leading-relaxed text-balance">
-                            {item.keterangan || "Laporan insiden keselamatan pasien tanpa keterangan."}
+                            {item.keterangan ||
+                              "Laporan insiden keselamatan pasien tanpa keterangan."}
                           </p>
                         </div>
                         <div className="flex items-center gap-2 mt-2 pt-2 border-t border-gray-50">
@@ -1186,27 +1643,49 @@ export default function Dashboard() {
                           </span>
                         </div>
                       </div>
-                  ))}
+                    ))}
 
-                  {/* Empty States */}
-                  {activeModal !== "IKP" && inmTableData.filter(i => {
-                      if (activeModal === "TERCAPAI") return i.status === "green";
-                      if (activeModal === "BELUM_TERCAPAI") return i.status !== "green";
+                {/* Empty States */}
+                {activeModal !== "IKP" &&
+                  inmTableData
+                    .filter((i) => {
+                      if (activeModal === "TERCAPAI")
+                        return i.status === "green";
+                      if (activeModal === "BELUM_TERCAPAI")
+                        return i.status !== "green";
                       return true;
-                    }).filter(i => !modalSearch || i.name.toLowerCase().includes(modalSearch.toLowerCase())).length === 0 && (
-                      <div className="flex flex-col items-center justify-center p-8 text-center text-gray-400">
-                        <ListTodo size={32} className="mb-3 opacity-20" />
-                        <p className="text-xs font-bold">Tidak ada indikator yang sesuai pencarian.</p>
-                      </div>
+                    })
+                    .filter(
+                      (i) =>
+                        !modalSearch ||
+                        i.name
+                          .toLowerCase()
+                          .includes(modalSearch.toLowerCase()),
+                    ).length === 0 && (
+                    <div className="flex flex-col items-center justify-center p-8 text-center text-gray-400">
+                      <ListTodo size={32} className="mb-3 opacity-20" />
+                      <p className="text-xs font-bold">
+                        Tidak ada indikator yang sesuai pencarian.
+                      </p>
+                    </div>
                   )}
 
-                  {activeModal === "IKP" && ikpDataRaw.filter(i => !modalSearch || i.keterangan?.toLowerCase().includes(modalSearch.toLowerCase())).length === 0 && (
-                      <div className="flex flex-col items-center justify-center p-8 text-center text-gray-400">
-                        <ShieldAlert size={32} className="mb-3 opacity-20" />
-                        <p className="text-xs font-bold">Tidak ada laporan IKP yang ditemukan.</p>
-                      </div>
+                {activeModal === "IKP" &&
+                  ikpDataRaw.filter(
+                    (i) =>
+                      !modalSearch ||
+                      i.keterangan
+                        ?.toLowerCase()
+                        .includes(modalSearch.toLowerCase()),
+                  ).length === 0 && (
+                    <div className="flex flex-col items-center justify-center p-8 text-center text-gray-400">
+                      <ShieldAlert size={32} className="mb-3 opacity-20" />
+                      <p className="text-xs font-bold">
+                        Tidak ada laporan IKP yang ditemukan.
+                      </p>
+                    </div>
                   )}
-               </div>
+              </div>
             </motion.div>
           </div>
         )}

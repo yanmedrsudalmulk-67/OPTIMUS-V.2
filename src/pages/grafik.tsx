@@ -425,64 +425,66 @@ export default function Grafik() {
                   <p className="text-[11px] text-slate-400 mt-0.5">{longPeriodName}</p>
                 </div>
                 
-                <div className="h-[280px] w-full mt-auto">
-                  <ResponsiveContainer width="100%" height="100%">
-                    {chartType === "bar" ? (
-                      <ComposedChart data={d.series} margin={{ top: 20, right: 10, left: -20, bottom: 0 }}>
-                        <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                        <XAxis 
-                          dataKey="name" 
-                          tick={{ fontSize: 11, fill: '#64748b', fontWeight: 600 }}
-                          axisLine={false}
-                          tickLine={false}
-                          dy={10}
-                        />
-                        <YAxis 
-                          domain={[0, 100]} 
-                          tickFormatter={(val) => val === 0 ? "0" : val}
-                          tick={{ fontSize: 10, fill: '#94a3b8', fontWeight: 600 }}
-                          axisLine={false}
-                          tickLine={false}
-                          tickCount={5}
-                        />
-                        <RechartsTooltip content={<CustomTooltip />} cursor={{fill: 'transparent'}} />
-                        <RechartsLegend verticalAlign="bottom" align="center" iconType="circle" wrapperStyle={{ fontSize: '11px', fontWeight: 600, paddingTop: '15px' }} />
-                        <Bar shape={<TwoDShadowBar />} dataKey="capaian" name="Capaian" fill="#2563EB" maxBarSize={48}>
-                          <LabelList dataKey="capaian" position="top" offset={10} formatter={(val: number) => val + "%"} style={{ fontSize: '12px', fontWeight: 'bold', fill: '#2563EB' }} />
-                        </Bar>
-                        <Bar shape={<TwoDShadowBar />} dataKey="target" name="Target" fill="#DC2626" maxBarSize={48}>
-                          <LabelList dataKey="target" position="top" offset={10} formatter={(val: number) => val + "%"} style={{ fontSize: '12px', fontWeight: 'bold', fill: '#DC2626' }} />
-                        </Bar>
-                      </ComposedChart>
-                    ) : (
-                      <LineChart data={d.series} margin={{ top: 20, right: 30, left: -20, bottom: 0 }}>
-                        <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                        <XAxis 
-                          dataKey="name" 
-                          tick={{ fontSize: 11, fill: '#64748b', fontWeight: 600 }}
-                          axisLine={false}
-                          tickLine={false}
-                          dy={10}
-                        />
-                        <YAxis 
-                          domain={[0, 100]} 
-                          tickFormatter={(val) => val === 0 ? "0" : val}
-                          tick={{ fontSize: 10, fill: '#94a3b8', fontWeight: 600 }}
-                          axisLine={false}
-                          tickLine={false}
-                          tickCount={5}
-                        />
-                        <RechartsTooltip content={<CustomTooltip />} cursor={{strokeDasharray: '3 3'}} />
-                        <RechartsLegend verticalAlign="bottom" align="center" iconType="circle" wrapperStyle={{ fontSize: '11px', fontWeight: 600, paddingTop: '15px' }} />
-                        <Line dataKey="capaian" name="Capaian" type="monotone" stroke="#2563EB" strokeWidth={4} dot={{ r: 6, fill: '#2563EB', strokeWidth: 2, stroke: '#fff' }} activeDot={{ r: 8 }}>
-                           <LabelList dataKey="capaian" position="top" offset={10} formatter={(val: number) => val + "%"} style={{ fontSize: '12px', fontWeight: 'bold', fill: '#2563EB' }} />
-                        </Line>
-                        <Line dataKey="target" name="Target" type="monotone" stroke="#DC2626" strokeWidth={4} dot={{ r: 6, fill: '#DC2626', strokeWidth: 2, stroke: '#fff' }} activeDot={{ r: 8 }}>
-                           <LabelList dataKey="target" position="top" offset={10} formatter={(val: number) => val + "%"} style={{ fontSize: '12px', fontWeight: 'bold', fill: '#DC2626' }} />
-                        </Line>
-                      </LineChart>
-                    )}
-                  </ResponsiveContainer>
+                <div className="relative w-full h-[280px] shrink-0 mt-4">
+                  <div className="absolute inset-0">
+                    <ResponsiveContainer width="99%" height="100%" debounce={0}>
+                      {chartType === "bar" ? (
+                        <ComposedChart data={d.series} margin={{ top: 20, right: 10, left: -20, bottom: 0 }}>
+                          <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                          <XAxis 
+                            dataKey="name" 
+                            tick={{ fontSize: 11, fill: '#64748b', fontWeight: 600 }}
+                            axisLine={false}
+                            tickLine={false}
+                            dy={10}
+                          />
+                          <YAxis 
+                            domain={[0, 100]} 
+                            tickFormatter={(val) => val === 0 ? "0" : val}
+                            tick={{ fontSize: 10, fill: '#94a3b8', fontWeight: 600 }}
+                            axisLine={false}
+                            tickLine={false}
+                            tickCount={5}
+                          />
+                          <RechartsTooltip content={<CustomTooltip />} cursor={{fill: 'transparent'}} />
+                          <RechartsLegend verticalAlign="bottom" align="center" iconType="circle" wrapperStyle={{ fontSize: '11px', fontWeight: 600, paddingTop: '15px' }} />
+                          <Bar shape={<TwoDShadowBar />} dataKey="capaian" name="Capaian" fill="#2563EB" maxBarSize={48}>
+                            <LabelList dataKey="capaian" position="top" offset={10} formatter={(val: number) => val + "%"} style={{ fontSize: '12px', fontWeight: 'bold', fill: '#2563EB' }} />
+                          </Bar>
+                          <Bar shape={<TwoDShadowBar />} dataKey="target" name="Target" fill="#DC2626" maxBarSize={48}>
+                            <LabelList dataKey="target" position="top" offset={10} formatter={(val: number) => val + "%"} style={{ fontSize: '12px', fontWeight: 'bold', fill: '#DC2626' }} />
+                          </Bar>
+                        </ComposedChart>
+                      ) : (
+                        <LineChart data={d.series} margin={{ top: 20, right: 30, left: -20, bottom: 0 }}>
+                          <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                          <XAxis 
+                            dataKey="name" 
+                            tick={{ fontSize: 11, fill: '#64748b', fontWeight: 600 }}
+                            axisLine={false}
+                            tickLine={false}
+                            dy={10}
+                          />
+                          <YAxis 
+                            domain={[0, 100]} 
+                            tickFormatter={(val) => val === 0 ? "0" : val}
+                            tick={{ fontSize: 10, fill: '#94a3b8', fontWeight: 600 }}
+                            axisLine={false}
+                            tickLine={false}
+                            tickCount={5}
+                          />
+                          <RechartsTooltip content={<CustomTooltip />} cursor={{strokeDasharray: '3 3'}} />
+                          <RechartsLegend verticalAlign="bottom" align="center" iconType="circle" wrapperStyle={{ fontSize: '11px', fontWeight: 600, paddingTop: '15px' }} />
+                          <Line dataKey="capaian" name="Capaian" type="monotone" stroke="#2563EB" strokeWidth={4} dot={{ r: 6, fill: '#2563EB', strokeWidth: 2, stroke: '#fff' }} activeDot={{ r: 8 }}>
+                             <LabelList dataKey="capaian" position="top" offset={10} formatter={(val: number) => val + "%"} style={{ fontSize: '12px', fontWeight: 'bold', fill: '#2563EB' }} />
+                          </Line>
+                          <Line dataKey="target" name="Target" type="monotone" stroke="#DC2626" strokeWidth={4} dot={{ r: 6, fill: '#DC2626', strokeWidth: 2, stroke: '#fff' }} activeDot={{ r: 8 }}>
+                             <LabelList dataKey="target" position="top" offset={10} formatter={(val: number) => val + "%"} style={{ fontSize: '12px', fontWeight: 'bold', fill: '#DC2626' }} />
+                          </Line>
+                        </LineChart>
+                      )}
+                    </ResponsiveContainer>
+                  </div>
                 </div>
                 
                 <div className="w-full mt-6 bg-slate-50 rounded-2xl p-4 border border-slate-100">

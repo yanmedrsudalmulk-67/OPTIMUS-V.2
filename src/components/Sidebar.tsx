@@ -16,6 +16,7 @@ import {
   Hospital,
   User,
   LogOut,
+  ClipboardCheck,
 } from "lucide-react";
 
 export default function Sidebar() {
@@ -40,6 +41,7 @@ export default function Sidebar() {
     { name: "Insiden Pasien (IKP)", path: "/ikp", icon: AlertTriangle },
     { name: "Manajemen Risiko", path: "/risiko", icon: Shield },
     { name: "Survei Budaya", path: "/survei", icon: Activity },
+    { name: "Supervisi Mutu", path: "/supervisi", icon: ClipboardCheck },
     { name: "Pengaturan", path: "/pengaturan", icon: Settings },
   ];
 

@@ -1339,20 +1339,21 @@ export default function ProfilIndikator() {
       {/* DETAIL OVERLAY MODAL (👁 Lihat) */}
       <AnimatePresence>
         {viewingProfile && (
-          <div id="detail-overlay-backdrop" className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-md p-0 md:p-6 transition-all duration-500">
+          <div id="detail-overlay-backdrop" className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/70 p-0 md:p-6 transition-all duration-300">
             
             {/* Main Fullscreen or Large Modal Box */}
             <motion.div 
               id="detail-modal-box"
-              initial={{ y: 50, opacity: 0, scale: 0.98 }}
-              animate={{ y: 0, opacity: 1, scale: 1 }}
-              exit={{ y: 20, opacity: 0, scale: 0.98 }}
-              transition={{ type: 'spring', damping: 28, stiffness: 300 }}
+              initial={{ y: 40, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              exit={{ y: 25, opacity: 0 }}
+              transition={{ duration: 0.28, ease: [0.16, 1, 0.3, 1] }}
+              style={{ willChange: "transform, opacity" }}
               className="bg-gray-50 flex flex-col w-full h-full md:h-[95vh] md:max-w-6xl md:rounded-[32px] overflow-hidden shadow-2xl relative"
             >
               
               {/* Sticky Top Action Bar / Header */}
-              <div className="shrink-0 bg-white/80 backdrop-blur-xl border-b border-gray-100 z-20 sticky top-0 px-4 md:px-8 py-3.5 flex items-center justify-between">
+              <div className="shrink-0 bg-white/90 backdrop-blur-md border-b border-gray-100 z-20 sticky top-0 px-4 md:px-8 py-3.5 flex items-center justify-between">
                 <div className="flex items-center gap-4">
                   <div className="flex flex-col justify-center">
                     <span 
@@ -1387,11 +1388,11 @@ export default function ProfilIndikator() {
               </div>
 
               {/* Scrollable Content Container */}
-              <div className="flex-1 overflow-y-auto scrollbar-thin scrollbar-thumb-emerald-200 scrollbar-track-transparent">
-                <div className="px-4 py-6 md:p-8 max-w-5xl mx-auto space-y-6 md:space-y-8">
+              <div className="flex-1 overflow-y-auto scrollbar-thin scrollbar-thumb-emerald-200 scrollbar-track-transparent [will-change:transform] [transform:translateZ(0)]">
+                <div className="px-4 py-6 md:p-8 max-w-5xl mx-auto space-y-6 md:space-y-8 animate-in fade-in duration-300">
                   
                   {/* Main Specifications Frame with Unified Title Header */}
-                  <div className="bg-white/90 backdrop-blur-md shadow-xl border border-emerald-100/60 rounded-3xl overflow-hidden flex flex-col transition-all duration-300 hover:shadow-2xl">
+                  <div className="bg-white shadow-xl border border-emerald-100/60 rounded-3xl overflow-hidden flex flex-col transition-all duration-300 hover:shadow-2xl">
                     
                     {/* Unified Header */}
                     <div className="relative bg-gradient-to-b from-emerald-50/30 to-white border-b border-emerald-100/60 px-6 py-10 md:px-12 md:py-12 flex flex-col items-center justify-center text-center space-y-4">

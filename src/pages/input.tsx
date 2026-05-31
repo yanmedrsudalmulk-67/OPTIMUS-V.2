@@ -81,37 +81,7 @@ export default function InputData() {
   const [roomCategoryInput, setRoomCategoryInput] = useState("Rawat Inap");
   const [roomStatusInput, setRoomStatusInput] = useState<"Aktif" | "Nonaktif">("Aktif");
 
-  // Dynamic dynamic clock indicator
-  const [currentTimeFormatted, setCurrentTimeFormatted] = useState("");
-
   const unitDropdownRef = useRef<HTMLDivElement>(null);
-
-  // Load real-time clock inside the WIB format once upon display
-  useEffect(() => {
-    const updateTime = () => {
-      const now = new Date();
-      // Format to Indonesia timezone with 12/04/2026 — 08:45 WIB
-      const optionsDate: Intl.DateTimeFormatOptions = {
-        day: "2-digit",
-        month: "2-digit",
-        year: "numeric",
-        timeZone: "Asia/Jakarta"
-      };
-      const optionsTime: Intl.DateTimeFormatOptions = {
-        hour: "2-digit",
-        minute: "2-digit",
-        hour12: false,
-        timeZone: "Asia/Jakarta"
-      };
-      const dateStr = now.toLocaleDateString("id-ID", optionsDate);
-      const timeStr = now.toLocaleTimeString("id-ID", optionsTime);
-      setCurrentTimeFormatted(`${dateStr} — ${timeStr} WIB`);
-    };
-
-    updateTime();
-    const interval = setInterval(updateTime, 1000);
-    return () => clearInterval(interval);
-  }, []);
 
   // Fetch newest units from Supabase if active
   useEffect(() => {

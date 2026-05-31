@@ -39,29 +39,32 @@ export default function SurveiBudaya() {
             <Activity className="text-emerald-500" size={20} />
             Radar Capaian Dimensi
           </h3>
-          <div className="h-80 w-full flex justify-center items-center">
-            <ResponsiveContainer width="100%" height="100%">
-              <RadarChart cx="50%" cy="50%" outerRadius="70%" data={dataSurvei}>
-                <PolarGrid stroke="#e5e7eb" />
-                <PolarAngleAxis
-                  dataKey="subject"
-                  tick={{ fill: "#4b5563", fontSize: 12 }}
-                />
-                <PolarRadiusAxis
-                  angle={30}
-                  domain={[0, 100]}
-                  tick={{ fill: "#9ca3af", fontSize: 10 }}
-                />
-                <Radar
-                  name="Skor RS"
-                  dataKey="A"
-                  stroke="#10b981"
-                  fill="#10b981"
-                  fillOpacity={0.5}
-                />
-                <Legend />
-              </RadarChart>
-            </ResponsiveContainer>
+          <div className="relative w-full h-[320px] shrink-0 mt-4">
+            <div className="absolute inset-0">
+              <ResponsiveContainer width="99%" height="100%" debounce={0}>
+                <RadarChart cx="50%" cy="50%" outerRadius="70%" data={dataSurvei}>
+                  <PolarGrid stroke="#e5e7eb" />
+                  <PolarAngleAxis
+                    dataKey="subject"
+                    tick={{ fill: "#4b5563", fontSize: 12 }}
+                  />
+                  <PolarRadiusAxis
+                    angle={30}
+                    domain={[0, 100]}
+                    tick={{ fill: "#9ca3af", fontSize: 10 }}
+                  />
+                  <Radar
+                    name="Skor RS"
+                    dataKey="A"
+                    stroke="#10b981"
+                    fill="#10b981"
+                    fillOpacity={0.5}
+                    isAnimationActive={false}
+                  />
+                  <Legend />
+                </RadarChart>
+              </ResponsiveContainer>
+            </div>
           </div>
         </div>
 
