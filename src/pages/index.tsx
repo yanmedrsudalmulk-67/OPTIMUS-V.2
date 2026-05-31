@@ -148,6 +148,7 @@ export default function WelcomePage() {
           // Google Drive stream representation
           <div className="absolute inset-0">
             {/* Fallback layout styled cleanly with static image but subtle blur */}
+            {/* eslint-disable-next-line @next/next/no-img-element */}
             <img 
               src={backgroundImageSrc}
               alt="Background Fallback" 
@@ -172,12 +173,15 @@ export default function WelcomePage() {
             className="w-full h-full object-cover opacity-[0.6]"
           />
         ) : (
-          <img 
-            src={backgroundImageSrc}
-            alt="Welcome Background Image Fallback" 
-            className="w-full h-full object-cover opacity-80 transition-all duration-700"
-            referrerPolicy="no-referrer"
-          />
+          <>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img 
+              src={backgroundImageSrc}
+              alt="Welcome Background Image Fallback" 
+              className="w-full h-full object-cover opacity-80 transition-all duration-700"
+              referrerPolicy="no-referrer"
+            />
+          </>
         )}
 
       </div>
@@ -201,7 +205,7 @@ export default function WelcomePage() {
             <span className="font-extrabold text-sm tracking-tight text-white leading-tight truncate drop-shadow-md">
               UOBK RSUD AL-MULK
             </span>
-            <span className="text-[11px] text-emerald-100 font-medium leading-none mt-1 drop-shadow-md">
+            <span className="text-[12px] text-[#5ff14d] font-bold leading-none mt-1 drop-shadow-md">
               Kota Sukabumi
             </span>
           </div>

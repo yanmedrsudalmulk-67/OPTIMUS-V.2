@@ -63,26 +63,37 @@ export default function Layout({ children, router }: LayoutProps) {
       {/* Content flex alignment container */}
       <div className="flex-1 flex flex-col min-h-screen md:pl-64">
         {/* PREMIUM UNIFIED GLASSMORPHISM TOP HEADER */}
-        <header className="sticky top-0 z-30 flex items-center justify-between h-20 px-4 md:px-8 bg-white/75 backdrop-blur-lg border-b border-gray-100/80 shadow-xs">
+        <header className="sticky top-0 z-30 flex items-center justify-between min-h-20 md:h-20 py-2 md:py-0 px-4 md:px-8 bg-white/75 backdrop-blur-lg border-b border-gray-100/80 shadow-xs">
           {/* Left Side: Brand Identity */}
           <div className="flex items-center gap-3">
             <div className="flex flex-col">
               <span 
-                style={{ fontSize: "29px", fontStyle: "italic", color: "#4a5565" }}
-                className="font-extrabold tracking-[0.06em] select-none antialiased drop-shadow-[0_1px_1px_rgba(0,0,0,0.06)]"
+                className="font-black tracking-[0.1em] drop-shadow-sm select-none antialiased leading-none"
+                style={{ 
+                  fontVariantLigatures: "common-ligatures", 
+                  WebkitFontSmoothing: "antialiased",
+                  color: "#10a37f",
+                  fontStyle: "italic",
+                  fontSize: "40px",
+                  width: "330.891px",
+                  paddingLeft: "0px",
+                  marginBottom: "-7px",
+                  display: "inline-block",
+                  textDecorationLine: "underline"
+                }}
               >
                 OPTIMUS
               </span>
               <span 
-                style={{ fontSize: "10.5px", fontStyle: "normal", color: "#10a37f" }}
-                className="font-semibold tracking-wider leading-none mt-1 uppercase max-w-[150px] sm:max-w-none truncate sm:whitespace-normal"
+                className="text-[9px] sm:text-[10px] font-semibold tracking-[0.15em] text-slate-500 uppercase block whitespace-nowrap"
+                style={{ marginBottom: "-7px", marginTop: "8px", fontWeight: "bold" }}
               >
                 Optimalisasi Sistem Pelaporan Mutu Rumah Sakit
               </span>
             </div>
           </div>
 
-          {/* Right Side: High-Precision Unified Glassmorphism Calendar & Clock Widget */}
+          {/* Right Side: High-Precision Calendar & Clock Widget */}
           <div className="flex items-center">
             {timeString && (
               <motion.div

@@ -48,10 +48,10 @@ export default function Sidebar() {
       {/* Desktop Sidebar */}
       <aside
         id="main-sidebar"
-        className="hidden md:flex fixed inset-y-0 left-0 z-40 w-64 bg-emerald-600 text-white flex-col justify-between border-r border-emerald-700 transition-transform"
+        className="hidden md:flex fixed inset-y-0 left-0 z-40 w-64 bg-gradient-to-b from-[#007A4D] to-[#005F3A] text-white flex-col justify-between border-r border-[#005F3A]/50 shadow-[4px_0_24px_rgba(0,122,77,0.15)] transition-transform font-sans"
       >
         {/* Header & Logo */}
-        <div className="p-5 flex flex-col items-center border-b border-emerald-500/30">
+        <div className="p-5 flex flex-col items-center border-b border-[#005F3A]/30 bg-white/5 backdrop-blur-sm">
           <div className="flex items-center justify-between w-full mb-3">
             <div className="flex items-center gap-3 min-w-0">
               <div className="h-11 w-11 rounded-xl bg-white border border-emerald-500/10 flex items-center justify-center overflow-hidden flex-shrink-0 shadow-lg p-0.5">
@@ -70,7 +70,10 @@ export default function Sidebar() {
                 <span className="font-extrabold text-sm tracking-tight text-white leading-tight truncate">
                   UOBK RSUD AL-MULK
                 </span>
-                <span className="text-[11px] text-emerald-100 font-medium leading-none mt-1">
+                <span 
+                  className="leading-none mt-1"
+                  style={{ color: "#ded92d", fontWeight: "bold", fontSize: "12px" }}
+                >
                   Kota Sukabumi
                 </span>
               </div>
@@ -80,7 +83,7 @@ export default function Sidebar() {
 
         {/* Primary Navigation */}
         <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto scrollbar-hide">
-          {menuItems.map((item) => {
+          {menuItems.map((item, index) => {
             const isActive = currentPath === item.path;
             const Icon = item.icon;
             return (
@@ -88,28 +91,26 @@ export default function Sidebar() {
                 key={item.path}
                 href={item.path}
                 onClick={() => setCurrentPath(item.path)}
-                className={`flex items-center gap-3.5 px-3.5 py-2.5 rounded-xl text-sm font-semibold transition-all ${
+                className={`group relative flex items-center gap-3.5 px-3.5 py-2.5 rounded-[14px] text-sm font-semibold transition-all duration-200 ease-in-out border overflow-hidden ${
                   isActive
-                    ? "bg-emerald-800 text-white shadow-lg font-bold"
-                    : "text-white/90 hover:text-white hover:bg-white/10"
+                    ? "bg-white/10 text-[#ded92d] shadow-[0_0_15px_rgba(222,217,45,0.15)] font-bold border-white/5 backdrop-blur-md"
+                    : "text-emerald-50/80 hover:text-white hover:bg-white/5 border-transparent"
                 }`}
               >
+                {isActive && (
+                  <div className="absolute left-0 top-[15%] bottom-[15%] w-[3px] rounded-r-md bg-gradient-to-b from-[#ded92d] to-[#f59e0b] shadow-[0_0_14px_rgba(222,217,45,1)]"></div>
+                )}
                 <motion.div
-                  animate={isActive ? { y: [0, -4, 0] } : { y: 0 }}
+                  animate={isActive ? { y: [0, -3, 0] } : { y: 0 }}
                   transition={
                     isActive
-                      ? {
-                          repeat: Infinity,
-                          duration: 2.2,
-                          ease: "easeInOut",
-                        }
+                      ? { repeat: Infinity, duration: 2.2, ease: "easeInOut" }
                       : undefined
                   }
-                  whileHover={{ scale: 1.15 }}
-                  className="flex items-center justify-center"
+                  className="flex items-center justify-center transition-transform duration-200 group-hover:-translate-y-0.5 group-hover:scale-105 group-hover:opacity-100 opacity-90"
                 >
                   <Icon
-                    className="h-5 w-5 text-white"
+                    className={`h-5 w-5 transition-colors duration-200 ${isActive ? "text-[#ded92d] drop-shadow-[0_0_4px_rgba(222,217,45,0.4)]" : "text-white"}`}
                     strokeWidth={2.2}
                   />
                 </motion.div>
@@ -120,19 +121,24 @@ export default function Sidebar() {
         </nav>
 
         {/* User Information Profile Footer */}
-        <div className="p-4 border-t border-emerald-500/30 bg-emerald-700/60 flex flex-col gap-3">
+        <div className="p-4 border-t border-[#005F3A]/40 bg-black/10 backdrop-blur-sm flex flex-col gap-3">
           <div className="flex items-center gap-3">
-            <div className="h-10 w-10 rounded-xl bg-emerald-800/40 flex items-center justify-center border border-white/15">
-              <User className="h-5 w-5 text-white" />
+            <div className="h-10 w-10 rounded-[14px] bg-white/10 flex items-center justify-center border border-white/10 shadow-sm">
+              <User className="h-5 w-5 text-emerald-50" />
             </div>
             <div className="flex flex-col min-w-0">
-              <span className="text-xs font-bold text-white truncate font-sans">Pengguna</span>
-              <span className="text-[10px] text-emerald-100 font-medium">Tim Mutu RS</span>
+              <span 
+                className="text-xs font-bold text-white truncate font-sans tracking-wide"
+                style={{ color: "#ded92d" }}
+              >
+                Pengguna
+              </span>
+              <span className="text-[10px] text-emerald-100/80 font-medium">Tim Mutu RS</span>
             </div>
           </div>
           <motion.div
-            whileHover={{ scale: 1.04 }}
-            whileTap={{ scale: 0.96 }}
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
             className="w-full"
           >
             <Link
@@ -140,77 +146,77 @@ export default function Sidebar() {
               onClick={(e) => {
                 localStorage.removeItem("welcome_seen");
               }}
-              className="flex items-center justify-center gap-2 w-full py-2 px-4 bg-gradient-to-r from-sky-500 via-blue-600 to-indigo-600 hover:brightness-110 active:brightness-95 text-white text-xs font-bold rounded-full shadow-md transition-all cursor-pointer select-none"
+              className="flex items-center justify-center gap-2 w-full py-2.5 px-4 bg-white/10 hover:bg-white/20 active:bg-white/5 border border-white/10 hover:border-white/20 text-white text-xs font-bold rounded-[14px] shadow-sm transition-all duration-200 cursor-pointer select-none"
             >
-              <LogOut className="h-3.5 w-3.5" />
-              <span>Keluar</span>
+              <LogOut className="h-3.5 w-3.5" style={{ color: "#ded92d" }} />
+              <span style={{ color: "#ded92d" }}>Keluar</span>
             </Link>
           </motion.div>
         </div>
       </aside>
 
       {/* Mobile Bottom Horizontal Slider Navigation */}
-  <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-emerald-600 border-t border-emerald-700 shadow-[0_-10px_20px_rgba(0,0,0,0.1)] pb-safe">
-    <div className="flex items-center overflow-x-auto px-2 py-2 gap-1.5 scrollbar-hide snap-x">
-      {menuItems.map((item) => {
-        const isActive = currentPath === item.path;
-        const Icon = item.icon;
-        return (
-          <Link
-            key={item.path}
-            href={item.path}
-            onClick={() => setCurrentPath(item.path)}
-            className={`snap-center shrink-0 flex flex-col items-center justify-center min-w-[76px] px-2 py-2 rounded-xl transition-all ${
-              isActive
-                ? "text-white drop-shadow-[0_4px_8px_rgba(255,255,255,0.4)] bg-emerald-700/50"
-                : "text-white/80 hover:bg-white/10 hover:text-white"
-            }`}
-          >
-            <motion.div
-              animate={isActive ? { y: [0, -3, 0] } : { y: 0 }}
-              transition={
-                isActive
-                  ? {
-                      repeat: Infinity,
-                      duration: 2,
-                      ease: "easeInOut",
-                    }
-                  : undefined
-              }
-              className={`flex items-center justify-center mb-1 transition-transform ${isActive ? "scale-110" : "scale-100"}`}
-            >
-              <Icon className="h-5 w-5" strokeWidth={isActive ? 2.5 : 2} />
-            </motion.div>
-            <span className={`text-[10px] text-center leading-tight ${isActive ? "font-bold" : "font-semibold"}`}>
-              {item.name}
-            </span>
-          </Link>
-        );
-      })}
+      <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-[#007A4D] border-t border-[#005F3A]/50 shadow-[0_-10px_20px_rgba(0,0,0,0.1)] pb-safe">
+        <div className="flex items-center overflow-x-auto px-2 py-2 gap-1.5 scrollbar-hide snap-x">
+          {menuItems.map((item) => {
+            const isActive = currentPath === item.path;
+            const Icon = item.icon;
+            return (
+              <Link
+                key={item.path}
+                href={item.path}
+                onClick={() => setCurrentPath(item.path)}
+                className={`group snap-center shrink-0 flex flex-col items-center justify-center min-w-[76px] px-2 py-2 rounded-xl transition-all ${
+                  isActive
+                    ? "text-[#ded92d] bg-white/10 shadow-[0_0_12px_rgba(222,217,45,0.15)]"
+                    : "text-emerald-50/80 hover:bg-white/5 hover:text-white"
+                }`}
+              >
+                <motion.div
+                  animate={isActive ? { y: [0, -3, 0] } : { y: 0 }}
+                  transition={
+                    isActive
+                      ? {
+                          repeat: Infinity,
+                          duration: 2,
+                          ease: "easeInOut",
+                        }
+                      : undefined
+                  }
+                  className={`flex items-center justify-center mb-1 transition-transform group-hover:-translate-y-0.5 ${isActive ? "scale-110 opacity-100" : "scale-100 opacity-90 group-hover:opacity-100"}`}
+                >
+                  <Icon className={`h-5 w-5 ${isActive ? "text-[#ded92d]" : "text-white"}`} strokeWidth={isActive ? 2.5 : 2} />
+                </motion.div>
+                <span className={`text-[10px] text-center leading-tight ${isActive ? "font-bold text-[#ded92d]" : "font-semibold"}`}>
+                  {item.name}
+                </span>
+              </Link>
+            );
+          })}
 
-      {/* Mobile Logout Button with Premium Hospital Blue Gradient Capsule styling */}
-      <div className="snap-center shrink-0 flex items-center justify-center px-1.5 min-w-[90px]">
-        <motion.div
-          whileHover={{ scale: 1.04 }}
-          whileTap={{ scale: 0.96 }}
-          className="w-full"
-        >
-          <Link
-            href="/"
-            onClick={(e) => {
-              if (typeof window !== "undefined") {
-                localStorage.removeItem("welcome_seen");
-              }
-            }}
-            className="flex items-center justify-center gap-1.5 w-full py-1.5 px-3.5 bg-gradient-to-r from-sky-400 via-blue-500 to-indigo-650 text-white text-[11px] font-bold rounded-full shadow-sm cursor-pointer whitespace-nowrap select-none"
-          >
-            <LogOut className="h-3.5 w-3.5" strokeWidth={2.5} />
-            <span>Keluar</span>
-          </Link>
-        </motion.div>
-      </div>
-    </div>
-  </nav>
+          {/* Mobile Logout Button with Premium Hospital Blue Gradient Capsule styling */}
+          <div className="snap-center shrink-0 flex items-center justify-center px-1.5 min-w-[90px]">
+            <motion.div
+              whileHover={{ scale: 1.04 }}
+              whileTap={{ scale: 0.96 }}
+              className="w-full"
+            >
+              <Link
+                href="/"
+                onClick={(e) => {
+                  if (typeof window !== "undefined") {
+                    localStorage.removeItem("welcome_seen");
+                  }
+                }}
+                className="flex items-center justify-center gap-1.5 w-full py-1.5 px-3.5 bg-white/10 hover:bg-white/20 border border-white/10 text-white text-[11px] font-bold rounded-[14px] shadow-sm cursor-pointer whitespace-nowrap select-none transition-all"
+              >
+                <LogOut className="h-3.5 w-3.5" strokeWidth={2.5} />
+                <span>Keluar</span>
+              </Link>
+            </motion.div>
+          </div>
+        </div>
+      </nav>
     </>
   );
 }

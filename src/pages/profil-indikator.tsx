@@ -162,11 +162,11 @@ const FormattedDocumentText = ({ content }: { content: string }) => {
 };
 
 const DetailRow = ({ label, value, id }: { label: string, value: React.ReactNode, id?: string }) => (
-  <div id={id} className="flex flex-col md:flex-row items-stretch overflow-hidden border-b border-gray-200 last:border-b-0 transition-colors hover:bg-slate-50/50">
-    <div className="w-full md:w-[30%] bg-[#10a37f] p-5 md:p-6 flex items-center shrink-0 border-b md:border-b-0 md:border-r border-gray-200">
-      <span className="text-white font-semibold text-[11px] md:text-sm leading-normal tracking-wider uppercase">{label}</span>
+  <div id={id} className="flex flex-col md:flex-row items-stretch border-b border-gray-300 last:border-b-0 transition-colors hover:bg-slate-50/50">
+    <div className="w-full md:w-[30%] bg-[#10a37f] p-4 md:p-6 flex items-center shrink-0 border-b md:border-b-0 md:border-r border-gray-300">
+      <span className="text-white font-bold text-[11px] md:text-sm leading-normal tracking-wider uppercase">{label}</span>
     </div>
-    <div className="w-full md:w-[70%] bg-white p-5 md:p-6 flex items-center text-gray-700 text-sm">
+    <div className="w-full md:w-[70%] bg-white p-4 md:p-6 flex items-center text-gray-700 text-sm">
       <div className="w-full font-medium text-[13px] md:text-[14px] text-gray-600">
         {typeof value === 'string' ? (
           <FormattedDocumentText content={value} />
@@ -249,11 +249,13 @@ export default function ProfilIndikator() {
   });
 
   // Hot watches
+  /* eslint-disable react-hooks/incompatible-library */
   const watchNum = watch("numerator");
   const watchDen = watch("denominator");
   const watchUnit = watch("measurement_unit");
   const watchFormula = watch("formula");
   const watchAllFields = watch();
+  /* eslint-enable react-hooks/incompatible-library */
 
   // Real-time automatic formula generator
   useEffect(() => {
@@ -737,7 +739,7 @@ export default function ProfilIndikator() {
                 <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
                 <input 
                   type="text" 
-                  placeholder="🔍 Cari judul, penanggung jawab, atau dasar..." 
+                  placeholder="Cari judul, penanggung jawab, atau dasar..." 
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   className="w-full pl-10 pr-4 py-2.5 bg-white border border-gray-200 rounded-xl focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none text-xs font-semibold tracking-tight transition-all placeholder-gray-400 text-gray-900"
@@ -1352,17 +1354,18 @@ export default function ProfilIndikator() {
               {/* Sticky Top Action Bar / Header */}
               <div className="shrink-0 bg-white/80 backdrop-blur-xl border-b border-gray-100 z-20 sticky top-0 px-4 md:px-8 py-3.5 flex items-center justify-between">
                 <div className="flex items-center gap-4">
-                  {/* Logo RS */}
-                  <div className="h-10 w-10 md:h-12 md:w-12 bg-white rounded-2xl shadow-sm border border-gray-100 flex items-center justify-center p-0.5 overflow-hidden shrink-0">
-                    {hospitalLogo ? (
-                      <img src={hospitalLogo} alt="Logo" className="w-full h-full object-contain" />
-                    ) : (
-                      <div className="w-full h-full bg-emerald-50 rounded-xl flex items-center justify-center text-emerald-600 font-bold text-lg">RS</div>
-                    )}
-                  </div>
                   <div className="flex flex-col justify-center">
-                    <h1 className="text-sm md:text-[17px] font-black text-gray-900 tracking-tight leading-tight">Profil Indikator Mutu</h1>
-                    <h2 className="text-[9px] md:text-[10px] font-bold text-gray-400 tracking-widest uppercase mt-0.5">UOBK RSUD AL-MULK</h2>
+                    <span 
+                      className="text-2xl md:text-[28px] font-black tracking-[0.1em] text-transparent bg-clip-text bg-gradient-to-r from-emerald-800 via-emerald-600 to-teal-500 drop-shadow-sm select-none antialiased leading-none"
+                      style={{ fontVariantLigatures: "common-ligatures", WebkitFontSmoothing: "antialiased" }}
+                    >
+                      OPTIMUS
+                    </span>
+                    <span 
+                      className="text-[9px] md:text-[10px] font-semibold tracking-[0.15em] text-slate-500 mt-1 uppercase block"
+                    >
+                      Optimalisasi Sistem Pelaporan Mutu Rumah Sakit
+                    </span>
                   </div>
                 </div>
 

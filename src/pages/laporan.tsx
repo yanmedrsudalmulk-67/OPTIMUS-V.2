@@ -1,14 +1,93 @@
-import React, { useState, useRef, useMemo } from "react";
+import React, { useState, useRef, useMemo, useEffect } from "react";
 import { Download, FileText, Printer, FileSpreadsheet, RotateCcw, Filter, CheckCircle2 } from "lucide-react";
 import html2canvas from "html2canvas";
 import { jsPDF } from "jspdf";
 import { useStore, DataMutuPayload } from "@/store/useStore";
+import { supabase } from "@/lib/supabase";
 import { formatTarget } from "../../lib/utils";
 
 export default function Laporan() {
   const dataMutuList = useStore((state) => state.dataMutuList);
+  const setDataMutuList = useStore((state) => state.setDataMutuList);
   const indicatorProfiles = useStore((state) => state.indicatorProfiles);
   const reportRef = useRef<HTMLDivElement>(null);
+
+  // Fetch inputs from Supabase on mount to ensure real-time reporting from supabase
+  useEffect(() => {
+    const fetchSupabaseInputs = async () => {
+      try {
+        const { data, error } = await supabase
+          .from("indicator_inputs")
+          .select("*")
+          .order("created_at", { ascending: true });
+
+        if (data && data.length >= 0) {
+          const newDataList = data.map((dbInput: any) => {
+            const matchedProfile = indicatorProfiles.find((p) => p.id === dbInput.indicator_id);
+            const persentase = dbInput.achievement_percentage || 0;
+            const rawTarget = dbInput.target || matchedProfile?.target || 80;
+            const target = parseFloat(String(rawTarget).replace(/[^0-9.]/g, '')) || 80;
+            
+            // Determine achievement status
+            const isReverse = matchedProfile?.reverse || false;
+            let computedStatus: "Tercapai" | "Mendekati" | "Tidak Tercapai" = "Tidak Tercapai";
+            const isSuccess = isReverse ? persentase <= target : persentase >= target;
+            if (isSuccess) {
+              computedStatus = "Tercapai";
+            } else {
+              const gap = isReverse ? persentase - target : target - persentase;
+              if (gap <= 10) computedStatus = "Mendekati";
+            }
+
+            let ikpData: any = null;
+            if (dbInput.category_id === "IKP" && dbInput.notes) {
+              try {
+                const parsed = JSON.parse(dbInput.notes);
+                if (typeof parsed === 'object' && parsed !== null && ('kpc' in parsed || 'knc' in parsed)) {
+                  ikpData = parsed;
+                }
+              } catch (e) {}
+            }
+
+            return {
+              id: dbInput.id,
+              unit: dbInput.unit_id,
+              tanggal: dbInput.input_date,
+              kategori: dbInput.category_id,
+              indikator_id: dbInput.indicator_id || undefined,
+              indikator_name: matchedProfile?.indicator_title || undefined,
+              numerator: dbInput.numerator_value || 0,
+              denominator: dbInput.denominator_value || 1,
+              target: target,
+              capaian: persentase,
+              status: (dbInput.category_id === "IKP" ? "N/A" : computedStatus) as any,
+              keterangan: ikpData ? ikpData.keterangan : (dbInput.notes || ""),
+              kpc: ikpData ? ikpData.kpc : 0,
+              knc: ikpData ? ikpData.knc : 0,
+              ktc: ikpData ? ikpData.ktc : 0,
+              ktd: ikpData ? ikpData.ktd : 0,
+              sentinel: ikpData ? ikpData.sentinel : 0,
+            };
+          });
+          setDataMutuList(newDataList);
+        }
+      } catch (err) {
+        console.warn("Supabase load error in laporan", err);
+      }
+    };
+    fetchSupabaseInputs();
+
+    const inputsChannel = supabase
+      .channel("laporan-inputs-realtime")
+      .on("postgres_changes", { event: "*", schema: "public", table: "indicator_inputs" }, () => {
+        fetchSupabaseInputs();
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(inputsChannel);
+    };
+  }, [indicatorProfiles, setDataMutuList]);
 
   const allIndicators = useMemo(() => {
     return indicatorProfiles.map(p => ({
@@ -23,21 +102,32 @@ export default function Laporan() {
   }, [indicatorProfiles]);
 
   const [periode, setPeriode] = useState("Triwulan");
-  const [triwulan, setTriwulan] = useState("Triwulan 1 (Jan-Mar)");
-  const [tahun, setTahun] = useState("2026");
+  const [bulan, setBulan] = useState("0");
+  const [triwulan, setTriwulan] = useState("1");
+  const [semester, setSemester] = useState("1");
+  const [tahun, setTahun] = useState(new Date().getFullYear().toString());
   const [kategori, setKategori] = useState("Mutu Keseluruhan");
 
   // Display states
-  const [appliedFilters, setAppliedFilters] = useState({ periode, triwulan, tahun, kategori });
+  const [appliedFilters, setAppliedFilters] = useState({ periode, bulan, triwulan, semester, tahun, kategori });
 
   const getMonths = () => {
-    if (appliedFilters.periode === "Triwulan") {
-      if (appliedFilters.triwulan.includes("1")) return [0, 1, 2];
-      if (appliedFilters.triwulan.includes("2")) return [3, 4, 5];
-      if (appliedFilters.triwulan.includes("3")) return [6, 7, 8];
-      if (appliedFilters.triwulan.includes("4")) return [9, 10, 11];
+    if (appliedFilters.periode === "Bulanan") {
+      return [parseInt(appliedFilters.bulan)];
     }
-    // Simplification for demo: default to Jan, Feb, Mar
+    if (appliedFilters.periode === "Triwulan") {
+      if (appliedFilters.triwulan === "1") return [0, 1, 2];
+      if (appliedFilters.triwulan === "2") return [3, 4, 5];
+      if (appliedFilters.triwulan === "3") return [6, 7, 8];
+      if (appliedFilters.triwulan === "4") return [9, 10, 11];
+    }
+    if (appliedFilters.periode === "Semester") {
+      if (appliedFilters.semester === "1") return [0, 1, 2, 3, 4, 5];
+      if (appliedFilters.semester === "2") return [6, 7, 8, 9, 10, 11];
+    }
+    if (appliedFilters.periode === "Tahunan") {
+      return [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11];
+    }
     return [0, 1, 2];
   };
 
@@ -45,15 +135,17 @@ export default function Laporan() {
   const displayMonths = getMonths();
 
   const handleApplyFilter = () => {
-    setAppliedFilters({ periode, triwulan, tahun, kategori });
+    setAppliedFilters({ periode, bulan, triwulan, semester, tahun, kategori });
   };
 
   const handleResetFilter = () => {
     setPeriode("Triwulan");
-    setTriwulan("Triwulan 1 (Jan-Mar)");
-    setTahun("2026");
+    setBulan("0");
+    setTriwulan("1");
+    setSemester("1");
+    setTahun(new Date().getFullYear().toString());
     setKategori("Mutu Keseluruhan");
-    setAppliedFilters({ periode: "Triwulan", triwulan: "Triwulan 1 (Jan-Mar)", tahun: "2026", kategori: "Mutu Keseluruhan" });
+    setAppliedFilters({ periode: "Triwulan", bulan: "0", triwulan: "1", semester: "1", tahun: new Date().getFullYear().toString(), kategori: "Mutu Keseluruhan" });
   };
 
   const handleExportPDF = async () => {
@@ -122,6 +214,7 @@ export default function Laporan() {
                 onChange={e => setPeriode(e.target.value)}
                 className="w-full pl-10 pr-4 py-3 bg-white border border-gray-200 rounded-xl focus:ring-2 focus:ring-[#10a37f] focus:border-[#10a37f] outline-none text-sm font-bold text-slate-800 transition-all appearance-none cursor-pointer"
               >
+                <option value="Bulanan">Bulanan</option>
                 <option value="Triwulan">Triwulan</option>
                 <option value="Semester">Semester</option>
                 <option value="Tahunan">Tahunan</option>
@@ -129,29 +222,68 @@ export default function Laporan() {
             </div>
           </div>
           <div className="space-y-2">
-            <label className="text-[11px] font-extrabold text-slate-500 uppercase tracking-wider">Pilih Triwulan</label>
-            <select
-              value={triwulan}
-              onChange={e => setTriwulan(e.target.value)}
-              className="w-full px-4 py-3 bg-[#fafdfc] border border-gray-200 rounded-xl focus:ring-2 focus:ring-[#10a37f] focus:border-[#10a37f] outline-none text-sm font-bold text-slate-800 transition-all appearance-none cursor-pointer"
-            >
-              <option value="Triwulan 1 (Jan-Mar)">Triwulan 1 (Jan-Mar)</option>
-              <option value="Triwulan 2 (Apr-Jun)">Triwulan 2 (Apr-Jun)</option>
-              <option value="Triwulan 3 (Jul-Sep)">Triwulan 3 (Jul-Sep)</option>
-              <option value="Triwulan 4 (Okt-Des)">Triwulan 4 (Okt-Des)</option>
-            </select>
+            <label className="text-[11px] font-extrabold text-slate-500 uppercase tracking-wider">
+              {periode === "Bulanan" ? "Pilih Bulan" : 
+               periode === "Triwulan" ? "Pilih Triwulan" : 
+               periode === "Semester" ? "Pilih Semester" : "Pilih Tahun"}
+            </label>
+            {periode === "Bulanan" && (
+              <select
+                value={bulan}
+                onChange={e => setBulan(e.target.value)}
+                className="w-full px-4 py-3 bg-[#fafdfc] border border-gray-200 rounded-xl focus:ring-2 focus:ring-[#10a37f] focus:border-[#10a37f] outline-none text-sm font-bold text-slate-800 transition-all appearance-none cursor-pointer"
+              >
+                {monthNames.map((m, i) => (
+                  <option key={i} value={i}>{m}</option>
+                ))}
+              </select>
+            )}
+            {periode === "Triwulan" && (
+              <select
+                value={triwulan}
+                onChange={e => setTriwulan(e.target.value)}
+                className="w-full px-4 py-3 bg-[#fafdfc] border border-gray-200 rounded-xl focus:ring-2 focus:ring-[#10a37f] focus:border-[#10a37f] outline-none text-sm font-bold text-slate-800 transition-all appearance-none cursor-pointer"
+              >
+                <option value="1">Triwulan 1 (Jan-Mar)</option>
+                <option value="2">Triwulan 2 (Apr-Jun)</option>
+                <option value="3">Triwulan 3 (Jul-Sep)</option>
+                <option value="4">Triwulan 4 (Okt-Des)</option>
+              </select>
+            )}
+            {periode === "Semester" && (
+              <select
+                value={semester}
+                onChange={e => setSemester(e.target.value)}
+                className="w-full px-4 py-3 bg-[#fafdfc] border border-gray-200 rounded-xl focus:ring-2 focus:ring-[#10a37f] focus:border-[#10a37f] outline-none text-sm font-bold text-slate-800 transition-all appearance-none cursor-pointer"
+              >
+                <option value="1">Semester 1 (Jan-Jun)</option>
+                <option value="2">Semester 2 (Jul-Des)</option>
+              </select>
+            )}
+            {periode === "Tahunan" && (
+              <select
+                value={tahun}
+                onChange={e => setTahun(e.target.value)}
+                className="w-full px-4 py-3 bg-[#fafdfc] border border-gray-200 rounded-xl focus:ring-2 focus:ring-[#10a37f] focus:border-[#10a37f] outline-none text-sm font-bold text-slate-800 transition-all appearance-none cursor-pointer"
+              >
+                <option value="2026">2026</option>
+                <option value="2025">2025</option>
+              </select>
+            )}
           </div>
-          <div className="space-y-2">
-            <label className="text-[11px] font-extrabold text-slate-500 uppercase tracking-wider">Tahun</label>
-            <select
-              value={tahun}
-              onChange={e => setTahun(e.target.value)}
-              className="w-full px-4 py-3 bg-[#fafdfc] border border-gray-200 rounded-xl focus:ring-2 focus:ring-[#10a37f] focus:border-[#10a37f] outline-none text-sm font-bold text-slate-800 transition-all appearance-none cursor-pointer"
-            >
-              <option value="2026">2026</option>
-              <option value="2025">2025</option>
-            </select>
-          </div>
+          {periode !== "Tahunan" && (
+            <div className="space-y-2">
+              <label className="text-[11px] font-extrabold text-slate-500 uppercase tracking-wider">Tahun</label>
+              <select
+                value={tahun}
+                onChange={e => setTahun(e.target.value)}
+                className="w-full px-4 py-3 bg-[#fafdfc] border border-gray-200 rounded-xl focus:ring-2 focus:ring-[#10a37f] focus:border-[#10a37f] outline-none text-sm font-bold text-slate-800 transition-all appearance-none cursor-pointer"
+              >
+                <option value="2026">2026</option>
+                <option value="2025">2025</option>
+              </select>
+            </div>
+          )}
           <div className="space-y-2">
             <label className="text-[11px] font-extrabold text-slate-500 uppercase tracking-wider">Kategori</label>
             <select

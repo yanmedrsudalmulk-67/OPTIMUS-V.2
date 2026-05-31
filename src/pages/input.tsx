@@ -20,6 +20,8 @@ import {
   FileUp,
   Clock,
   ArrowRight,
+  ChevronDown,
+  Save,
 } from "lucide-react";
 import { useStore, DataMutuPayload, VisiteData, JatuhData, Unit, IndicatorProfile } from "@/store/useStore";
 import { supabase } from "@/lib/supabase";
@@ -176,10 +178,12 @@ export default function InputData() {
     },
   });
 
+  /* eslint-disable react-hooks/incompatible-library */
   const watchKategori = watch("kategori");
   const watchIndikatorId = watch("indikator_id");
   const watchNumerator = watch("numerator_val");
   const watchDenominator = watch("denominator_val");
+  /* eslint-enable react-hooks/incompatible-library */
 
   // Filter indicator profiles dynamically from state/database
   const filteredIndikators = useMemo(() => {
@@ -527,7 +531,7 @@ export default function InputData() {
               Input Data Mutu RS
             </h1>
           </div>
-          <p className="text-gray-900 text-sm font-semibold">
+          <p className="text-gray-900 text-[10px] sm:text-sm font-semibold">
             Input Data INM, IMP-RS, IMP-Unit dan SPM secara realtime
           </p>
         </div>
@@ -551,17 +555,17 @@ export default function InputData() {
 
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-8">
           {/* STEP 1 & 2: UNIT & TANGGAL */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {/* 1. Pilih Unit Selector */}
-            <div className="space-y-3 relative" ref={unitDropdownRef}>
-              <label className="flex items-center justify-between text-sm font-extrabold text-slate-800 tracking-wide">
+            <div className="space-y-3 relative animate-in fade-in duration-300" ref={unitDropdownRef}>
+              <label className="flex items-center justify-between text-sm font-extrabold text-slate-800 tracking-wide h-8">
                 <span>1. Pilih Unit</span>
                 
                 {/* Admin-only Add Room trigger */}
                 <button
                   type="button"
                   onClick={handleOpenAddRoom}
-                  className="text-xs font-black text-emerald-600 hover:text-emerald-800 flex items-center justify-center bg-emerald-55 hover:bg-emerald-100/80 px-2 py-1 rounded-lg border border-emerald-100 transition-colors w-7 h-7"
+                  className="text-xs font-black text-[#10a37f] hover:text-emerald-800 flex items-center justify-center bg-emerald-50 hover:bg-emerald-100/80 px-2 py-1 rounded-lg border border-emerald-100 transition-colors w-7 h-7"
                   title="Tambah Ruangan"
                 >
                   <Plus size={14} className="stroke-[3]" />
@@ -572,11 +576,12 @@ export default function InputData() {
               <div className="relative">
                 <div
                   onClick={() => setShowUnitDropdown(!showUnitDropdown)}
-                  className="w-full px-5 py-4 rounded-xl border border-gray-200 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-all text-slate-800 font-bold bg-slate-50/50 hover:bg-white cursor-pointer flex items-center justify-between shadow-xs"
+                  className="w-full h-[56px] px-5 rounded-2xl border border-gray-200 outline-none transition-all text-slate-800 bg-white hover:border-[#10a37f]/50 cursor-pointer flex items-center justify-between shadow-xs select-none focus-within:border-[#10a37f] focus-within:ring-2 focus-within:ring-[#10a37f]/20"
                 >
-                  <span className={selectedUnit ? "text-slate-900" : "text-gray-400"}>
+                  <span className={selectedUnit ? "text-slate-900 text-sm font-semibold" : "text-gray-400 text-sm font-medium"}>
                     {selectedUnit ? selectedUnit.name : "Silahkan pilih unit"}
                   </span>
+                  <ChevronDown className={`text-gray-400 h-4 w-4 transition-transform duration-200 ${showUnitDropdown ? 'rotate-180' : ''}`} />
                 </div>
 
                 {showUnitDropdown && (
@@ -600,7 +605,7 @@ export default function InputData() {
                         </div>
                       ) : (
                         filteredUnits.map((u) => (
-                          <div
+                           <div
                             key={u.id}
                             onClick={() => {
                               setSelectedUnit(u);
@@ -649,15 +654,17 @@ export default function InputData() {
             </div>
 
             {/* 2. Pilih Tanggal Realtime */}
-            <div className="space-y-3">
-              <label className="text-sm font-extrabold text-slate-800 tracking-wide">
-                2. Tanggal input
+            <div className="space-y-3 animate-in fade-in duration-300">
+              <label className="flex items-center text-sm font-extrabold text-slate-800 tracking-wide h-8">
+                <span>2. Tanggal Input</span>
               </label>
-              <input
-                type="date"
-                {...register("tanggal")}
-                className="w-full px-5 py-4 rounded-xl border border-gray-200 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-all text-slate-800 font-bold bg-slate-50/50 hover:bg-white shadow-xs"
-              />
+              <div className="relative flex items-center h-[56px] w-full bg-white border border-gray-200 hover:border-[#10a37f]/50 focus-within:border-[#10a37f] focus-within:ring-2 focus-within:ring-[#10a37f]/20 rounded-2xl px-5 shadow-xs transition-all ring-offset-background">
+                <input
+                  type="date"
+                  {...register("tanggal")}
+                  className="w-full h-full bg-transparent outline-none text-slate-900 font-semibold text-sm cursor-pointer border-none p-0 focus:ring-0 leading-normal flex items-center [&::-webkit-calendar-picker-indicator]:cursor-pointer [&::-webkit-calendar-picker-indicator]:opacity-70 hover:[&::-webkit-calendar-picker-indicator]:opacity-100 pr-2"
+                />
+              </div>
               {errors.tanggal && <p className="text-red-500 text-xs font-semibold mt-1">{errors.tanggal.message}</p>}
             </div>
           </div>
@@ -1184,7 +1191,7 @@ export default function InputData() {
                       <div className="flex items-center gap-2.5 mb-4">
                         <Activity size={20} className="text-emerald-600" strokeWidth={2.5} />
                         <h4 className="font-extrabold text-[11px] tracking-widest text-[#0c2415] uppercase">
-                          NUMERATOR VALUE
+                          NUMERATOR
                         </h4>
                       </div>
                       <p className="text-xs text-slate-500 leading-relaxed font-semibold">
@@ -1208,7 +1215,7 @@ export default function InputData() {
                       <div className="flex items-center gap-2.5 mb-4">
                         <Layers size={20} className="text-emerald-700" strokeWidth={2.5} />
                         <h4 className="font-extrabold text-[11px] tracking-widest text-[#0c2415] uppercase">
-                          DENOMINATOR VALUE
+                          DENOMINATOR
                         </h4>
                       </div>
                       <p className="text-xs text-slate-500 leading-relaxed font-semibold">
@@ -1233,88 +1240,30 @@ export default function InputData() {
 
           {/* REALTIME SCORE PREVIEW & CALCULATION INSIGHT BAR */}
           {watchKategori !== "IKP" && selectedIndikatorProfile && (
-            <div className="bg-gradient-to-br from-emerald-900 to-emerald-950 p-8 rounded-[24px] border border-emerald-800 text-white shadow-xl flex flex-col md:flex-row items-center justify-between gap-8 animate-in fade-in duration-500">
-              <div className="flex flex-col md:flex-row items-center gap-6 text-center md:text-left">
-                {/* Premium Circular Progress Ring */}
-                <div className="relative flex items-center justify-center shrink-0">
-                  <svg className="w-24 h-24 transform -rotate-90">
-                    {/* Background circle */}
-                    <circle
-                      cx="48"
-                      cy="48"
-                      r={36}
-                      className="text-emerald-950/40"
-                      strokeWidth="8"
-                      stroke="currentColor"
-                      fill="transparent"
-                    />
-                    {/* Foreground circle with animation */}
-                    <motion.circle
-                      cx="48"
-                      cy="48"
-                      r={36}
-                      className="text-emerald-400"
-                      strokeWidth="8"
-                      strokeLinecap="round"
-                      stroke="currentColor"
-                      fill="transparent"
-                      strokeDasharray={2 * Math.PI * 36}
-                      strokeDashoffset={(2 * Math.PI * 36) - (computedCapaian / 100) * (2 * Math.PI * 36)}
-                      initial={{ strokeDashoffset: 2 * Math.PI * 36 }}
-                      animate={{ strokeDashoffset: (2 * Math.PI * 36) - (computedCapaian / 100) * (2 * Math.PI * 36) }}
-                      transition={{ duration: 0.5, ease: "easeOut" }}
-                    />
-                  </svg>
-                  {/* Indicator icon inside circle */}
-                  <span className="absolute text-sm font-black text-emerald-400">
-                    %
-                  </span>
-                </div>
+            <div className="bg-white rounded-[24px] border border-gray-100 shadow-[0_8px_30px_rgb(0,0,0,0.04)] p-6 md:p-10 flex flex-col items-center justify-center gap-4 animate-in fade-in duration-500 hover:shadow-[0_8px_40px_rgb(0,0,0,0.08)] transition-all max-w-2xl mx-auto w-full">
+              <span className="text-sm md:text-base font-semibold text-gray-500 tracking-wide md:mb-1">
+                Persentase Capaian
+              </span>
+              
+              <div className="flex flex-col items-center gap-5 mt-1">
+                <span className={`text-[60px] md:text-[72px] font-bold leading-none tracking-tight transition-all duration-500 drop-shadow-[0_4px_8px_rgba(0,0,0,0.15)] ${
+                  achievementStatus === "Tercapai" ? "text-[#10a37f]" :
+                  achievementStatus === "Mendekati" ? "text-amber-500" :
+                  "text-red-500"
+                }`}>
+                  {computedCapaian}%
+                </span>
                 
-                <div className="space-y-1.5">
-                  <span className="block text-xs font-black tracking-widest text-emerald-400 uppercase font-sans">
-                    REALTIME ANALYSIS: PERSENTASE CAPAIAN MUTU
-                  </span>
-                  <div className="flex flex-wrap items-center justify-center md:justify-start gap-3">
-                    <span className="text-4xl font-extrabold text-white tracking-tight">{computedCapaian}%</span>
-                    <span
-                      className={`text-xs font-black px-3 py-1 rounded-full border ${
-                        achievementStatus === "Tercapai"
-                          ? "bg-emerald-500/20 border-emerald-400/30 text-emerald-300"
-                          : achievementStatus === "Mendekati"
-                          ? "bg-orange-500/20 border-orange-400/30 text-orange-350"
-                          : "bg-red-500/20 border-red-400/30 text-red-300"
-                      }`}
-                    >
-                      {achievementStatus}
-                    </span>
-                  </div>
-                  <p className="text-xs text-emerald-200/70 font-semibold max-w-sm">
-                    {watchIndikatorId === "7" && `Formula: ${visiteGrid.filter((d) => d.jam_visite_kurang_14 && d.keterangan === "Sesuai Jadwal").length} / ${visiteGrid.length || 0} pasien patuh.`}
-                    {watchIndikatorId === "11" && `Formula: ${jatuhGrid.reduce((acc, curr) => acc + (curr.asesmen_awal ? 1 : 0) + (curr.asesmen_ulang ? 1 : 0) + (curr.intervensi ? 1 : 0), 0)} / ${jatuhGrid.length * 3 || 0} poin asesmen.`}
-                    {watchIndikatorId !== "7" && watchIndikatorId !== "11" && `Berdasarkan Nilai Pembilang (${watchNumerator ?? 0}) dibagi Nilai Penyebut (${watchDenominator ?? 0})`}
-                  </p>
-                </div>
+                <span className={`px-6 py-2.5 rounded-full text-sm md:text-base font-bold shadow-sm transition-colors duration-500 ${
+                  achievementStatus === "Tercapai" 
+                    ? "bg-emerald-50 text-[#10a37f] border border-emerald-100/50" 
+                    : achievementStatus === "Mendekati" 
+                    ? "bg-amber-50 text-amber-600 border border-amber-100/50"
+                    : "bg-red-50 text-red-600 border border-red-100/50"
+                }`}>
+                  {achievementStatus === "Mendekati" ? "Mendekati Target" : achievementStatus}
+                </span>
               </div>
-
-              {/* Upload Proof Document inside the same card */}
-              {watchIndikatorId !== "3" && watchIndikatorId !== "5" && (
-                <div className="flex flex-col items-center md:items-end gap-3 shrink-0">
-                  <span className="text-[10px] text-emerald-300 font-extrabold tracking-widest uppercase font-sans">Lampirkan Bukti Fisik</span>
-                  <div className="flex items-center gap-3">
-                    <label className="text-xs font-black text-emerald-105 cursor-pointer hover:text-white bg-emerald-800/40 hover:bg-emerald-800/60 px-4 py-2.5 rounded-xl border border-emerald-700/50 transition-all flex items-center gap-1.5 shadow-xs">
-                      <FileUp size={14} />
-                      {uploadedProofName ? "Ubah Berkas" : "Upload Bukti Audit"}
-                      <input type="file" onChange={handleFileUploadMock} className="hidden" accept=".jpg,.png,.pdf" />
-                    </label>
-                    {uploadedProofName && (
-                      <span className="text-xs font-bold text-emerald-300 truncate max-w-[150px]" title={uploadedProofName}>
-                        📎 {uploadedProofName}
-                      </span>
-                    )}
-                  </div>
-                </div>
-              )}
             </div>
           )}
 
@@ -1335,7 +1284,7 @@ export default function InputData() {
                 </>
               ) : (
                 <>
-                  💾 Simpan {watchKategori === "IKP" ? "Insiden Keselamatan" : "Hasil Capaian"}
+                  <Save size={18} /> Simpan Data
                 </>
               )}
             </button>

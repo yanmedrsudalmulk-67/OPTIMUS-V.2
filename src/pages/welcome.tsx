@@ -145,6 +145,7 @@ export default function WelcomePage() {
           // Google Drive stream representation
           <div className="absolute inset-0">
             {/* Fallback layout styled cleanly with static image but subtle blur */}
+            {/* eslint-disable-next-line @next/next/no-img-element */}
             <img 
               src={backgroundImageSrc}
               alt="Background Fallback" 
@@ -169,12 +170,15 @@ export default function WelcomePage() {
             className="w-full h-full object-cover opacity-[0.6]"
           />
         ) : (
-          <img 
-            src={backgroundImageSrc}
-            alt="Welcome Background Image Fallback" 
-            className="w-full h-full object-cover opacity-30 transition-all duration-700"
-            referrerPolicy="no-referrer"
-          />
+          <>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img 
+              src={backgroundImageSrc}
+              alt="Welcome Background Image Fallback" 
+              className="w-full h-full object-cover opacity-30 transition-all duration-700"
+              referrerPolicy="no-referrer"
+            />
+          </>
         )}
 
         {/* Cinematic dark mask overlay */}
@@ -188,8 +192,8 @@ export default function WelcomePage() {
             +
           </div>
           <div className="flex flex-col">
-            <span className="font-extrabold text-sm md:text-md uppercase tracking-widest text-emerald-400">OPTIMUS</span>
-            <span className="text-[9px] text-slate-400 font-bold uppercase tracking-wider block">UOBK RSUD AL-MULK</span>
+            <span style={{ fontSize: "17px" }} className="font-extrabold uppercase tracking-widest text-emerald-400">OPTIMUS</span>
+            <span style={{ fontSize: "16px" }} className="text-slate-400 font-bold uppercase tracking-wider block">UOBK RSUD AL-MULK</span>
           </div>
         </div>
 

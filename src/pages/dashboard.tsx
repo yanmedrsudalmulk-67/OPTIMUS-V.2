@@ -15,6 +15,11 @@ import {
   X,
   Search,
   Filter,
+  FileText,
+  Users,
+  ShieldCheck,
+  Building,
+  Building2,
 } from "lucide-react";
 import {
   XAxis,
@@ -38,6 +43,59 @@ import { supabase } from "@/lib/supabase";
 import { formatTarget } from "../../lib/utils";
 import Link from "next/link";
 
+const CustomTooltip = ({ active, payload, label }: any) => {
+  if (active && payload && payload.length) {
+    return (
+      <div className="bg-white p-3 border border-gray-100 shadow-xl rounded-xl">
+        <p className="text-xs font-bold text-gray-800 mb-2">{label}</p>
+        {payload.map((entry: any, index: number) => (
+          <div key={index} className="flex flex-row items-center justify-between gap-4 mb-1">
+            <div className="flex items-center gap-1.5">
+              <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: entry.color }} />
+              <span className="text-[10px] font-semibold text-gray-500 uppercase">{entry.name}</span>
+            </div>
+            <span className="text-xs font-black" style={{ color: entry.color }}>
+              {entry.value}%
+            </span>
+          </div>
+        ))}
+      </div>
+    );
+  }
+  return null;
+};
+
+const TwoDShadowBar = (props: any) => {
+  const { fill, x, y, width, height } = props;
+  
+  if (height === undefined || height <= 0 || Number.isNaN(height)) {
+     return <rect x={x} y={y} width={width} height={0} fill={fill} />;
+  }
+
+  const radius = Math.min(6, width / 2);
+  const path = `
+    M ${x},${y + height}
+    L ${x},${y + radius}
+    A ${radius},${radius} 0 0,1 ${x + radius},${y}
+    L ${x + width - radius},${y}
+    A ${radius},${radius} 0 0,1 ${x + width},${y + radius}
+    L ${x + width},${y + height}
+    Z
+  `;
+
+  return (
+    <g>
+      <path 
+        d={path} 
+        fill="#000000" 
+        opacity="0.18" 
+        style={{ transform: 'translate(3px, 3px)', filter: 'blur(1.5px)' }}
+      />
+      <path d={path} fill={fill} />
+    </g>
+  );
+};
+
 export default function Dashboard() {
   // Redirect to welcome screen on very first load
   useEffect(() => {
@@ -53,6 +111,11 @@ export default function Dashboard() {
   const addDataMutu = useStore((state) => state.addDataMutu);
   const setDataMutuList = useStore((state) => state.setDataMutuList);
   const indicatorProfiles = useStore((state) => state.indicatorProfiles);
+
+  const inmCount = indicatorProfiles.filter((p) => p.category === "INM").length;
+  const impRsCount = indicatorProfiles.filter((p) => p.category === "IMP-RS").length;
+  const impUnitCount = indicatorProfiles.filter((p) => p.category === "IMP-Unit").length;
+  const spmCount = indicatorProfiles.filter((p) => p.category === "SPM").length;
 
   const [selectedIndikatorId, setSelectedIndikatorId] = useState("");
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
@@ -283,11 +346,7 @@ export default function Dashboard() {
     } = {};
     sorted.forEach((item) => {
       const d = new Date(item.tanggal);
-      let mLabel = d.toLocaleString("id-ID", { month: "short" }) + " " + d.getFullYear();
-      
-      if (periodeMode === "Bulanan") {
-        mLabel = d.toLocaleString("id-ID", { day: 'numeric', month: 'short' });
-      }
+      let mLabel = d.toLocaleString("id-ID", { month: "long" });
 
       if (!monthlyGroups[mLabel]) {
         const rawTarget = item.target || selectedIndikatorProfile?.target || 80;
@@ -312,22 +371,53 @@ export default function Dashboard() {
     });
   }, [filteredDataMutu, activeIndikatorId, selectedIndikatorProfile, periodeMode]);
 
+  const selectedChartAnalysis = useMemo(() => {
+    if (!selectedChartData || selectedChartData.length === 0 || !selectedIndikatorProfile) return null;
+    
+    let totalCap = 0;
+    selectedChartData.forEach(d => totalCap += d.Capaian);
+    const avgCap = selectedChartData.length > 0 ? parseFloat((totalCap / selectedChartData.length).toFixed(2)) : 0;
+    const target = selectedChartData[0]?.Target || 80;
+    
+    const isReverse = selectedIndikatorProfile?.reverse || false;
+    const isSuccess = isReverse ? avgCap <= target : avgCap >= target;
+
+    let status = "Tidak Tercapai";
+    if (isSuccess) status = "Tercapai";
+    else if (Math.abs(avgCap - target) <= 10) status = "Mendekati Target";
+
+    let longPeriodName = `Periode Tahun ${selectedTahun}`;
+    if (periodeMode === "Bulanan") longPeriodName = `Periode Bulan ${selectedBulan} Tahun ${selectedTahun}`;
+    if (periodeMode === "Triwulan") {
+        if (selectedTriwulan.includes("1")) longPeriodName = `Periode Triwulan I (Januari - Maret) Tahun ${selectedTahun}`;
+        if (selectedTriwulan.includes("2")) longPeriodName = `Periode Triwulan II (April - Juni) Tahun ${selectedTahun}`;
+        if (selectedTriwulan.includes("3")) longPeriodName = `Periode Triwulan III (Juli - September) Tahun ${selectedTahun}`;
+        if (selectedTriwulan.includes("4")) longPeriodName = `Periode Triwulan IV (Oktober - Desember) Tahun ${selectedTahun}`;
+    }
+    if (periodeMode === "Semester") {
+        if (selectedSemester.includes("1")) longPeriodName = `Periode Semester I (Januari - Juni) Tahun ${selectedTahun}`;
+        if (selectedSemester.includes("2")) longPeriodName = `Periode Semester II (Juli - Desember) Tahun ${selectedTahun}`;
+    }
+
+    return { avgCap, target, status, longPeriodName, indicatorTitle: selectedIndikatorProfile.indicator_title };
+  }, [selectedChartData, selectedIndikatorProfile, periodeMode, selectedBulan, selectedTriwulan, selectedSemester, selectedTahun]);
+
   return (
     <div className="space-y-10 animate-in fade-in slide-in-from-bottom-4 duration-700 pb-16">
       {/* Header and Filter */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-gray-100 pb-6 mb-4">
+      <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-4 border-b border-gray-100 pb-6 mb-4">
         <div>
           <div className="flex items-start md:items-center gap-3">
             <h1 className="text-2xl md:text-3xl font-extrabold text-[#10a37f] tracking-tight leading-tight">
               Dashboard Mutu Rumah Sakit
             </h1>
           </div>
-          <p className="text-gray-900 mt-2 text-[9px] sm:text-[10px] md:text-sm font-semibold truncate leading-relaxed max-w-[280px] sm:max-w-full">
+          <p style={{ color: "#4a5565" }} className="mt-2 text-[9px] sm:text-[10px] md:text-sm font-semibold whitespace-nowrap leading-relaxed">
             Pemantauan Indikator Mutu & Keselamatan Pasien UOBK RSUD AL-MULK
           </p>
         </div>
 
-        <div className="flex flex-wrap items-center gap-2 md:gap-3 w-full md:w-auto">
+        <div className="flex flex-wrap items-center gap-2 md:gap-3 w-full xl:w-auto justify-start md:justify-end xl:justify-start mt-2 xl:mt-0">
           <div className="flex items-center gap-1.5 bg-white border border-gray-200 rounded-lg md:rounded-xl px-2.5 md:px-2 lg:px-2.5 shadow-sm shrink-0">
             <Filter size={14} className="text-emerald-600 hidden md:block" />
             <select 
@@ -392,29 +482,53 @@ export default function Dashboard() {
       </div>
 
       {/* KPI Overview Cards */}
-      <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-4 lg:gap-6">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 lg:gap-4 xl:gap-6">
         {/* Card 1: Pemenuhan Target INM */}
         <div 
           onClick={() => setActiveModal("TERCAPAI")}
-          className="bg-white/80 backdrop-blur-lg rounded-2xl p-4 md:p-4 lg:p-6 shadow-[0_8px_30px_rgb(0,0,0,0.02)] border border-white/60 flex flex-col justify-between hover:-translate-y-1 hover:shadow-lg hover:border-emerald-200 cursor-pointer transition-all duration-300"
+          className="bg-white rounded-[20px] md:rounded-[24px] lg:rounded-[28px] p-3 md:p-4 lg:p-6 shadow-[0_8px_30px_rgb(0,0,0,0.04),_0_8px_20px_-8px_rgba(16,163,127,0.25)] border border-emerald-100/30 border-b-[4px] border-b-emerald-100 flex flex-col hover:-translate-y-1.5 hover:shadow-[0_12px_40px_rgb(16,163,127,0.15)] hover:border-emerald-200 hover:border-b-emerald-300 cursor-pointer transition-all duration-300 relative overflow-hidden group"
         >
-          <div className="flex flex-col md:flex-row md:items-start gap-1.5 md:gap-3 lg:gap-4">
-            <div className="p-1.5 md:p-2 lg:p-3 rounded-xl bg-orange-50 text-orange-500 w-fit shrink-0">
-              <Target className="h-4 w-4 md:h-5 md:w-5 lg:h-[26px] lg:w-[26px]" strokeWidth={2.5} />
+          <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-50 rounded-full blur-3xl opacity-50 group-hover:opacity-80 transition-opacity pointer-events-none" />
+          <div className="relative z-10 flex flex-col h-full gap-2 lg:gap-4">
+            <div className="flex items-start justify-between">
+              <div className="flex flex-col items-start gap-2 lg:gap-4">
+                <div className="p-2 md:p-2.5 lg:p-3.5 rounded-[12px] lg:rounded-[16px] bg-gradient-to-br from-emerald-400 to-emerald-600 text-white shadow-lg shadow-emerald-200/50 flex-shrink-0">
+                  <Target className="h-4 w-4 md:h-5 md:w-5 lg:h-6 lg:w-6" strokeWidth={2.5} />
+                </div>
+                <div>
+                  <p className="text-[9px] md:text-[9.5px] lg:text-xs font-bold text-gray-500 mb-0.5 lg:mb-1 leading-snug tracking-wide">
+                    Pemenuhan Target INM
+                  </p>
+                  <h3 className="text-2xl md:text-3xl lg:text-[44px] font-extrabold text-emerald-600 lg:text-slate-800 leading-none tracking-tight">
+                    {tercapaiCount}
+                    <span className="text-sm md:text-base lg:text-2xl text-gray-400 font-bold ml-1.5">/ 13</span>
+                  </h3>
+                </div>
+              </div>
+              <div className="p-1.5 lg:p-2 bg-emerald-50 rounded-lg lg:rounded-xl text-emerald-600 shrink-0 hidden md:block">
+                <TrendingUp className="w-4 h-4 lg:w-5 lg:h-5" strokeWidth={2.5} />
+              </div>
             </div>
-            <div>
-              <p className="text-[9px] md:text-[11px] lg:text-[13px] font-bold text-gray-500 mb-0.5 md:mb-0.5 lg:mb-1 leading-tight">
-                Pemenuhan Target INM
-              </p>
-              <h3 className="text-lg md:text-2xl lg:text-3xl font-black text-gray-900 leading-none">
-                {tercapaiCount}
-                <span className="text-xs md:text-sm lg:text-xl text-gray-400"> / 13</span>
-              </h3>
+            {/* Progress bar */}
+            <div className="space-y-1.5 mt-1">
+              <div className="flex items-center justify-between text-[8px] lg:text-xs font-bold text-gray-400">
+                <span>0%</span>
+                <span>{((tercapaiCount / 13) * 100).toFixed(0)}%</span>
+              </div>
+              <div className="h-1 lg:h-1.5 w-full bg-gray-100 rounded-full overflow-hidden">
+                <div 
+                  className="h-full bg-gradient-to-r from-emerald-400 to-emerald-500 rounded-full relative overflow-hidden"
+                  style={{ width: `${(tercapaiCount / 13) * 100}%` }}
+                >
+                  <div className="absolute top-0 left-0 bottom-0 right-0 bg-white/20 animate-pulse" />
+                </div>
+              </div>
             </div>
           </div>
-          <div className="mt-2 md:mt-3 lg:mt-5 pt-1.5 md:pt-3 lg:pt-4 border-t border-gray-100/50">
-            <span className="text-[8px] md:text-[10px] lg:text-xs font-bold text-emerald-600 tracking-wide flex items-center gap-1 leading-tight">
-              {((tercapaiCount / 13) * 100).toFixed(1)}% Indikator Tercapai
+          <div className="relative z-10 mt-auto pt-3 md:pt-4 border-t border-gray-100/80">
+            <span className="px-2 lg:px-4 py-1.5 lg:py-2.5 rounded-full bg-emerald-50/80 text-emerald-600 text-[8px] md:text-[9px] lg:text-xs font-bold flex items-center justify-center gap-1.5 w-full transition-colors group-hover:bg-emerald-100/80">
+              <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0" />
+              {tercapaiCount > 0 ? "Target INM Tercapai" : "Belum Ada Indikator Tercapai"}
             </span>
           </div>
         </div>
@@ -422,74 +536,144 @@ export default function Dashboard() {
         {/* Card 2: Indikator Belum Tercapai */}
         <div 
           onClick={() => setActiveModal("BELUM_TERCAPAI")}
-          className="bg-white/80 backdrop-blur-lg rounded-2xl p-4 md:p-4 lg:p-6 shadow-[0_8px_30px_rgb(0,0,0,0.02)] border border-white/60 flex flex-col justify-between hover:-translate-y-1 hover:shadow-lg hover:border-red-200 cursor-pointer transition-all duration-300"
+          className="bg-white rounded-[20px] md:rounded-[24px] lg:rounded-[28px] p-3 md:p-4 lg:p-6 shadow-[0_8px_30px_rgb(0,0,0,0.04),_0_8px_20px_-8px_rgba(239,68,68,0.25)] border border-red-100/30 border-b-[4px] border-b-red-100 flex flex-col hover:-translate-y-1.5 hover:shadow-[0_12px_40px_rgba(239,68,68,0.15)] hover:border-red-200 hover:border-b-red-300 cursor-pointer transition-all duration-300 relative overflow-hidden group"
         >
-          <div className="flex flex-col md:flex-row md:items-start gap-1.5 md:gap-3 lg:gap-4">
-            <div className="p-1.5 md:p-2 lg:p-3 rounded-xl bg-red-50 text-red-500 w-fit shrink-0">
-              <AlertTriangle className="h-4 w-4 md:h-5 md:w-5 lg:h-[26px] lg:w-[26px]" strokeWidth={2.5} />
+          <div className="absolute top-0 right-0 w-32 h-32 bg-red-50 rounded-full blur-3xl opacity-50 group-hover:opacity-80 transition-opacity pointer-events-none" />
+          <div className="relative z-10 flex flex-col h-full gap-2 lg:gap-4">
+            <div className="flex items-start justify-between">
+              <div className="flex flex-col items-start gap-2 lg:gap-4">
+                <div className="p-2 md:p-2.5 lg:p-3.5 rounded-[12px] lg:rounded-[16px] bg-gradient-to-br from-red-400 to-red-500 text-white shadow-lg shadow-red-200/50 flex-shrink-0">
+                  <AlertTriangle className="h-4 w-4 md:h-5 md:w-5 lg:h-6 lg:w-6" strokeWidth={2.5} />
+                </div>
+                <div>
+                  <p className="text-[9px] md:text-[9.5px] lg:text-xs font-bold text-gray-500 mb-0.5 lg:mb-1 leading-snug tracking-wide">
+                    Indikator Belum Tercapai
+                  </p>
+                  <h3 className="text-2xl md:text-3xl lg:text-[44px] font-extrabold text-red-500 lg:text-slate-800 leading-none tracking-tight">
+                    {belumTercapaiCount}
+                  </h3>
+                </div>
+              </div>
+              <div className="p-1.5 lg:p-2 bg-red-50 rounded-lg lg:rounded-xl text-red-500 shrink-0 hidden md:block">
+                <TrendingDown className="w-4 h-4 lg:w-5 lg:h-5" strokeWidth={2.5} />
+              </div>
             </div>
-            <div>
-              <p className="text-[9px] md:text-[11px] lg:text-[13px] font-bold text-gray-500 mb-0.5 md:mb-0.5 lg:mb-1 leading-tight">
-                Indikator Belum Tercapai
-              </p>
-              <h3 className="text-lg md:text-2xl lg:text-3xl font-black text-gray-900 leading-none">
-                {belumTercapaiCount}
-              </h3>
+            
+            {/* Added spacer to match Card 1 layout height natively */}
+            <div className="space-y-1.5 mt-1 opacity-0 pointer-events-none flex-shrink-0">
+               <div className="flex items-center justify-between text-[8px] lg:text-xs font-bold text-gray-400"><span>0%</span></div>
+               <div className="h-1 lg:h-1.5 w-full bg-gray-100 rounded-full overflow-hidden" />
             </div>
           </div>
-          <div className="mt-2 md:mt-3 lg:mt-5 pt-1.5 md:pt-3 lg:pt-4 border-t border-gray-100/50">
-            <div className="text-[8px] md:text-[10px] lg:text-xs font-bold text-red-500 flex items-center gap-1 tracking-wide leading-tight break-words">
-              Perlu perbaikan mutu
-            </div>
+          <div className="relative z-10 mt-auto pt-3 md:pt-4 border-t border-gray-100/80">
+            <span className="px-2 lg:px-4 py-1.5 lg:py-2.5 rounded-full bg-red-50/80 text-red-600 text-[8px] md:text-[9px] lg:text-xs font-bold flex items-center justify-center gap-1.5 w-full transition-colors group-hover:bg-red-100/80">
+              <div className="w-1.5 h-1.5 rounded-full bg-red-500 shrink-0" />
+              Perlu Perbaikan Mutu
+            </span>
           </div>
         </div>
 
-        {/* Card 3: Kejadian IKP Tercatat */}
+        {/* Card 3: Kejadian IKP */}
         <div 
           onClick={() => setActiveModal("IKP")}
-          className="bg-white/80 backdrop-blur-lg rounded-2xl p-4 md:p-4 lg:p-6 shadow-[0_8px_30px_rgb(0,0,0,0.02)] border border-white/60 flex flex-col justify-between hover:-translate-y-1 hover:shadow-lg hover:border-blue-200 cursor-pointer transition-all duration-300"
+          className="bg-white rounded-[20px] md:rounded-[24px] lg:rounded-[28px] p-3 md:p-4 lg:p-6 shadow-[0_8px_30px_rgb(0,0,0,0.04),_0_8px_20px_-8px_rgba(59,130,246,0.25)] border border-blue-100/30 border-b-[4px] border-b-blue-100 flex flex-col hover:-translate-y-1.5 hover:shadow-[0_12px_40px_rgba(59,130,246,0.15)] hover:border-blue-200 hover:border-b-blue-300 cursor-pointer transition-all duration-300 relative overflow-hidden group"
         >
-          <div className="flex flex-col md:flex-row md:items-start gap-1.5 md:gap-3 lg:gap-4">
-            <div className="p-1.5 md:p-2 lg:p-3 rounded-xl bg-blue-50 text-blue-500 w-fit shrink-0">
-              <ShieldAlert className="h-4 w-4 md:h-5 md:w-5 lg:h-[26px] lg:w-[26px]" strokeWidth={2.5} />
+          <div className="absolute top-0 right-0 w-32 h-32 bg-blue-50 rounded-full blur-3xl opacity-50 group-hover:opacity-80 transition-opacity pointer-events-none" />
+          <div className="relative z-10 flex flex-col h-full gap-2 lg:gap-4">
+            <div className="flex items-start justify-between">
+              <div className="flex flex-col items-start gap-2 lg:gap-4">
+                <div className="p-2 md:p-2.5 lg:p-3.5 rounded-[12px] lg:rounded-[16px] bg-gradient-to-br from-blue-400 to-blue-500 text-white shadow-lg shadow-blue-200/50 flex-shrink-0">
+                  <ShieldAlert className="h-4 w-4 md:h-5 md:w-5 lg:h-6 lg:w-6" strokeWidth={2.5} />
+                </div>
+                <div>
+                  <p className="text-[9px] md:text-[9.5px] lg:text-xs font-bold text-gray-500 mb-0.5 lg:mb-1 leading-snug tracking-wide">
+                    Kejadian IKP Tercatat
+                  </p>
+                  <h3 className="text-2xl md:text-3xl lg:text-[44px] font-extrabold text-blue-500 lg:text-slate-800 leading-none tracking-tight flex items-baseline gap-1.5">
+                    {totalIncidentCount}
+                    <span className="text-xs md:text-sm lg:text-xl text-gray-400 font-bold">Laporan</span>
+                  </h3>
+                </div>
+              </div>
+              <div 
+                className="p-1.5 lg:p-2 bg-blue-50 rounded-lg lg:rounded-xl text-blue-500 shrink-0 hidden md:block"
+                style={{ paddingBottom: "8px", marginLeft: "-20px" }}
+              >
+                <FileText className="w-4 h-4 lg:w-5 lg:h-5" strokeWidth={2.5} />
+              </div>
             </div>
-            <div>
-              <p className="text-[9px] md:text-[11px] lg:text-[13px] font-bold text-gray-500 mb-0.5 md:mb-0.5 lg:mb-1 leading-tight">
-                Kejadian IKP Tercatat
-              </p>
-              <h3 className="text-lg md:text-2xl lg:text-3xl font-black text-gray-900 leading-none">
-                {totalIncidentCount}{" "}
-                <span className="text-[9px] md:text-[11px] lg:text-sm text-gray-400 font-bold">Laporan</span>
-              </h3>
+
+            {/* Added spacer to match Card 1 layout height natively */}
+            <div className="space-y-1.5 mt-1 opacity-0 pointer-events-none flex-shrink-0">
+               <div className="flex items-center justify-between text-[8px] lg:text-xs font-bold text-gray-400"><span>0%</span></div>
+               <div className="h-1 lg:h-1.5 w-full bg-gray-100 rounded-full overflow-hidden" />
             </div>
           </div>
-          <div className="mt-2 md:mt-3 lg:mt-5 pt-1.5 md:pt-3 lg:pt-4 border-t border-gray-100/50">
-            <span className="text-[8px] md:text-[10px] lg:text-xs font-bold text-slate-500 tracking-wide leading-tight break-words">
-              Jumlah Kejadian Nyaris/Cidera
-            </span>
+          <div className="relative z-10 mt-auto pt-3 md:pt-4 border-t border-gray-100/80">
+            <div className="flex flex-row md:flex-col items-center justify-between md:justify-center bg-gray-50/50 hover:bg-gray-100/50 transition-colors px-2 lg:px-4 py-1.5 lg:py-2.5 rounded-full md:rounded-xl w-full gap-1 md:gap-1.5">
+              <span className="text-blue-600 text-[8px] md:text-[9px] lg:text-[11px] xl:text-xs font-bold flex items-center gap-1.5 truncate">
+                <div className="w-1.5 h-1.5 rounded-full bg-blue-500 shrink-0" />
+                Laporan Masuk
+              </span>
+              <span className="px-1.5 md:px-2 lg:px-3 py-0.5 lg:py-1 rounded-full bg-blue-100/50 text-blue-700 text-[7px] md:text-[8px] lg:text-[9px] xl:text-[10px] font-extrabold uppercase flex items-center gap-1 shadow-sm border border-blue-200/30 flex-shrink-0">
+                Realtime <div className="w-1 h-1 lg:w-1.5 lg:h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+              </span>
+            </div>
           </div>
         </div>
 
         {/* Card 4: Total Indikator */}
         <div 
           onClick={() => setActiveModal("ALL")}
-          className="bg-white/80 backdrop-blur-lg rounded-2xl p-4 md:p-4 lg:p-6 shadow-[0_8px_30px_rgb(0,0,0,0.02)] border border-white/60 flex flex-col justify-between hover:-translate-y-1 hover:shadow-lg hover:border-teal-200 cursor-pointer transition-all duration-300"
+          className="bg-white rounded-[20px] md:rounded-[24px] lg:rounded-[28px] p-3 md:p-4 lg:p-6 shadow-[0_8px_30px_rgb(0,0,0,0.04),_0_8px_20px_-8px_rgba(249,115,22,0.25)] border border-orange-100/30 border-b-[4px] border-b-orange-100 flex flex-col hover:-translate-y-1.5 hover:shadow-[0_12px_40px_rgba(249,115,22,0.15)] hover:border-orange-200 hover:border-b-orange-300 cursor-pointer transition-all duration-300 relative overflow-hidden group"
         >
-          <div className="flex flex-col md:flex-row md:items-start gap-1.5 md:gap-3 lg:gap-4">
-            <div className="p-1.5 md:p-2 lg:p-3 rounded-xl bg-teal-50 text-teal-650 w-fit shrink-0">
-              <ListTodo className="h-4 w-4 md:h-5 md:w-5 lg:h-[26px] lg:w-[26px]" strokeWidth={2.5} />
+          <div className="absolute top-0 right-0 w-32 h-32 bg-orange-50 rounded-full blur-3xl opacity-50 group-hover:opacity-80 transition-opacity pointer-events-none" />
+          <div className="relative z-10 flex flex-col h-full gap-2 lg:gap-4">
+            <div className="flex items-start justify-between">
+              <div className="flex flex-col items-start gap-2 lg:gap-4">
+                <div className="p-2 md:p-2.5 lg:p-3.5 rounded-[12px] lg:rounded-[16px] bg-[#f97316] text-white shadow-lg shadow-orange-200/50 flex-shrink-0">
+                  <ListTodo className="h-5 w-5 md:h-6 md:w-6 lg:h-7 lg:w-7" strokeWidth={2.5} />
+                </div>
+                <div>
+                  <p className="text-[10px] md:text-[11px] lg:text-[13px] font-bold text-slate-500 mb-0.5 tracking-tight leading-snug">
+                    Total Indikator Aktif
+                  </p>
+                  <h3 className="text-[28px] md:text-[32px] lg:text-[44px] font-extrabold text-slate-800 leading-none tracking-tight">
+                    {indicatorProfiles.length}
+                  </h3>
+                </div>
+              </div>
+              <div className="p-1.5 lg:p-2 bg-orange-50 rounded-lg lg:rounded-[14px] text-orange-600 shrink-0 hidden md:block">
+                <Users className="w-5 h-5 lg:w-6 lg:h-6" strokeWidth={2.5} />
+              </div>
             </div>
-            <div>
-              <p className="text-[9px] md:text-[11px] lg:text-[13px] font-bold text-gray-500 mb-0.5 md:mb-0.5 lg:mb-1 leading-tight">
-                Total Kamar Indikator
-              </p>
-              <h3 className="text-lg md:text-2xl lg:text-3xl font-black text-gray-900 leading-none">
-                {indicatorProfiles.length}
-              </h3>
+
+            <div className="grid grid-cols-2 gap-x-2 gap-y-2 mt-auto pt-3 md:pt-4 border-t border-gray-100/80">
+              <div className="flex items-center gap-1.5">
+                <ShieldCheck className="w-3.5 h-3.5 lg:w-4 lg:h-4 text-emerald-500 shrink-0" strokeWidth={2.5} />
+                <span className="text-[9px] md:text-[10px] lg:text-[12px] font-semibold text-slate-600 truncate">
+                  INM: <span className="text-slate-800">{inmCount}</span>
+                </span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <Building className="w-3.5 h-3.5 lg:w-4 lg:h-4 text-blue-500 shrink-0" strokeWidth={2.5} />
+                <span className="text-[9px] md:text-[10px] lg:text-[12px] font-semibold text-slate-600 truncate">
+                  IMP-RS: <span className="text-slate-800">{impRsCount}</span>
+                </span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <Building2 className="w-3.5 h-3.5 lg:w-4 lg:h-4 text-purple-500 shrink-0" strokeWidth={2.5} />
+                <span className="text-[9px] md:text-[10px] lg:text-[12px] font-semibold text-slate-600 truncate">
+                  IMP-Unit: <span className="text-slate-800">{impUnitCount}</span>
+                </span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <FileText className="w-3.5 h-3.5 lg:w-4 lg:h-4 text-orange-500 shrink-0" strokeWidth={2.5} />
+                <span className="text-[9px] md:text-[10px] lg:text-[12px] font-semibold text-slate-600 truncate">
+                  SPM: <span className="text-slate-800">{spmCount}</span>
+                </span>
+              </div>
             </div>
-          </div>
-          <div className="mt-2 md:mt-3 lg:mt-5 pt-1.5 md:pt-3 lg:pt-4 border-t border-gray-100/50 flex flex-wrap md:flex-nowrap items-center gap-1 md:gap-1.5 text-[8px] md:text-[10px] lg:text-xs font-bold text-emerald-600 leading-tight">
-            <CheckCircle2 className="h-3 md:h-3.5 w-3 md:w-3.5 shrink-0" /> Berjalan Aktif
           </div>
         </div>
       </div>
@@ -498,12 +682,9 @@ export default function Dashboard() {
       <div className="bg-emerald-50/20 rounded-2xl md:rounded-[32px] p-4 md:p-6 lg:p-8 border border-emerald-50 shadow-sm">
         <div className="flex flex-col md:flex-row md:items-center justify-between mb-4 md:mb-8 gap-3 md:gap-4 md:px-2">
           <div>
-            <h2 className="text-xl md:text-2xl font-extrabold text-emerald-950 tracking-tight leading-tight">
+            <h2 className="text-xl md:text-2xl font-extrabold text-[#10a37f] tracking-tight leading-normal">
               13 Indikator Nasional Mutu (INM)
             </h2>
-            <p className="text-[7.5px] sm:text-[9px] md:text-xs text-gray-400 font-bold mt-1 uppercase tracking-wider leading-relaxed truncate max-w-[280px] sm:max-w-[400px] md:max-w-full">
-              Status Capaian Berdasarkan Standar Pelayanan Rumah Sakit
-            </p>
           </div>
           <div className="flex flex-wrap items-center gap-2 md:gap-5 text-[9px] md:text-xs font-bold text-gray-600">
             <div className="flex items-center gap-1.5 md:gap-2">
@@ -584,15 +765,12 @@ export default function Dashboard() {
       <div className="bg-white/80 backdrop-blur-lg rounded-2xl p-4 lg:p-8 border border-white/60 shadow-[0_10px_35px_-5px_rgba(0,0,0,0.02)] space-y-4 md:space-y-6 hover:shadow-md transition-all duration-300">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 md:gap-4">
           <div>
-            <div className="flex items-center gap-2 mb-1">
+            <div className="flex items-center gap-2">
               <BarChart3 className="text-[#10a37f] h-[18px] w-[18px] md:h-5 md:w-5" />
-              <h3 className="text-sm md:text-xl font-extrabold text-emerald-950 tracking-tight leading-tight">
-                Tren Capaian Target INM Terpilih
+              <h3 className="text-sm md:text-xl font-extrabold text-[#10a37f] tracking-tight leading-normal">
+                GRAFIK CAPAIAN MUTU INM
               </h3>
             </div>
-            <p className="text-gray-400 text-[9px] md:text-xs font-semibold uppercase tracking-wider leading-relaxed">
-              Pilih indikator di kanan untuk menampilkan diagram batang & garis secara realtime dari data input
-            </p>
           </div>
 
           {/* Interactive Selection filter - Professional Searchable Dropdown */}
@@ -663,26 +841,8 @@ export default function Dashboard() {
           </div>
         </div>
 
-        <div className="bg-slate-50/50 p-2.5 md:p-4 rounded-xl border border-slate-100 flex flex-col md:flex-row md:items-center justify-between gap-2 md:gap-4">
-          <div>
-            <span className="text-[9px] md:text-[10px] font-black text-emerald-800 tracking-wider uppercase bg-emerald-100 px-2 py-0.5 md:px-2.5 md:py-1 rounded">
-              Pencapaian Indikator Aktif
-            </span>
-            <h4 className="text-[11px] md:text-xs font-bold text-emerald-950 mt-1 md:mt-1.5 leading-snug">
-              {selectedIndikatorProfile?.indicator_title}
-            </h4>
-          </div>
-          <div className="flex items-center justify-between md:justify-start gap-2 whitespace-nowrap mt-1 md:mt-0">
-            <span className="text-[10px] md:text-xs font-bold text-gray-500">Target Sasaran:</span>
-            <span className="text-[10px] md:text-xs font-black text-teal-850 bg-teal-50 border border-teal-100 px-1.5 md:px-2 py-0.5 rounded">
-              {formatTarget(selectedIndikatorProfile?.target, selectedIndikatorProfile?.measurement_unit, selectedIndikatorProfile?.reverse)}
-            </span>
-          </div>
-        </div>
-
-        {/* Dynamic ComposedChart rendering */}
-        <div className="w-full flex items-center justify-center">
-          {selectedChartData.length === 0 ? (
+        {selectedChartData.length === 0 ? (
+          <div className="w-full flex items-center justify-center">
             <div className="flex flex-col items-center justify-center py-16 px-4 bg-slate-50/20 rounded-3xl border border-dashed border-gray-200 w-full animate-pulse">
               <div className="bg-slate-100 text-slate-400 p-4 rounded-full mb-3">
                 <Activity size={24} />
@@ -698,91 +858,54 @@ export default function Dashboard() {
                 untuk merespons grafik progres riwayat mutu secara langsung.
               </p>
             </div>
-          ) : (
-            <div className="h-80 w-full animate-in fade-in duration-500">
+          </div>
+        ) : (
+          <div className="bg-white p-6 rounded-3xl border border-gray-100 shadow-[0_8px_30px_rgb(0,0,0,0.06)] hover:shadow-[0_20px_40px_rgb(0,0,0,0.12)] transition-all duration-300 flex flex-col items-center mt-3">
+            <div className="text-center mb-6 w-full px-4">
+              <h3 className="text-lg font-bold text-slate-800 leading-tight">{selectedChartAnalysis?.indicatorTitle}</h3>
+              <p className="text-xs font-bold text-slate-500 mt-1.5 uppercase tracking-wider">UOBK RSUD AL-MULK KOTA SUKABUMI</p>
+              <p className="text-[11px] text-slate-400 mt-0.5">{selectedChartAnalysis?.longPeriodName}</p>
+            </div>
+            
+            <div className="h-[280px] w-full mt-auto">
               <ResponsiveContainer width="100%" height="100%">
-                <ComposedChart
-                  data={selectedChartData}
-                  margin={{ top: 20, right: 10, left: -25, bottom: 0 }}
-                >
-                  <CartesianGrid
-                    strokeDasharray="4 4"
-                    stroke="#f1f5f9"
-                    vertical={false}
-                  />
-                  <XAxis
-                    dataKey="name"
+                <ComposedChart data={selectedChartData} margin={{ top: 20, right: 10, left: -20, bottom: 0 }}>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                  <XAxis 
+                    dataKey="name" 
+                    tick={{ fontSize: 11, fill: '#64748b', fontWeight: 600 }}
                     axisLine={false}
                     tickLine={false}
-                    tick={{ fill: "#64748b", fontSize: 10, fontWeight: 700 }}
+                    dy={10}
                   />
-                  <YAxis
+                  <YAxis 
+                    domain={[0, 100]} 
+                    tickFormatter={(val) => val === 0 ? "0" : val}
+                    tick={{ fontSize: 10, fill: '#94a3b8', fontWeight: 600 }}
                     axisLine={false}
                     tickLine={false}
-                    tick={{ fill: "#94a3b8", fontSize: 10, fontWeight: 600 }}
-                    domain={[0, 100]}
-                    ticks={[0, 20, 40, 60, 80, 100]}
+                    tickCount={5}
                   />
-                  <Tooltip
-                    contentStyle={{
-                      borderRadius: "12px",
-                      border: "none",
-                      boxShadow: "0 10px 15px -3px rgba(0,0,0,0.05)",
-                      fontWeight: "bold",
-                      fontSize: "12px",
-                    }}
-                  />
-                  <Legend
-                    iconType="circle"
-                    wrapperStyle={{
-                      paddingTop: "15px",
-                      fontSize: "11px",
-                      fontWeight: "bold",
-                    }}
-                  />
-
-                  {/* Composed diagram representation: Bar and Line */}
-                  <Bar
-                    dataKey="Capaian"
-                    fill="#10a37f"
-                    radius={[6, 6, 0, 0]}
-                    maxBarSize={45}
-                    name="Capaian (%)"
-                  >
-                    <LabelList
-                      dataKey="Capaian"
-                      position="top"
-                      fill="#10a37f"
-                      fontSize={10}
-                      fontWeight="black"
-                      formatter={(val: number) => val + "%"}
-                    />
+                  <Tooltip content={<CustomTooltip />} cursor={{fill: 'transparent'}} />
+                  <Legend verticalAlign="bottom" align="center" iconType="circle" wrapperStyle={{ fontSize: '11px', fontWeight: 600, paddingTop: '15px' }} />
+                  <Bar shape={<TwoDShadowBar />} dataKey="Capaian" name="Capaian" fill="#2563EB" maxBarSize={48}>
+                    <LabelList dataKey="Capaian" position="top" offset={10} formatter={(val: number) => val + "%"} style={{ fontSize: '12px', fontWeight: 'bold', fill: '#2563EB' }} />
                   </Bar>
-
-                  <Line
-                    type="monotone"
-                    dataKey="Capaian"
-                    stroke="#059669"
-                    strokeWidth={3}
-                    dot={{ r: 4, strokeWidth: 1 }}
-                    activeDot={{ r: 7 }}
-                    name="Tren Garis"
-                  />
-
-                  <Line
-                    type="monotone"
-                    dataKey="Target"
-                    stroke="#f97316"
-                    strokeDasharray="5 5"
-                    strokeWidth={1.5}
-                    dot={false}
-                    name="Target Sasaran (%)"
-                  />
+                  <Bar shape={<TwoDShadowBar />} dataKey="Target" name="Target" fill="#DC2626" maxBarSize={48}>
+                    <LabelList dataKey="Target" position="top" offset={10} formatter={(val: number) => val + "%"} style={{ fontSize: '12px', fontWeight: 'bold', fill: '#DC2626' }} />
+                  </Bar>
                 </ComposedChart>
               </ResponsiveContainer>
             </div>
-          )}
-        </div>
+            
+            <div className="w-full mt-6 bg-slate-50 rounded-2xl p-4 border border-slate-100">
+                <h4 className="text-xs font-bold text-slate-800 mb-2">Analisa Capaian</h4>
+                <p className="text-xs text-slate-600 leading-relaxed">
+                    Dari grafik di atas terlihat bahwa capaian mutu <strong>{selectedChartAnalysis?.indicatorTitle}</strong> pada periode <strong>{selectedChartAnalysis?.longPeriodName}</strong> rata-rata mencapai <strong>{selectedChartAnalysis?.avgCap}%</strong>, dengan standar target <strong>{selectedChartAnalysis?.target}%</strong>.
+                </p>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* 3. Patients Safety Incident (IKP) Card - diagram lingkaran saja */}
@@ -790,12 +913,9 @@ export default function Dashboard() {
         <div className="flex items-center gap-3 border-b border-red-100/50 pb-3 md:pb-4">
           <ShieldAlert className="text-red-500 h-5 w-5 md:h-7 md:w-7 animate-pulse shrink-0" />
           <div>
-            <h2 className="text-sm md:text-xl font-bold text-red-650 tracking-tight leading-none">
+            <h2 className="text-sm md:text-xl font-bold text-[#10a37f] tracking-tight leading-normal">
               Laporan Insiden Keselamatan Pasien (IKP)
             </h2>
-            <span className="text-[9px] md:text-[10px] text-gray-400 font-extrabold block mt-1 uppercase tracking-wider leading-relaxed">
-              Distribusi Kategori Mutu & Risiko Keselamatan (Diagram Lingkaran Saja)
-            </span>
           </div>
         </div>
 
@@ -879,11 +999,11 @@ export default function Dashboard() {
             
             <div className="space-y-2.5">
               {[
-                { name: "KPC", label: "Potensial Cedera", val: totalIkp.KPC, color: "#10a37f" },
-                { name: "KNC", label: "Nyaris Cedera", val: totalIkp.KNC, color: "#3b82f6" },
-                { name: "KTC", label: "Tidak Cedera", val: totalIkp.KTC, color: "#eab308" },
-                { name: "KTD", label: "Tidak Diharapkan", val: totalIkp.KTD, color: "#f97316" },
-                { name: "Sentinel", label: "Sentinel", val: totalIkp.Sentinel, color: "#ef4444" },
+                { name: "KPC", label: "Kondisi Potensial Cedera", val: totalIkp.KPC, color: "#10a37f" },
+                { name: "KNC", label: "Kejadian Nyaris Cedera", val: totalIkp.KNC, color: "#3b82f6" },
+                { name: "KTC", label: "Kejadian Tidak Cedera", val: totalIkp.KTC, color: "#eab308" },
+                { name: "KTD", label: "Kejadian Tidak Diharapkan", val: totalIkp.KTD, color: "#f97316" },
+                { name: "Sentinel", label: "", val: totalIkp.Sentinel, color: "#ef4444" },
               ].map((item) => (
                 <div key={item.name} className="flex justify-between items-center bg-slate-50/50 p-3 rounded-xl border border-slate-100">
                   <div className="flex items-center gap-2">
@@ -895,9 +1015,11 @@ export default function Dashboard() {
                       <span className="text-xs font-black text-gray-800 block">
                         {item.name}
                       </span>
-                      <span className="text-[10px] text-gray-400 font-semibold block leading-none">
-                        {item.label}
-                      </span>
+                      {item.label && (
+                        <span className="text-[10px] text-gray-400 font-semibold block leading-none mt-1">
+                          {item.label}
+                        </span>
+                      )}
                     </div>
                   </div>
                   <span className="text-sm font-black text-slate-900 bg-white px-2.5 py-1 rounded-md border border-slate-1 w-10 text-center">
