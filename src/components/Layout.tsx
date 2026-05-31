@@ -63,7 +63,7 @@ export default function Layout({ children, router }: LayoutProps) {
       {/* Content flex alignment container */}
       <div className="flex-1 flex flex-col min-h-screen md:pl-64">
         {/* PREMIUM UNIFIED GLASSMORPHISM TOP HEADER */}
-        <header className="sticky top-0 z-30 flex items-center justify-between min-h-20 md:h-20 py-2 md:py-0 px-4 md:px-8 bg-white/75 backdrop-blur-lg border-b border-gray-100/80 shadow-xs">
+        <header className="sticky top-0 z-30 flex items-center justify-between min-h-20 md:h-[88px] py-4 md:py-2 px-4 md:px-8 bg-white/75 backdrop-blur-lg border-b border-gray-100/80 shadow-xs pt-6 md:pt-8 w-full">
           {/* Left Side: Brand Identity */}
           <div className="flex items-center gap-3">
             <div className="flex flex-col">
@@ -75,18 +75,25 @@ export default function Layout({ children, router }: LayoutProps) {
                   color: "#10a37f",
                   fontStyle: "italic",
                   fontSize: "40px",
-                  width: "330.891px",
-                  paddingLeft: "0px",
-                  marginBottom: "-7px",
                   display: "inline-block",
-                  textDecorationLine: "underline"
+                  textDecorationLine: "underline",
+                  marginBottom: "-1px",
+                  marginTop: "-12px",
+                  height: "40px",
+                  paddingBottom: "0px",
+                  paddingLeft: "0px",
+                  paddingRight: "0px",
+                  paddingTop: "0px",
+                  marginRight: "0px",
+                  marginLeft: "0px",
+                  width: "250.891px"
                 }}
               >
                 OPTIMUS
               </span>
               <span 
                 className="text-[9px] sm:text-[10px] font-semibold tracking-[0.15em] text-slate-500 uppercase block whitespace-nowrap"
-                style={{ marginBottom: "-7px", marginTop: "8px", fontWeight: "bold" }}
+                style={{ marginBottom: "0px", marginTop: "6px", fontWeight: "bold" }}
               >
                 Optimalisasi Sistem Pelaporan Mutu Rumah Sakit
               </span>

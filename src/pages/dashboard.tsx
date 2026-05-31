@@ -651,25 +651,25 @@ export default function Dashboard() {
             <div className="grid grid-cols-2 gap-x-2 gap-y-2 mt-auto pt-3 md:pt-4 border-t border-gray-100/80">
               <div className="flex items-center gap-1.5">
                 <ShieldCheck className="w-3.5 h-3.5 lg:w-4 lg:h-4 text-emerald-500 shrink-0" strokeWidth={2.5} />
-                <span className="text-[9px] md:text-[10px] lg:text-[12px] font-semibold text-slate-600 truncate">
+                <span className="text-[9px] md:text-[10px] lg:text-[9.5px] xl:text-[12px] font-semibold text-slate-600 truncate">
                   INM: <span className="text-slate-800">{inmCount}</span>
                 </span>
               </div>
               <div className="flex items-center gap-1.5">
                 <Building className="w-3.5 h-3.5 lg:w-4 lg:h-4 text-blue-500 shrink-0" strokeWidth={2.5} />
-                <span className="text-[9px] md:text-[10px] lg:text-[12px] font-semibold text-slate-600 truncate">
+                <span className="text-[9px] md:text-[10px] lg:text-[9.5px] xl:text-[12px] font-semibold text-slate-600 truncate">
                   IMP-RS: <span className="text-slate-800">{impRsCount}</span>
                 </span>
               </div>
               <div className="flex items-center gap-1.5">
                 <Building2 className="w-3.5 h-3.5 lg:w-4 lg:h-4 text-purple-500 shrink-0" strokeWidth={2.5} />
-                <span className="text-[9px] md:text-[10px] lg:text-[12px] font-semibold text-slate-600 truncate">
+                <span className="text-[9px] md:text-[10px] lg:text-[9.5px] xl:text-[12px] font-semibold text-slate-600 truncate">
                   IMP-Unit: <span className="text-slate-800">{impUnitCount}</span>
                 </span>
               </div>
               <div className="flex items-center gap-1.5">
                 <FileText className="w-3.5 h-3.5 lg:w-4 lg:h-4 text-orange-500 shrink-0" strokeWidth={2.5} />
-                <span className="text-[9px] md:text-[10px] lg:text-[12px] font-semibold text-slate-600 truncate">
+                <span className="text-[9px] md:text-[10px] lg:text-[9.5px] xl:text-[12px] font-semibold text-slate-600 truncate">
                   SPM: <span className="text-slate-800">{spmCount}</span>
                 </span>
               </div>

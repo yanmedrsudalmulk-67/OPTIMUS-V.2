@@ -51,8 +51,8 @@ export default function Sidebar() {
         className="hidden md:flex fixed inset-y-0 left-0 z-40 w-64 bg-gradient-to-b from-[#007A4D] to-[#005F3A] text-white flex-col justify-between border-r border-[#005F3A]/50 shadow-[4px_0_24px_rgba(0,122,77,0.15)] transition-transform font-sans"
       >
         {/* Header & Logo */}
-        <div className="p-5 flex flex-col items-center border-b border-[#005F3A]/30 bg-white/5 backdrop-blur-sm">
-          <div className="flex items-center justify-between w-full mb-3">
+        <div className="p-4 pt-3 mt-2 flex flex-col items-center border-b border-[#005F3A]/30 bg-white/5 backdrop-blur-sm">
+          <div className="flex items-center justify-between w-full mb-2">
             <div className="flex items-center gap-3 min-w-0">
               <div className="h-11 w-11 rounded-xl bg-white border border-emerald-500/10 flex items-center justify-center overflow-hidden flex-shrink-0 shadow-lg p-0.5">
                 {hospitalLogo ? (
