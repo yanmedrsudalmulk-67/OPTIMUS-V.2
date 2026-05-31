@@ -625,7 +625,7 @@ export default function Dashboard() {
         {/* Card 4: Total Indikator */}
         <div 
           onClick={() => setActiveModal("ALL")}
-          className="bg-white rounded-[20px] md:rounded-[24px] lg:rounded-[28px] p-3 md:p-4 lg:p-6 shadow-[0_8px_30px_rgb(0,0,0,0.04),_0_8px_20px_-8px_rgba(249,115,22,0.25)] border border-orange-100/30 border-b-[4px] border-b-orange-100 flex flex-col hover:-translate-y-1.5 hover:shadow-[0_12px_40px_rgba(249,115,22,0.15)] hover:border-orange-200 hover:border-b-orange-300 cursor-pointer transition-all duration-300 relative overflow-hidden group"
+          className="bg-white rounded-[20px] md:rounded-[24px] lg:rounded-[28px] p-3 md:p-4 lg:p-5 xl:p-6 shadow-[0_8px_30px_rgb(0,0,0,0.04),_0_8px_20px_-8px_rgba(249,115,22,0.25)] border border-orange-100/30 border-b-[4px] border-b-orange-100 flex flex-col hover:-translate-y-1.5 hover:shadow-[0_12px_40px_rgba(249,115,22,0.15)] hover:border-orange-200 hover:border-b-orange-300 cursor-pointer transition-all duration-300 relative overflow-hidden group"
         >
           <div className="absolute top-0 right-0 w-32 h-32 bg-orange-50 rounded-full blur-3xl opacity-50 group-hover:opacity-80 transition-opacity pointer-events-none" />
           <div className="relative z-10 flex flex-col h-full gap-2 lg:gap-4">
@@ -648,29 +648,41 @@ export default function Dashboard() {
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-x-2 gap-y-2 mt-auto pt-3 md:pt-4 border-t border-gray-100/80">
-              <div className="flex items-center gap-1.5">
-                <ShieldCheck className="w-3.5 h-3.5 lg:w-4 lg:h-4 text-emerald-500 shrink-0" strokeWidth={2.5} />
-                <span className="text-[9px] md:text-[10px] lg:text-[9.5px] xl:text-[12px] font-semibold text-slate-600 truncate">
-                  INM: <span className="text-slate-800">{inmCount}</span>
+            <div className="grid grid-cols-2 lg:grid-cols-1 xl:grid-cols-2 gap-x-2 gap-y-2 lg:gap-y-2.5 xl:gap-y-2 mt-auto pt-3 md:pt-4 border-t border-gray-100/80">
+              <div className="flex items-center gap-1.5 lg:gap-2.5 xl:gap-1.5">
+                <ShieldCheck className="w-3.5 h-3.5 lg:w-[18px] lg:h-[18px] xl:w-4 xl:h-4 text-emerald-500 shrink-0" strokeWidth={2.5} />
+                <span className="text-[9px] md:text-[10px] lg:text-[13.5px] xl:text-[12px] font-semibold text-slate-600 truncate lg:overflow-visible lg:whitespace-normal xl:truncate">
+                  <span className="lg:inline-block lg:w-[70px] xl:w-auto">INM</span>
+                  <span className="hidden lg:inline xl:hidden px-0.5 md:px-1">:</span>
+                  <span className="lg:hidden xl:inline">: </span>
+                  <span className="text-slate-800">{inmCount}</span>
                 </span>
               </div>
-              <div className="flex items-center gap-1.5">
-                <Building className="w-3.5 h-3.5 lg:w-4 lg:h-4 text-blue-500 shrink-0" strokeWidth={2.5} />
-                <span className="text-[9px] md:text-[10px] lg:text-[9.5px] xl:text-[12px] font-semibold text-slate-600 truncate">
-                  IMP-RS: <span className="text-slate-800">{impRsCount}</span>
+              <div className="flex items-center gap-1.5 lg:gap-2.5 xl:gap-1.5">
+                <Building className="w-3.5 h-3.5 lg:w-[18px] lg:h-[18px] xl:w-4 xl:h-4 text-blue-500 shrink-0" strokeWidth={2.5} />
+                <span className="text-[9px] md:text-[10px] lg:text-[13.5px] xl:text-[12px] font-semibold text-slate-600 truncate lg:overflow-visible lg:whitespace-normal xl:truncate">
+                  <span className="lg:inline-block lg:w-[70px] xl:w-auto">IMP-RS</span>
+                  <span className="hidden lg:inline xl:hidden px-0.5 md:px-1">:</span>
+                  <span className="lg:hidden xl:inline">: </span>
+                  <span className="text-slate-800">{impRsCount}</span>
                 </span>
               </div>
-              <div className="flex items-center gap-1.5">
-                <Building2 className="w-3.5 h-3.5 lg:w-4 lg:h-4 text-purple-500 shrink-0" strokeWidth={2.5} />
-                <span className="text-[9px] md:text-[10px] lg:text-[9.5px] xl:text-[12px] font-semibold text-slate-600 truncate">
-                  IMP-Unit: <span className="text-slate-800">{impUnitCount}</span>
+              <div className="flex items-center gap-1.5 lg:gap-2.5 xl:gap-1.5">
+                <Building2 className="w-3.5 h-3.5 lg:w-[18px] lg:h-[18px] xl:w-4 xl:h-4 text-purple-500 shrink-0" strokeWidth={2.5} />
+                <span className="text-[9px] md:text-[10px] lg:text-[13.5px] xl:text-[12px] font-semibold text-slate-600 truncate lg:overflow-visible lg:whitespace-normal xl:truncate">
+                  <span className="lg:inline-block lg:w-[70px] xl:w-auto">IMP-Unit</span>
+                  <span className="hidden lg:inline xl:hidden px-0.5 md:px-1">:</span>
+                  <span className="lg:hidden xl:inline">: </span>
+                  <span className="text-slate-800">{impUnitCount}</span>
                 </span>
               </div>
-              <div className="flex items-center gap-1.5">
-                <FileText className="w-3.5 h-3.5 lg:w-4 lg:h-4 text-orange-500 shrink-0" strokeWidth={2.5} />
-                <span className="text-[9px] md:text-[10px] lg:text-[9.5px] xl:text-[12px] font-semibold text-slate-600 truncate">
-                  SPM: <span className="text-slate-800">{spmCount}</span>
+              <div className="flex items-center gap-1.5 lg:gap-2.5 xl:gap-1.5">
+                <FileText className="w-3.5 h-3.5 lg:w-[18px] lg:h-[18px] xl:w-4 xl:h-4 text-orange-500 shrink-0" strokeWidth={2.5} />
+                <span className="text-[9px] md:text-[10px] lg:text-[13.5px] xl:text-[12px] font-semibold text-slate-600 truncate lg:overflow-visible lg:whitespace-normal xl:truncate">
+                  <span className="lg:inline-block lg:w-[70px] xl:w-auto">SPM</span>
+                  <span className="hidden lg:inline xl:hidden px-0.5 md:px-1">:</span>
+                  <span className="lg:hidden xl:inline">: </span>
+                  <span className="text-slate-800">{spmCount}</span>
                 </span>
               </div>
             </div>
