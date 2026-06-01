@@ -840,67 +840,63 @@ export default function Dashboard() {
               </h3>
             </div>
 
-            <div className="grid grid-cols-2 lg:grid-cols-1 gap-y-1 gap-x-[6px] mt-auto pt-3 md:pt-4 border-t border-gray-100/80">
-              <div className="flex justify-center items-center gap-1.5 md:gap-2">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-y-2 gap-x-[10px] mt-auto pt-3 md:pt-4 border-t border-gray-100/80">
+              <div className="flex items-center gap-1.5 md:gap-2">
                 <ShieldCheck
-                  className="w-3.5 h-3.5 md:w-4 md:h-4 text-emerald-500 shrink-0"
+                  className="w-4 h-4 md:w-5 md:h-5 text-emerald-500 shrink-0"
                   strokeWidth={2.5}
                 />
-                <span className="text-[9px] md:text-[13px] xl:text-[11px] font-semibold text-slate-600 whitespace-nowrap">
+                <span className="text-[10px] md:text-[13px] xl:text-[11px] font-semibold text-slate-600 whitespace-nowrap">
                   <span className="inline-block md:w-[68px] xl:w-auto">
                     INM
                   </span>
-                  <span className="hidden md:inline xl:hidden pr-1">:</span>
-                  <span className="md:hidden xl:inline"> :</span>
-                  <span className="text-slate-800 ml-1 md:ml-0 xl:ml-1">
+                  <span className="pr-1">:</span>
+                  <span className="text-slate-800 font-bold ml-0.5">
                     {inmCount}
                   </span>
                 </span>
               </div>
               <div className="flex items-center gap-1.5 md:gap-2">
                 <Building
-                  className="w-3.5 h-3.5 md:w-4 md:h-4 text-blue-500 shrink-0"
+                  className="w-4 h-4 md:w-5 md:h-5 text-blue-500 shrink-0"
                   strokeWidth={2.5}
                 />
-                <span className="text-[9px] md:text-[13px] xl:text-[11px] font-semibold text-slate-600 whitespace-nowrap">
+                <span className="text-[10px] md:text-[13px] xl:text-[11px] font-semibold text-slate-600 whitespace-nowrap">
                   <span className="inline-block md:w-[68px] xl:w-auto">
                     IMP-RS
                   </span>
-                  <span className="hidden md:inline xl:hidden pr-1">:</span>
-                  <span className="md:hidden xl:inline"> :</span>
-                  <span className="text-slate-800 ml-1 md:ml-0 xl:ml-1">
+                  <span className="pr-1">:</span>
+                  <span className="text-slate-800 font-bold ml-0.5">
                     {impRsCount}
                   </span>
                 </span>
               </div>
               <div className="flex items-center gap-1.5 md:gap-2">
                 <Building2
-                  className="w-3.5 h-3.5 md:w-4 md:h-4 text-purple-500 shrink-0"
+                  className="w-4 h-4 md:w-5 md:h-5 text-purple-500 shrink-0"
                   strokeWidth={2.5}
                 />
-                <span className="text-[9px] md:text-[13px] xl:text-[11px] font-semibold text-slate-600 whitespace-nowrap">
+                <span className="text-[10px] md:text-[13px] xl:text-[11px] font-semibold text-slate-600 whitespace-nowrap">
                   <span className="inline-block md:w-[68px] xl:w-auto">
                     IMP-Unit
                   </span>
-                  <span className="hidden md:inline xl:hidden pr-1">:</span>
-                  <span className="md:hidden xl:inline"> :</span>
-                  <span className="text-slate-800 ml-1 md:ml-0 xl:ml-1">
+                  <span className="pr-1">:</span>
+                  <span className="text-slate-800 font-bold ml-0.5">
                     {impUnitCount}
                   </span>
                 </span>
               </div>
               <div className="flex items-center gap-1.5 md:gap-2">
                 <FileText
-                  className="w-3.5 h-3.5 md:w-4 md:h-4 text-orange-500 shrink-0"
+                  className="w-4 h-4 md:w-5 md:h-5 text-orange-500 shrink-0"
                   strokeWidth={2.5}
                 />
-                <span className="text-[9px] md:text-[13px] xl:text-[11px] font-semibold text-slate-600 whitespace-nowrap">
+                <span className="text-[10px] md:text-[13px] xl:text-[11px] font-semibold text-slate-600 whitespace-nowrap">
                   <span className="inline-block md:w-[68px] xl:w-auto">
                     SPM
                   </span>
-                  <span className="hidden md:inline xl:hidden pr-1">:</span>
-                  <span className="md:hidden xl:inline"> :</span>
-                  <span className="text-slate-800 ml-1 md:ml-0 xl:ml-1">
+                  <span className="pr-1">:</span>
+                  <span className="text-slate-800 font-bold ml-0.5">
                     {spmCount}
                   </span>
                 </span>
