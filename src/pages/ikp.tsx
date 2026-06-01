@@ -181,8 +181,7 @@ export default function IKP() {
             </h1>
           </div>
           <p className="text-gray-900 mt-1.5 text-sm font-semibold">
-            Sistem pencatatan, pemantauan, dan investigasi insiden klinis rumah
-            sakit.
+            Sistem pencatatan dan pelaporan insiden keselamatan pasien
           </p>
         </div>
         <div>
