@@ -53,10 +53,11 @@ export default function Sidebar() {
         className="hidden md:flex fixed inset-y-0 left-0 z-40 w-64 bg-gradient-to-b from-[#007A4D] to-[#005F3A] text-white flex-col justify-between border-r border-[#005F3A]/50 shadow-[4px_0_24px_rgba(0,122,77,0.15)] transition-transform font-sans"
       >
         {/* Header & Logo */}
-        <div className="p-4 pt-3 mt-2 flex flex-col items-center border-b border-[#005F3A]/30 bg-white/5 backdrop-blur-sm">
+        <div className="relative p-4 pt-3 flex flex-col items-center border-b border-[#005F3A]/30 bg-white/5 backdrop-blur-sm" style={{ marginTop: '7px' }}>
+          <div className="absolute bottom-0 left-0 right-0 h-[2px] bg-gradient-to-r from-[#f59e0b] via-[#ded92d] to-[#f59e0b] shadow-[0_2px_15px_rgba(222,217,45,0.8)] z-40" />
           <div className="flex items-center justify-between w-full mb-2">
-            <div className="flex items-center gap-3 min-w-0">
-              <div className="h-11 w-11 rounded-xl bg-white border border-emerald-500/10 flex items-center justify-center overflow-hidden flex-shrink-0 shadow-lg p-0.5">
+            <div className="flex items-center gap-3 min-w-0" style={{ paddingTop: '0px', marginLeft: '0px', marginTop: '0px', marginBottom: '0px', height: '44px', width: '207.781px', paddingBottom: '0px', paddingRight: '0px' }}>
+              <div className="h-11 w-11 rounded-xl bg-white border border-emerald-500/10 flex items-center justify-center overflow-hidden flex-shrink-0 shadow-lg p-0.5" style={{ paddingTop: '2px', marginTop: '10px', paddingBottom: '2px', marginRight: '-9px', marginBottom: '0px', height: '44px', marginLeft: '11px' }}>
                 {hospitalLogo ? (
                   // eslint-disable-next-line @next/next/no-img-element
                   <img
@@ -69,12 +70,12 @@ export default function Sidebar() {
                 )}
               </div>
               <div className="flex flex-col min-w-0">
-                <span className="font-extrabold text-sm tracking-tight text-white leading-tight truncate">
+                <span className="font-extrabold text-sm tracking-tight text-white leading-tight truncate" style={{ marginTop: '12px', paddingBottom: '0px', paddingRight: '7px', marginBottom: '0px', marginRight: '-10px', marginLeft: '6px' }}>
                   UOBK RSUD AL-MULK
                 </span>
                 <span 
-                  className="leading-none mt-1"
-                  style={{ color: "#ded92d", fontWeight: "bold", fontSize: "12px" }}
+                  className="leading-none"
+                  style={{ color: "#ded92d", fontWeight: "bold", fontSize: "12px", marginTop: "0px", marginRight: "1px", marginLeft: "6px" }}
                 >
                   Kota Sukabumi
                 </span>
@@ -174,21 +175,9 @@ export default function Sidebar() {
                     : "text-emerald-50/80 hover:bg-white/5 hover:text-white"
                 }`}
               >
-                <motion.div
-                  animate={isActive ? { y: [0, -3, 0] } : { y: 0 }}
-                  transition={
-                    isActive
-                      ? {
-                          repeat: Infinity,
-                          duration: 2,
-                          ease: "easeInOut",
-                        }
-                      : undefined
-                  }
-                  className={`flex items-center justify-center mb-1 transition-transform group-hover:-translate-y-0.5 ${isActive ? "scale-110 opacity-100" : "scale-100 opacity-90 group-hover:opacity-100"}`}
-                >
+                <div className="flex items-center justify-center mb-1 transition-transform group-hover:-translate-y-0.5">
                   <Icon className={`h-5 w-5 ${isActive ? "text-[#ded92d]" : "text-white"}`} strokeWidth={isActive ? 2.5 : 2} />
-                </motion.div>
+                </div>
                 <span className={`text-[10px] text-center leading-tight ${isActive ? "font-bold text-[#ded92d]" : "font-semibold"}`}>
                   {item.name}
                 </span>
@@ -198,9 +187,7 @@ export default function Sidebar() {
 
           {/* Mobile Logout Button with Premium Hospital Blue Gradient Capsule styling */}
           <div className="snap-center shrink-0 flex items-center justify-center px-1.5 min-w-[90px]">
-            <motion.div
-              whileHover={{ scale: 1.04 }}
-              whileTap={{ scale: 0.96 }}
+            <div
               className="w-full"
             >
               <Link
@@ -215,7 +202,7 @@ export default function Sidebar() {
                 <LogOut className="h-3.5 w-3.5" strokeWidth={2.5} />
                 <span>Keluar</span>
               </Link>
-            </motion.div>
+            </div>
           </div>
         </div>
       </nav>

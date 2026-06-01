@@ -21,8 +21,8 @@ const dataSurvei = [
 
 export default function SurveiBudaya() {
   return (
-    <div className="animate-in fade-in slide-in-from-bottom-4 duration-700 space-y-6">
-      <div className="flex justify-between items-end">
+    <div className="animate-in fade-in slide-in-from-bottom-4 duration-700 space-y-6 max-w-7xl mx-auto w-full p-2 md:p-0">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-2">
         <div>
           <h1 className="text-3xl font-bold text-[#10a37f] tracking-tight">
             Survei Budaya Keselamatan Pasien
@@ -33,26 +33,27 @@ export default function SurveiBudaya() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
-          <h3 className="text-lg font-semibold text-gray-900 mb-6 flex items-center gap-2">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6 w-full">
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-4 md:p-6 w-full min-w-0 overflow-hidden">
+          <h3 className="text-lg font-semibold text-gray-900 mb-4 md:mb-6 flex items-center gap-2">
             <Activity className="text-emerald-500" size={20} />
             Radar Capaian Dimensi
           </h3>
-          <div className="relative w-full h-[320px] shrink-0 mt-4">
+          <div className="relative w-full h-[280px] md:h-[320px] shrink-0 mt-4 overflow-hidden">
             <div className="absolute inset-0">
-              <ResponsiveContainer width="99%" height="100%" debounce={0}>
-                <RadarChart cx="50%" cy="50%" outerRadius="70%" data={dataSurvei}>
+              <ResponsiveContainer width="100%" height="100%" debounce={0}>
+                <RadarChart cx="50%" cy="50%" outerRadius="60%" data={dataSurvei}>
                   <PolarGrid stroke="#e5e7eb" />
                   <PolarAngleAxis
                     dataKey="subject"
-                    tick={{ fill: "#4b5563", fontSize: 12 }}
+                    tick={{ fill: "#4b5563", fontSize: typeof window !== 'undefined' && window.innerWidth < 640 ? 9 : 12 }}
                   />
                   <PolarRadiusAxis
                     angle={30}
                     domain={[0, 100]}
-                    tick={{ fill: "#9ca3af", fontSize: 10 }}
+                    tick={{ fill: "#9ca3af", fontSize: typeof window !== 'undefined' && window.innerWidth < 640 ? 8 : 10 }}
                   />
+
                   <Radar
                     name="Skor RS"
                     dataKey="A"

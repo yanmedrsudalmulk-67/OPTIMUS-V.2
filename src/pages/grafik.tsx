@@ -230,16 +230,113 @@ export default function Grafik() {
         status = "Belum Ada Data";
       }
 
+      let longPeriodName = `Tahun ${selectedTahun}`;
+      let shortPeriod = "Tahunan";
+      if (periodeMode === "Bulanan") {
+        longPeriodName = `bulan ${selectedBulan} Tahun ${selectedTahun}`;
+        shortPeriod = "Bulanan";
+      }
+      if (periodeMode === "Triwulan") {
+        let twStr = "";
+        if (selectedTriwulan.includes("1")) twStr = "Triwulan I";
+        if (selectedTriwulan.includes("2")) twStr = "Triwulan II";
+        if (selectedTriwulan.includes("3")) twStr = "Triwulan III";
+        if (selectedTriwulan.includes("4")) twStr = "Triwulan IV";
+        longPeriodName = `${twStr} Tahun ${selectedTahun}`;
+        shortPeriod = "Triwulan";
+      }
+      if (periodeMode === "Semester") {
+        let semStr = "";
+        if (selectedSemester.includes("1")) semStr = "Semester I";
+        if (selectedSemester.includes("2")) semStr = "Semester II";
+        longPeriodName = `${semStr} Tahun ${selectedTahun}`;
+        shortPeriod = "Semester";
+      }
+
+      const avgCap = parseFloat(overallCapaian.toFixed(2));
+      const indTitle = profile.indicator_title;
+
+      let narasi = "";
+      if (shortPeriod === "Bulanan") {
+        narasi = `Berdasarkan hasil pemantauan ${longPeriodName} di UOBK RSUD Al-Mulk Kota Sukabumi, capaian indikator ${indTitle} sebesar ${avgCap}%, `;
+      } else {
+        narasi = `Berdasarkan hasil pemantauan ${longPeriodName} di UOBK RSUD Al-Mulk Kota Sukabumi, diperoleh rata-rata capaian indikator ${indTitle} sebesar ${avgCap}%, `;
+      }
+
+      const opTargetText = isReverse ? `≤${parsedTargetOverall}%` : `≥${parsedTargetOverall}%`;
+      if (isSuccess) {
+        narasi += `telah mencapai target nasional yaitu ${opTargetText}.`;
+      } else {
+        narasi += `masih berada di bawah target nasional yaitu ${opTargetText}.`;
+      }
+
+      let trendStr = "";
+      if (series.length > 1) {
+        const firstCap = series[0].capaian;
+        const lastCap = series[series.length - 1].capaian;
+        const diff = lastCap - firstCap;
+
+        let isMonotonicIncrease = true;
+        let isMonotonicDecrease = true;
+
+        for (let i = 1; i < series.length; i++) {
+          const prev = series[i - 1].capaian;
+          const curr = series[i].capaian;
+          if (curr < prev) isMonotonicIncrease = false;
+          if (curr > prev) isMonotonicDecrease = false;
+        }
+
+        if (isMonotonicIncrease && diff > 0) {
+          trendStr = `Terdapat tren peningkatan capaian dari bulan ${series[0].name.toLowerCase()} hingga ${series[series.length - 1].name.toLowerCase()} yang menunjukkan adanya perbaikan kepatuhan petugas terhadap indikator yang diukur.`;
+        } else if (isMonotonicDecrease && diff < 0) {
+          trendStr = `Terdapat tren penurunan capaian dari bulan ${series[0].name.toLowerCase()} hingga ${series[series.length - 1].name.toLowerCase()} yang perlu menjadi perhatian untuk dilakukan evaluasi lebih lanjut.`;
+        } else if (diff > 5) {
+          trendStr = "Terdapat tren peningkatan capaian pada beberapa periode terakhir yang menunjukkan perbaikan berkelanjutan.";
+        } else if (diff < -5) {
+          trendStr = "Terdapat tren penurunan capaian pada beberapa periode yang perlu menjadi perhatian untuk dilakukan evaluasi lebih lanjut.";
+        } else {
+          trendStr = "Capaian indikator relatif stabil pada seluruh periode pemantauan.";
+        }
+      }
+
+      let conclusion = "";
+      if (isSuccess) {
+        conclusion = "Walaupun terdapat variasi capaian antar periode, indikator telah memenuhi target yang ditetapkan sehingga mutu pelayanan dinilai baik.";
+      } else {
+        conclusion = "Hal ini menunjukkan pencapaian masih belum optimal. Indikator masih belum mencapai target yang ditetapkan sehingga diperlukan upaya perbaikan berkelanjutan melalui monitoring dan evaluasi rutin.";
+      }
+
+      let recommendations: string[] = [];
+      if (!isSuccess) {
+         recommendations = [
+          "Meningkatkan sosialisasi kepada petugas.",
+          "Melakukan audit internal secara berkala.",
+          "Memperkuat supervisi kepala unit.",
+          "Memberikan umpan balik hasil monitoring.",
+          "Menyusun rencana tindak lanjut perbaikan."
+        ];
+      } else {
+        recommendations = [
+          "Mempertahankan capaian yang sudah baik.",
+          "Melakukan monitoring rutin.",
+          "Menjadikan unit dengan capaian tinggi sebagai role model."
+        ];
+      }
+
       return {
         id: profile.id,
         name: profile.indicator_title,
         category: profile.category,
-        capaian: parseFloat(overallCapaian.toFixed(2)),
+        capaian: avgCap,
         target: parsedTargetOverall,
         status: status,
         rawTargetStr: profile.target,
         unit: profile.measurement_unit,
-        series: series
+        series: series,
+        narasi,
+        trendStr,
+        conclusion,
+        recommendations
       };
     });
   }, [activeProfilesInCategory, dataMutuList, periodeMode, selectedBulan, selectedTriwulan, selectedSemester, selectedTahun]);
@@ -252,7 +349,7 @@ export default function Grafik() {
   const avgCapaian = chartData.length > 0 ? chartData.reduce((sum, d) => sum + d.capaian, 0) / chartData.length : 0;
 
   return (
-    <div className="animate-in fade-in slide-in-from-bottom-4 duration-700 space-y-6 pb-16">
+    <div className="animate-in fade-in slide-in-from-bottom-4 duration-700 space-y-6 pb-16 w-full max-w-full px-2 sm:px-4 md:px-0 overflow-x-hidden md:overflow-visible">
       
       {/* Header */}
       <div className="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -487,18 +584,28 @@ export default function Grafik() {
                   </div>
                 </div>
                 
-                <div className="w-full mt-6 bg-slate-50 rounded-2xl p-4 border border-slate-100">
-                    <h4 className="text-xs font-bold text-slate-800 mb-2">Analisis Capaian & Rekomendasi</h4>
-                    <p className="text-xs text-slate-600 leading-relaxed mb-2">
-                        Dari grafik di atas terlihat bahwa capaian mutu <strong>{d.name}</strong> pada periode <strong>{longPeriodName}</strong> mencapai <strong>{d.capaian}%</strong>, dengan standar target <strong>{d.target}%</strong>.
-                    </p>
-                    <p className="text-xs text-slate-600 leading-relaxed">
-                        <strong className="text-slate-800">Rekomendasi: </strong>
-                        {d.status === "Tercapai"
-                          ? "Pertahankan capaian dan terus lakukan monitoring secara berkala agar mutu tetap terjaga."
-                          : "Lakukan evaluasi mendalam dan cari akar permasalahan untuk dapat meningkatkan upaya perbaikan mutu agar mencapai standar target ke depannya."
-                        }
-                    </p>
+                <div className="w-full mt-6 bg-slate-50/70 p-5 md:p-6 rounded-2xl border border-slate-100/80">
+                  <h4 className="text-sm font-bold text-slate-800 mb-3 flex items-center gap-2">
+                    <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                    Analisa Capaian
+                  </h4>
+                  <p className="text-sm text-slate-600 leading-relaxed font-medium mb-4 text-justify">
+                    {d.narasi} {d.trendStr} {d.conclusion}
+                  </p>
+                  
+                  <div className="bg-white p-4 rounded-xl border border-slate-100 shadow-sm mt-4">
+                    <h5 className="text-[13px] font-bold text-slate-800 mb-2 uppercase tracking-wide">
+                      Rekomendasi Tindak Lanjut:
+                    </h5>
+                    <ul className="list-none space-y-2 pl-0 mb-0">
+                      {d.recommendations?.map((rec: string, i: number) => (
+                        <li key={i} className="text-[13px] text-slate-600 flex items-start gap-2.5">
+                          <span className="text-emerald-500 font-bold mt-[-1px] text-lg leading-none">•</span>
+                          <span className="font-medium">{rec}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
                 </div>
               </div>
             );

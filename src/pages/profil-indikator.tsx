@@ -650,7 +650,7 @@ export default function ProfilIndikator() {
   };
 
   return (
-    <div id="profil-indikator-root" className="space-y-6 pb-16 relative max-w-6xl mx-auto w-full">
+    <div id="profil-indikator-root" className="space-y-6 pb-4 relative max-w-6xl mx-auto w-full">
       
       {/* Dynamic light frosted glass pop-up toasts */}
       <AnimatePresence>
@@ -1349,7 +1349,7 @@ export default function ProfilIndikator() {
               exit={{ y: 25, opacity: 0 }}
               transition={{ duration: 0.28, ease: [0.16, 1, 0.3, 1] }}
               style={{ willChange: "transform, opacity" }}
-              className="bg-gray-50 flex flex-col w-full h-full md:h-[95vh] md:max-w-6xl md:rounded-[32px] overflow-hidden shadow-2xl relative"
+              className="bg-gray-50 flex flex-col w-full h-[100dvh] md:h-[95vh] md:max-w-6xl md:rounded-[32px] overflow-hidden shadow-2xl relative"
             >
               
               {/* Sticky Top Action Bar / Header */}

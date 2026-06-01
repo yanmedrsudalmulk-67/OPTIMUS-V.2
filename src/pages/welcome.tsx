@@ -159,7 +159,6 @@ export default function WelcomePage() {
               if (el) {
                 el.defaultMuted = true;
                 el.muted = muted;
-                el.play().catch(e => console.warn("Autoplay error:", e));
               }
             }}
             src={forcedVideoUrl}

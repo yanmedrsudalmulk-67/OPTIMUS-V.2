@@ -1,179 +1,80 @@
-import React, { useState } from "react";
-import {
-  ClipboardCheck,
-  LayoutDashboard,
-  FileEdit,
-  Activity,
-  Calendar,
-  BarChart2,
-  Printer,
-  ShieldAlert,
-  CheckCircle,
-  Clock,
-  AlertTriangle,
-  Building,
-  Target,
-  ListTodo
-} from "lucide-react";
+import React from "react";
+import { ClipboardCheck } from "lucide-react";
 
 export default function SupervisiMutu() {
-  const [activeTab, setActiveTab] = useState("DASHBOARD");
-
-  const tabs = [
-    { id: "DASHBOARD", label: "Dashboard", icon: LayoutDashboard },
-    { id: "INSTRUMEN", label: "Master Instrumen", icon: ListTodo },
-    { id: "INPUT", label: "Input Supervisi", icon: FileEdit },
-    { id: "TINDAK_LANJUT", label: "Tindak Lanjut", icon: Activity },
-    { id: "MONITORING", label: "Monitoring", icon: Target },
-    { id: "KALENDER", label: "Kalender", icon: Calendar },
-    { id: "ANALISIS", label: "Analisis", icon: BarChart2 },
-    { id: "CETAK", label: "Cetak Laporan", icon: Printer },
-  ];
-
   return (
-    <div className="w-full mx-auto pb-safe p-4 md:p-6 lg:p-8 space-y-6">
-      {/* HEADER SECTION */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-2xl md:text-3xl font-extrabold text-slate-800 tracking-tight flex items-center gap-3">
-            <ClipboardCheck className="w-8 h-8 text-[#10a37f]" strokeWidth={2.5} />
-            Supervisi Mutu
-          </h1>
-          <p className="text-slate-500 font-medium mt-1 text-sm md:text-base">
-            Sistem Digital Pelaksanaan, Monitoring, Evaluasi, dan Tindak Lanjut Supervisi Mutu.
-          </p>
-        </div>
+    <div className="animate-in fade-in slide-in-from-bottom-4 duration-700 max-w-7xl mx-auto w-full flex flex-col min-h-[calc(100vh-140px)]">
+      <div className="mb-4 shrink-0">
+        <h1 className="text-3xl font-bold text-[#10a37f] tracking-tight">
+          Supervisi Mutu
+        </h1>
+        <p className="text-gray-900 mt-1 text-sm font-semibold">
+          Daftar pemonitoran dan supervisi indikator mutu unit RS.
+        </p>
       </div>
 
-      {/* TABS NAVIGATION */}
-      <div className="bg-white/80 backdrop-blur-md border border-gray-100 rounded-2xl p-1.5 shadow-sm overflow-x-auto scrollbar-hide">
-        <div className="flex items-center min-w-max gap-1">
-          {tabs.map((tab) => {
-            const Icon = tab.icon;
-            const isActive = activeTab === tab.id;
-            return (
-              <button
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
-                className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-bold transition-all duration-200 ${
-                  isActive
-                    ? "bg-[#10a37f] text-white shadow-md shadow-emerald-500/20"
-                    : "text-slate-500 hover:bg-slate-50 hover:text-slate-700"
-                }`}
-              >
-                <Icon className="w-4 h-4" strokeWidth={isActive ? 2.5 : 2} />
-                {tab.label}
-              </button>
-            );
-          })}
+      <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-4 md:p-6 flex-1 min-h-0 overflow-hidden flex flex-col">
+        <div className="flex items-center gap-2 mb-4 shrink-0">
+          <ClipboardCheck className="text-emerald-500" size={20} />
+          <h3 className="text-lg font-semibold text-gray-900">
+            Jadwal & Hasil Supervisi
+          </h3>
         </div>
-      </div>
-
-      {/* CONTENT AREA */}
-      <div className="anime-in zoom-in-95 duration-500">
-        {activeTab === "DASHBOARD" && (
-          <div className="space-y-6">
-            {/* KPI Cards */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 xl:gap-6">
-              {[
-                { title: "Total Supervisi Bulan Ini", value: "24", icon: ClipboardCheck, color: "emerald" },
-                { title: "Supervisi Selesai", value: "18", icon: CheckCircle, color: "blue" },
-                { title: "Belum Ditindaklanjuti", value: "6", icon: Clock, color: "orange" },
-                { title: "Total Temuan Lapangan", value: "12", icon: ShieldAlert, color: "rose" },
-              ].map((kpi, idx) => {
-                const colors: Record<string, string> = {
-                  emerald: "bg-emerald-50 text-emerald-600 border-emerald-100",
-                  blue: "bg-blue-50 text-blue-600 border-blue-100",
-                  orange: "bg-orange-50 text-orange-600 border-orange-100",
-                  rose: "bg-rose-50 text-rose-600 border-rose-100",
-                };
-                return (
-                  <div key={idx} className="bg-white rounded-2xl p-4 md:p-6 border border-gray-100 shadow-sm hover:shadow-md transition-all flex flex-col gap-3 group cursor-pointer relative overflow-hidden">
-                    <div className="flex justify-between items-start z-10">
-                      <div className={`p-3 rounded-xl ${colors[kpi.color]}`}>
-                        <kpi.icon className="w-6 h-6" strokeWidth={2.5} />
-                      </div>
-                    </div>
-                    <div className="z-10 mt-2">
-                      <h3 className="text-3xl font-black text-slate-800">{kpi.value}</h3>
-                      <p className="text-xs font-bold text-slate-500 mt-1 uppercase tracking-wide">{kpi.title}</p>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-
-            {/* Content Mockups */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <div className="bg-white p-6 rounded-[24px] border border-gray-100 shadow-sm">
-                 <h2 className="text-lg font-extrabold text-slate-800 mb-4">Grafik Temuan per Unit</h2>
-                 <div className="flex items-center justify-center h-[300px] border-2 border-dashed border-gray-100 rounded-xl bg-gray-50/50">
-                   <p className="text-gray-400 font-medium">Area Chart (Segera Hadir)</p>
-                 </div>
-              </div>
-              <div className="bg-white p-6 rounded-[24px] border border-gray-100 shadow-sm">
-                 <h2 className="text-lg font-extrabold text-slate-800 mb-4">Kepatuhan Tindak Lanjut</h2>
-                 <div className="flex items-center justify-center h-[300px] border-2 border-dashed border-gray-100 rounded-xl bg-gray-50/50">
-                   <p className="text-gray-400 font-medium">Progress Bar / Donut Chart (Segera Hadir)</p>
-                 </div>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {activeTab === "INSTRUMEN" && (
-          <div className="space-y-6">
-            <div className="flex justify-between items-center bg-white p-4 md:p-6 rounded-2xl border border-gray-100 shadow-sm">
-              <div>
-                <h2 className="text-xl font-extrabold text-slate-800">Kategori Instrumen Supervisi</h2>
-                <p className="text-sm font-medium text-slate-500 mt-1">Kelola checklist dan instrumen berdasarkan standar akreditasi.</p>
-              </div>
-              <button className="px-4 py-2 bg-[#10a37f] text-white font-bold text-sm rounded-xl hover:bg-[#0e8f6e] transition-colors shadow-md">
-                + Tambah Instrumen
-              </button>
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {[
-                { title: "PMKP", items: ["Kepatuhan Pengumpulan Data", "Validasi Data Indikator", "Analisis Indikator", "Pelaporan Mutu"] },
-                { title: "Sasaran Keselamatan Pasien (SKP)", items: ["SKP 1 Identifikasi Pasien", "SKP 2 Komunikasi Efektif", "SKP 3 Obat High Alert", "SKP 4 Tepat Lokasi Operasi", "SKP 5 Pencegahan Infeksi", "SKP 6 Pencegahan Risiko Jatuh"] },
-                { title: "PPI", items: ["Kepatuhan Hand Hygiene", "Penggunaan APD", "Dekontaminasi Alat", "Pengelolaan Limbah Medis"] },
-                { title: "Manajemen Risiko", items: ["Identifikasi Risiko", "Register Risiko", "Mitigasi Risiko", "Monitoring Risiko"] },
-                { title: "IKP", items: ["Pelaporan Insiden", "Investigasi Insiden", "RCA", "Tindak Lanjut Insiden"] },
-                { title: "Fasilitas dan Keselamatan", items: ["APAR", "Jalur Evakuasi", "K3RS", "Sarana Prasarana"] },
-              ].map((category, idx) => (
-                <div key={idx} className="bg-white rounded-[20px] p-6 border border-gray-100 shadow-sm hover:shadow-md transition-shadow group">
-                  <div className="flex items-center gap-3 border-b border-gray-100 pb-4 mb-4">
-                    <div className="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center">
-                      <ListTodo className="w-5 h-5" strokeWidth={2.5} />
-                    </div>
-                    <h3 className="font-extrabold text-lg text-slate-800 group-hover:text-emerald-600 transition-colors">{category.title}</h3>
-                  </div>
-                  <ul className="space-y-2.5">
-                    {category.items.map((item, i) => (
-                      <li key={i} className="flex items-start gap-2.5 text-sm font-semibold text-slate-600">
-                        <div className="w-1.5 h-1.5 rounded-full bg-emerald-400 mt-1.5 shrink-0" />
-                        <span className="leading-tight">{item}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* MOCK OTHER TABS */}
-        {activeTab !== "DASHBOARD" && activeTab !== "INSTRUMEN" && (
-          <div className="bg-white rounded-[24px] border border-gray-100 p-8 shadow-sm flex flex-col items-center justify-center min-h-[400px] text-center">
-            <div className="w-20 h-20 bg-emerald-50 rounded-full flex items-center justify-center mb-6">
-              <ClipboardCheck className="w-10 h-10 text-emerald-500" strokeWidth={2} />
-            </div>
-            <h2 className="text-2xl font-black text-slate-800 mb-2">Modul {tabs.find(t => t.id === activeTab)?.label}</h2>
-            <p className="text-slate-500 font-medium max-w-md">
-              Halaman ini akan menampilkan sistem terintegrasi untuk {tabs.find(t => t.id === activeTab)?.label?.toLowerCase()} dengan desain modern, realtime database sinkronisasi, dan laporan PDF otomatis.
-            </p>
-          </div>
-        )}
+        
+        <div className="flex-1 overflow-auto rounded-xl border border-gray-100 rounded-b-lg">
+          <table className="w-full text-left border-collapse min-w-[600px]">
+            <thead className="sticky top-0 bg-gray-50 flex-shrink-0 z-10 shadow-sm">
+              <tr>
+                <th className="p-3 font-semibold text-sm border-b border-gray-200">No</th>
+                <th className="p-3 font-semibold text-sm border-b border-gray-200">Unit Bagian</th>
+                <th className="p-3 font-semibold text-sm border-b border-gray-200">Fokus Supervisi</th>
+                <th className="p-3 font-semibold text-sm text-center border-b border-gray-200">Status</th>
+                <th className="p-3 font-semibold text-sm text-center border-b border-gray-200">Aksi</th>
+              </tr>
+            </thead>
+            <tbody className="overflow-y-auto">
+              <tr className="hover:bg-gray-50">
+                <td className="p-3 border-b border-gray-100 text-sm font-medium">1</td>
+                <td className="p-3 border-b border-gray-100 text-sm font-semibold text-emerald-800">Ruang Inap Melati</td>
+                <td className="p-3 border-b border-gray-100 text-sm">Kepatuhan Kebersihan Tangan</td>
+                <td className="p-3 border-b border-gray-100 text-center">
+                  <span className="bg-emerald-100 text-emerald-700 px-2 py-1 rounded-md text-xs font-bold">
+                    Selesai
+                  </span>
+                </td>
+                <td className="p-3 border-b border-gray-100 text-center">
+                  <button className="text-xs font-bold bg-white border border-gray-200 text-gray-700 px-3 py-1.5 rounded-lg hover:bg-gray-50 flex items-center justify-center mx-auto shadow-sm">Lihat Hasil</button>
+                </td>
+              </tr>
+              <tr className="hover:bg-gray-50">
+                <td className="p-3 border-b border-gray-100 text-sm font-medium">2</td>
+                <td className="p-3 border-b border-gray-100 text-sm font-semibold text-emerald-800">IGD</td>
+                <td className="p-3 border-b border-gray-100 text-sm">Waktu Tanggap Pelayanan</td>
+                <td className="p-3 border-b border-gray-100 text-center">
+                  <span className="bg-amber-100 text-amber-700 px-2 py-1 rounded-md text-xs font-bold">
+                    Terjadwal
+                  </span>
+                </td>
+                <td className="p-3 border-b border-gray-100 text-center">
+                  <button className="text-xs font-bold bg-[#10a37f] text-white px-3 py-1.5 rounded-lg hover:bg-emerald-600 flex items-center justify-center mx-auto shadow-[0_2px_8px_-1px_rgba(16,163,127,0.4)]">Isi Supervisi</button>
+                </td>
+              </tr>
+              <tr className="hover:bg-gray-50">
+                <td className="p-3 border-b border-gray-100 text-sm font-medium">3</td>
+                <td className="p-3 border-b border-gray-100 text-sm font-semibold text-emerald-800">Farmasi</td>
+                <td className="p-3 border-b border-gray-100 text-sm">Ketepatan Waktu Tunggu Obat Minimum</td>
+                <td className="p-3 border-b border-gray-100 text-center">
+                  <span className="bg-amber-100 text-amber-700 px-2 py-1 rounded-md text-xs font-bold">
+                    Terjadwal
+                  </span>
+                </td>
+                <td className="p-3 border-b border-gray-100 text-center">
+                  <button className="text-xs font-bold bg-[#10a37f] text-white px-3 py-1.5 rounded-lg hover:bg-emerald-600 flex items-center justify-center mx-auto shadow-[0_2px_8px_-1px_rgba(16,163,127,0.4)]">Isi Supervisi</button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
   );

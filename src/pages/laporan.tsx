@@ -176,7 +176,7 @@ export default function Laporan() {
   const categories = ["INM", "IMP-RS"];
 
   return (
-    <div className="animate-in fade-in slide-in-from-bottom-4 duration-700 space-y-6 max-w-7xl mx-auto">
+    <div className="animate-in fade-in slide-in-from-bottom-4 duration-700 space-y-6 max-w-7xl mx-auto w-full p-2 md:p-0">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <div className="flex items-center gap-2 mb-1">
@@ -189,22 +189,23 @@ export default function Laporan() {
           </p>
         </div>
 
-        <div className="flex flex-wrap gap-3">
-          <button className="flex items-center gap-2 px-5 py-2.5 bg-[#10a37f] text-white rounded-xl hover:bg-emerald-700 transition-colors text-sm font-bold shadow-[0_4px_10px_-2px_rgba(16,185,129,0.3)]">
+        <div className="flex flex-col sm:flex-row flex-wrap gap-3">
+          <button className="flex items-center justify-center gap-2 px-5 py-2.5 bg-[#10a37f] text-white rounded-xl hover:bg-emerald-700 transition-colors text-sm font-bold shadow-[0_4px_10px_-2px_rgba(16,185,129,0.3)]">
             <FileSpreadsheet size={18} /> Export Excel
           </button>
           <button
             onClick={handleExportPDF}
-            className="flex items-center gap-2 px-5 py-2.5 bg-[#c2410c] text-white rounded-xl hover:bg-orange-800 transition-colors text-sm font-bold shadow-[0_4px_10px_-2px_rgba(194,65,12,0.3)]"
+            className="flex items-center justify-center gap-2 px-5 py-2.5 bg-[#c2410c] text-white rounded-xl hover:bg-orange-800 transition-colors text-sm font-bold shadow-[0_4px_10px_-2px_rgba(194,65,12,0.3)]"
           >
             <Download size={18} /> Export PDF
           </button>
         </div>
       </div>
 
-      <div className="bg-white rounded-[24px] shadow-[0_4px_30px_-5px_rgba(0,0,0,0.05)] border border-gray-100 p-6 md:p-8">
+      <div className="bg-white rounded-[24px] shadow-[0_4px_30px_-5px_rgba(0,0,0,0.05)] border border-gray-100 p-4 md:p-8 w-full overflow-hidden">
         {/* Filters */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 md:gap-6 mb-8">
+
           <div className="space-y-2">
             <label className="text-[11px] font-extrabold text-slate-500 uppercase tracking-wider">Periode</label>
             <div className="relative">
@@ -315,7 +316,7 @@ export default function Laporan() {
 
         {/* Table Area */}
         <div 
-          className="border border-gray-200 rounded-[20px] overflow-x-auto bg-white"
+          className="border border-gray-200 rounded-[20px] overflow-x-auto bg-white w-full"
           ref={reportRef}
         >
           <table className="w-full text-left border-collapse min-w-[800px]">
