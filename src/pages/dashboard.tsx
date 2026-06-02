@@ -1111,7 +1111,7 @@ export default function Dashboard() {
         ) : (
           <div className="bg-white p-6 rounded-3xl border border-gray-100 shadow-[0_8px_30px_rgb(0,0,0,0.06)] hover:shadow-[0_20px_40px_rgb(0,0,0,0.12)] transition-all duration-300 flex flex-col items-center mt-3">
             <div className="text-center mb-6 w-full px-4">
-              <h3 className="text-[16px] font-bold text-slate-800 leading-tight">
+              <h3 className="text-[16px] font-bold text-slate-800 leading-tight" style={{ fontSize: "16px" }}>
                 {selectedChartAnalysis?.indicatorTitle}
               </h3>
               <p className="text-xs font-bold text-slate-500 mt-1.5 uppercase tracking-wider">
@@ -1483,7 +1483,7 @@ export default function Dashboard() {
           <h4 className="text-sm font-bold text-slate-800 mb-3 flex items-center gap-2">
              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span> Analisa Data Insiden Keselamatan Pasien
           </h4>
-          <p className="text-sm text-slate-600 leading-relaxed font-medium">
+          <p className="text-sm text-slate-600 leading-relaxed font-medium text-justify">
             {(() => {
               if (totalIncidentCount === 0) {
                 return `Tidak terdapat laporan insiden keselamatan pasien pada ${periodeMode === "Bulanan" ? `bulan ${selectedBulan.toLowerCase()} ${selectedTahun}` : periodeMode === "Triwulan" ? `periode ${selectedTriwulan.toLowerCase().replace("triwulan 1", "triwulan I").replace("triwulan 2", "triwulan II").replace("triwulan 3", "triwulan III").replace("triwulan 4", "triwulan IV")} ${selectedTahun}` : periodeMode === "Semester" ? `periode ${selectedSemester.toLowerCase().replace("semester 1", "semester I").replace("semester 2", "semester II")} ${selectedTahun}` : `tahun ${selectedTahun}`}. Kondisi lingkungan klinis terpantau aman.`;
