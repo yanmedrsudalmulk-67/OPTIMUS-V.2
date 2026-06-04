@@ -1,4 +1,5 @@
 import React, { useState, useMemo, useEffect } from "react";
+import InteractiveDashboardModal from "../components/dashboard/InteractiveDashboardModal";
 import {
   Target,
   AlertTriangle,
@@ -938,7 +939,7 @@ export default function Dashboard() {
                   <th className="py-2 px-1.5 md:py-4 md:px-8 font-black text-[8px] md:text-xs border-r border-[#10a37f]/20 w-6 md:w-16 text-center">
                     NO
                   </th>
-                  <th className="py-2 px-2 md:py-4 md:px-6 font-black text-[8px] md:text-xs uppercase tracking-wider">
+                  <th className="py-2 px-2 md:py-4 md:px-6 font-black text-[8px] md:text-xs uppercase tracking-wider text-center">
                     Indikator Mutu
                   </th>
                   <th className="py-2 px-1.5 md:py-4 md:px-6 font-black text-[8px] md:text-xs text-center uppercase tracking-wider w-12 md:w-32">
@@ -1530,255 +1531,16 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* MODAL / POPUP DETAIL CARD */}
-      <AnimatePresence>
-        {activeModal && (
-          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
-            {/* Backdrop */}
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm"
-              onClick={() => setActiveModal(null)}
-            />
-
-            {/* Modern Premium Modal Content */}
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95, y: 10 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95, y: 10 }}
-              transition={{ duration: 0.2 }}
-              className="relative w-full max-w-3xl max-h-[85dvh] flex flex-col bg-white/95 backdrop-blur-xl rounded-3xl shadow-[0_20px_60px_-15px_rgba(0,0,0,0.3)] border border-white overflow-hidden"
-            >
-              {/* Modal Header */}
-              <div className="flex items-center justify-between px-6 py-5 border-b border-gray-100 bg-white/50 shrink-0">
-                <div className="flex items-center gap-3">
-                  <div
-                    className={`p-2 rounded-xl ${
-                      activeModal === "TERCAPAI"
-                        ? "bg-orange-50 text-orange-500"
-                        : activeModal === "BELUM_TERCAPAI"
-                          ? "bg-red-50 text-red-500"
-                          : activeModal === "IKP"
-                            ? "bg-blue-50 text-blue-500"
-                            : "bg-teal-50 text-teal-650"
-                    }`}
-                  >
-                    {activeModal === "TERCAPAI" && (
-                      <Target size={24} strokeWidth={2.5} />
-                    )}
-                    {activeModal === "BELUM_TERCAPAI" && (
-                      <AlertTriangle size={24} strokeWidth={2.5} />
-                    )}
-                    {activeModal === "IKP" && (
-                      <ShieldAlert size={24} strokeWidth={2.5} />
-                    )}
-                    {activeModal === "ALL" && (
-                      <ListTodo size={24} strokeWidth={2.5} />
-                    )}
-                  </div>
-                  <div>
-                    <h3 className="text-sm md:text-lg font-black text-slate-800 uppercase tracking-tight">
-                      {activeModal === "TERCAPAI" &&
-                        "Pemenuhan Target INM Tercapai"}
-                      {activeModal === "BELUM_TERCAPAI" &&
-                        "Indikator Belum Tercapai"}
-                      {activeModal === "IKP" && "Detail Laporan Kejadian IKP"}
-                      {activeModal === "ALL" && "Seluruh Daftar Indikator Mutu"}
-                    </h3>
-                    <p className="text-[10px] md:text-xs text-gray-500 font-bold mt-0.5">
-                      {activeModal === "IKP"
-                        ? "Daftar Insiden Keselamatan Pasien Tercatat"
-                        : "Berdasarkan Periode Filter Saat Ini"}
-                    </p>
-                  </div>
-                </div>
-                <button
-                  onClick={() => setActiveModal(null)}
-                  className="p-2 bg-slate-50 hover:bg-red-50 hover:text-red-500 rounded-full transition-colors text-slate-400"
-                >
-                  <X size={18} />
-                </button>
-              </div>
-
-              {/* Search / Filter Section */}
-              <div className="px-6 py-3 border-b border-gray-100 bg-slate-50/50 shrink-0 flex gap-2">
-                <div className="relative flex-1">
-                  <Search
-                    size={14}
-                    className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
-                  />
-                  <input
-                    type="text"
-                    value={modalSearch}
-                    onChange={(e) => setModalSearch(e.target.value)}
-                    placeholder="Cari indikator atau unit..."
-                    className="w-full pl-9 pr-4 py-2 text-xs font-semibold border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-[#10a37f] transition-all bg-white text-gray-700"
-                  />
-                </div>
-              </div>
-
-              {/* List of items */}
-              <div className="flex-1 overflow-y-auto p-6 space-y-3 scrollbar-thin scrollbar-thumb-emerald-200 scrollbar-track-transparent">
-                {activeModal !== "IKP" &&
-                  inmTableData
-                    .filter((i) => {
-                      if (activeModal === "TERCAPAI")
-                        return i.status === "green";
-                      if (activeModal === "BELUM_TERCAPAI")
-                        return i.status !== "green";
-                      return true;
-                    })
-                    .filter(
-                      (i) =>
-                        !modalSearch ||
-                        i.name
-                          .toLowerCase()
-                          .includes(modalSearch.toLowerCase()) ||
-                        i.unit_id
-                          .toLowerCase()
-                          .includes(modalSearch.toLowerCase()),
-                    )
-                    .map((item, idx) => (
-                      <div
-                        key={idx}
-                        className="flex flex-col md:flex-row md:items-center justify-between p-4 bg-white border border-gray-100 rounded-2xl shadow-sm hover:shadow-md transition-shadow gap-4"
-                      >
-                        <div className="flex-1">
-                          <h4 className="text-xs md:text-sm font-black text-gray-800 leading-snug">
-                            {item.name}
-                          </h4>
-                          <div className="flex items-center gap-2 mt-2">
-                            <span className="text-[10px] font-bold text-gray-500 bg-slate-100 px-2 py-0.5 rounded-md">
-                              {item.unit_id}
-                            </span>
-                            <span className="text-[10px] font-bold text-gray-400">
-                              Input:{" "}
-                              {item.tanggal
-                                ? new Date(item.tanggal).toLocaleDateString(
-                                    "id-ID",
-                                  )
-                                : "-"}
-                            </span>
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-3 md:gap-5 shrink-0 bg-slate-50 p-2 md:p-3 rounded-xl border border-slate-100">
-                          <div className="text-center">
-                            <span className="block text-[9px] font-bold text-gray-400 uppercase mb-0.5">
-                              Target
-                            </span>
-                            <span className="text-xs font-black text-gray-700">
-                              {item.target}
-                            </span>
-                          </div>
-                          <div className="w-px h-8 bg-gray-200"></div>
-                          <div className="text-center">
-                            <span className="block text-[9px] font-bold text-gray-400 uppercase mb-0.5">
-                              Capaian
-                            </span>
-                            <span
-                              className={`inline-block px-2.5 py-0.5 rounded-full text-[10px] font-black border tracking-wide
-                                ${
-                                  item.status === "red"
-                                    ? "bg-red-50 text-red-600 border-red-100"
-                                    : item.status === "orange"
-                                      ? "bg-orange-50 text-orange-600 border-orange-100"
-                                      : "bg-emerald-50 text-emerald-600 border-emerald-100"
-                                }
-                             `}
-                            >
-                              {item.capaian}
-                            </span>
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-
-                {activeModal === "IKP" &&
-                  ikpDataRaw
-                    .filter(
-                      (i) =>
-                        !modalSearch ||
-                        i.keterangan
-                          ?.toLowerCase()
-                          .includes(modalSearch.toLowerCase()) ||
-                        i.unit
-                          ?.toLowerCase()
-                          .includes(modalSearch.toLowerCase()),
-                    )
-                    .map((item, idx) => (
-                      <div
-                        key={idx}
-                        className="flex flex-col p-4 bg-white border border-red-50 rounded-2xl shadow-sm hover:shadow-md transition-shadow gap-2"
-                      >
-                        <div className="flex items-center justify-between border-b border-gray-50 pb-2">
-                          <span className="text-xs font-black text-red-600 bg-red-50 px-2 py-0.5 rounded border border-red-100">
-                            Laporan IKP Pilihan
-                          </span>
-                          <span className="text-[10px] font-bold text-gray-400">
-                            {new Date(item.tanggal).toLocaleDateString("id-ID")}
-                          </span>
-                        </div>
-                        <div className="mt-1">
-                          <p className="text-xs md:text-sm font-bold text-gray-800 leading-relaxed text-balance">
-                            {item.keterangan ||
-                              "Laporan insiden keselamatan pasien tanpa keterangan."}
-                          </p>
-                        </div>
-                        <div className="flex items-center gap-2 mt-2 pt-2 border-t border-gray-50">
-                          <span className="text-[10px] font-bold text-gray-500 bg-slate-100 px-2 py-1 rounded-md">
-                            Unit Terkait: {item.unit}
-                          </span>
-                        </div>
-                      </div>
-                    ))}
-
-                {/* Empty States */}
-                {activeModal !== "IKP" &&
-                  inmTableData
-                    .filter((i) => {
-                      if (activeModal === "TERCAPAI")
-                        return i.status === "green";
-                      if (activeModal === "BELUM_TERCAPAI")
-                        return i.status !== "green";
-                      return true;
-                    })
-                    .filter(
-                      (i) =>
-                        !modalSearch ||
-                        i.name
-                          .toLowerCase()
-                          .includes(modalSearch.toLowerCase()),
-                    ).length === 0 && (
-                    <div className="flex flex-col items-center justify-center p-8 text-center text-gray-400">
-                      <ListTodo size={32} className="mb-3 opacity-20" />
-                      <p className="text-xs font-bold">
-                        Tidak ada indikator yang sesuai pencarian.
-                      </p>
-                    </div>
-                  )}
-
-                {activeModal === "IKP" &&
-                  ikpDataRaw.filter(
-                    (i) =>
-                      !modalSearch ||
-                      i.keterangan
-                        ?.toLowerCase()
-                        .includes(modalSearch.toLowerCase()),
-                  ).length === 0 && (
-                    <div className="flex flex-col items-center justify-center p-8 text-center text-gray-400">
-                      <ShieldAlert size={32} className="mb-3 opacity-20" />
-                      <p className="text-xs font-bold">
-                        Tidak ada laporan IKP yang ditemukan.
-                      </p>
-                    </div>
-                  )}
-              </div>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
+      <InteractiveDashboardModal
+        activeModal={activeModal}
+        setActiveModal={setActiveModal}
+        inmTableData={inmTableData}
+        ikpDataRaw={ikpDataRaw}
+        indicatorProfiles={indicatorProfiles}
+        filteredDataMutu={filteredDataMutu}
+        dataMutuList={dataMutuList}
+        periodeText={periodeMode === "Bulanan" ? `Bulan ${selectedBulan} ${selectedTahun}` : periodeMode === "Triwulan" ? `${selectedTriwulan} ${selectedTahun}` : periodeMode === "Semester" ? `${selectedSemester} ${selectedTahun}` : `Tahun ${selectedTahun}`}
+      />
     </div>
   );
 }
