@@ -679,9 +679,12 @@ export default function Dashboard() {
       {/* KPI Overview Cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-2 md:gap-3 lg:gap-4 xl:gap-6">
         {/* Card 1: Pemenuhan Target INM */}
-        <div
+        <motion.div
+          whileHover={{ scale: 1.02, boxShadow: '0 10px 30px -10px rgba(16, 163, 127, 0.3)' }}
+          whileTap={{ scale: 0.98 }}
+          transition={{ duration: 0.15 }}
           onClick={() => setActiveModal("TERCAPAI")}
-          className="bg-white rounded-[20px] md:rounded-[24px] p-4 md:p-6 shadow-[0_8px_24px_rgba(0,0,0,0.05)] border border-emerald-100 flex flex-col hover:-translate-y-1 transition-all duration-250 cursor-pointer relative overflow-hidden group h-full"
+          className="bg-white rounded-[20px] md:rounded-[24px] p-4 md:p-6 shadow-[0_8px_24px_rgba(0,0,0,0.05)] border border-emerald-100 flex flex-col cursor-pointer relative overflow-hidden group h-full"
         >
           <div className="absolute bottom-0 left-0 right-0 h-1.5 bg-gradient-to-r from-emerald-400 to-emerald-600 shadow-[0_0_15px_rgba(16,163,127,0.8)] opacity-80 group-hover:opacity-100 group-hover:h-2 transition-all duration-300" />
           <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-50 rounded-full blur-3xl opacity-50 group-hover:opacity-80 transition-opacity pointer-events-none" />
@@ -732,12 +735,15 @@ export default function Dashboard() {
               </span>
             </div>
           </div>
-        </div>
+        </motion.div>
 
         {/* Card 2: Indikator Belum Tercapai */}
-        <div
+        <motion.div
+          whileHover={{ scale: 1.02, boxShadow: '0 10px 30px -10px rgba(220, 38, 38, 0.3)' }}
+          whileTap={{ scale: 0.98 }}
+          transition={{ duration: 0.15 }}
           onClick={() => setActiveModal("BELUM_TERCAPAI")}
-          className="bg-white rounded-[20px] md:rounded-[24px] p-4 md:p-6 shadow-[0_8px_24px_rgba(0,0,0,0.05)] border border-red-100 flex flex-col hover:-translate-y-1 transition-all duration-250 cursor-pointer relative overflow-hidden group h-full"
+          className="bg-white rounded-[20px] md:rounded-[24px] p-4 md:p-6 shadow-[0_8px_24px_rgba(0,0,0,0.05)] border border-red-100 flex flex-col cursor-pointer relative overflow-hidden group h-full"
         >
           <div className="absolute bottom-0 left-0 right-0 h-1.5 bg-gradient-to-r from-red-400 to-red-600 shadow-[0_0_15px_rgba(220,38,38,0.8)] opacity-80 group-hover:opacity-100 group-hover:h-2 transition-all duration-300" />
           <div className="absolute top-0 right-0 w-32 h-32 bg-red-50 rounded-full blur-3xl opacity-50 group-hover:opacity-80 transition-opacity pointer-events-none" />
@@ -767,12 +773,15 @@ export default function Dashboard() {
               </span>
             </div>
           </div>
-        </div>
+        </motion.div>
 
         {/* Card 3: Kejadian IKP */}
-        <div
+        <motion.div
+          whileHover={{ scale: 1.02, boxShadow: '0 10px 30px -10px rgba(37, 99, 235, 0.3)' }}
+          whileTap={{ scale: 0.98 }}
+          transition={{ duration: 0.15 }}
           onClick={() => setActiveModal("IKP")}
-          className="bg-white rounded-[20px] md:rounded-[24px] p-4 md:p-6 shadow-[0_8px_24px_rgba(0,0,0,0.05)] border border-blue-100 flex flex-col hover:-translate-y-1 transition-all duration-250 cursor-pointer relative overflow-hidden group h-full"
+          className="bg-white rounded-[20px] md:rounded-[24px] p-4 md:p-6 shadow-[0_8px_24px_rgba(0,0,0,0.05)] border border-blue-100 flex flex-col cursor-pointer relative overflow-hidden group h-full"
         >
           <div className="absolute bottom-0 left-0 right-0 h-1.5 bg-gradient-to-r from-blue-400 to-blue-600 shadow-[0_0_15px_rgba(37,99,235,0.8)] opacity-80 group-hover:opacity-100 group-hover:h-2 transition-all duration-300" />
           <div className="absolute top-0 right-0 w-32 h-32 bg-blue-50 rounded-full blur-3xl opacity-50 group-hover:opacity-80 transition-opacity pointer-events-none" />
@@ -813,12 +822,15 @@ export default function Dashboard() {
               </div>
             </div>
           </div>
-        </div>
+        </motion.div>
 
         {/* Card 4: Total Indikator */}
-        <div
+        <motion.div
+          whileHover={{ scale: 1.02, boxShadow: '0 10px 30px -10px rgba(234, 88, 12, 0.3)' }}
+          whileTap={{ scale: 0.98 }}
+          transition={{ duration: 0.15 }}
           onClick={() => setActiveModal("ALL")}
-          className="bg-white rounded-[20px] md:rounded-[24px] p-4 md:p-6 shadow-[0_8px_24px_rgba(0,0,0,0.05)] border border-orange-100 flex flex-col hover:-translate-y-1 transition-all duration-250 cursor-pointer relative overflow-hidden group h-full"
+          className="bg-white rounded-[20px] md:rounded-[24px] p-4 md:p-6 shadow-[0_8px_24px_rgba(0,0,0,0.05)] border border-orange-100 flex flex-col cursor-pointer relative overflow-hidden group h-full"
         >
           <div className="absolute bottom-0 left-0 right-0 h-1.5 bg-gradient-to-r from-orange-400 to-orange-600 shadow-[0_0_15px_rgba(234,88,12,0.8)] opacity-80 group-hover:opacity-100 group-hover:h-2 transition-all duration-300" />
           <div className="absolute top-0 right-0 w-32 h-32 bg-orange-50 rounded-full blur-3xl opacity-50 group-hover:opacity-80 transition-opacity pointer-events-none" />
@@ -833,15 +845,15 @@ export default function Dashboard() {
             </div>
 
             <div className="mt-2 md:mt-4">
-              <p className="text-[11px] md:text-[15px] font-semibold text-gray-500 leading-tight md:leading-[1.4] mb-0 line-clamp-1">
-                Total Indikator Aktif
+              <p className="text-[11px] md:text-[15px] font-semibold text-gray-500 leading-tight md:leading-[1.4] mb-0 line-clamp-1 md:line-clamp-2 xl:line-clamp-1">
+                Total Indikator <br className="hidden md:block xl:hidden" /> Aktif
               </p>
               <h3 className="text-[28px] md:text-[48px] font-extrabold text-slate-800 leading-none mt-1 md:mt-[12px] mb-1 md:mb-[12px] italic">
                 {indicatorProfiles.length}
               </h3>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-y-2 gap-x-[10px] mt-auto pt-3 md:pt-4 border-t border-gray-100/80">
+            <div className="grid grid-cols-1 xl:grid-cols-2 gap-y-2 gap-x-[10px] mt-auto pt-3 md:pt-4 border-t border-gray-100/80">
               <div className="flex items-center gap-1.5 md:gap-2">
                 <ShieldCheck
                   className="w-4 h-4 md:w-5 md:h-5 text-emerald-500 shrink-0"
@@ -904,7 +916,7 @@ export default function Dashboard() {
               </div>
             </div>
           </div>
-        </div>
+        </motion.div>
       </div>
 
       {/* 1. 13 Indikator Nasional Mutu (INM) Table */}

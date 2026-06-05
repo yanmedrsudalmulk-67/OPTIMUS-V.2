@@ -117,8 +117,6 @@ export default function InteractiveDashboardModal({
     });
   };
 
-  if (!activeModal) return null;
-
   const exportCSV = (filename: string, rows: object[]) => {
     if (rows.length === 0) return;
     const header = Object.keys(rows[0]).join(",");
@@ -147,48 +145,60 @@ export default function InteractiveDashboardModal({
   };
 
   return (
-    <div className="fixed inset-0 z-[150] flex py-4 md:py-10 justify-center bg-slate-900/60 backdrop-blur-sm overflow-y-auto w-full">
-      <motion.div 
-        initial={{ opacity: 0, scale: 0.95, y: 10 }}
-        animate={{ opacity: 1, scale: 1, y: 0 }}
-        exit={{ opacity: 0, scale: 0.95, y: 10 }}
-        className="bg-white/95 backdrop-blur-xl w-full max-w-[90vw] md:max-w-[80vw] min-h-[80vh] flex flex-col md:rounded-3xl shadow-2xl border border-white"
-      >
-        {/* Header */}
-        <div className="sticky top-0 bg-white/90 backdrop-blur-md border-b border-gray-200 p-5 md:px-8 flex justify-between items-center z-20 md:rounded-t-3xl shadow-sm">
-          <div className="flex items-center gap-4">
-            <div className={`p-3 rounded-2xl ${activeModal === "TERCAPAI" ? "bg-emerald-50 text-emerald-600" : activeModal === "BELUM_TERCAPAI" ? "bg-rose-50 text-rose-600" : activeModal === "IKP" ? "bg-blue-50 text-blue-600" : "bg-teal-50 text-teal-600"}`}>
-              {activeModal === "TERCAPAI" && <Target size={28} strokeWidth={2.5} />}
-              {activeModal === "BELUM_TERCAPAI" && <AlertTriangle size={28} strokeWidth={2.5} />}
-              {activeModal === "IKP" && <ShieldAlert size={28} strokeWidth={2.5} />}
-              {activeModal === "ALL" && <ListTodo size={28} strokeWidth={2.5} />}
+    <AnimatePresence>
+      {activeModal && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.15 }}
+          className="fixed inset-0 z-[150] flex py-4 md:py-10 justify-center bg-black/20 backdrop-blur-[6px] overflow-y-auto w-full"
+        >
+          <motion.div 
+            initial={{ opacity: 0, scale: 0.92, y: 8 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.92, y: 8 }}
+            transition={{ 
+              duration: 0.2, 
+              ease: [0.22, 1, 0.36, 1] 
+            }}
+            className="m-auto bg-white/95 backdrop-blur-xl w-full max-w-[90vw] md:max-w-[80vw] h-auto min-h-[50vh] max-h-[90vh] flex flex-col md:rounded-[24px] shadow-2xl border border-white"
+          >
+            {/* Header */}
+            <div className="sticky top-0 bg-white/90 backdrop-blur-md border-b border-gray-200 p-5 md:px-8 flex justify-between items-center z-20 md:rounded-t-[24px] shadow-[0_4px_20px_-12px_rgba(0,0,0,0.1)]">
+              <div className="flex items-center gap-4">
+                <div className={`p-3 rounded-2xl ${activeModal === "TERCAPAI" ? "bg-emerald-50 text-emerald-600" : activeModal === "BELUM_TERCAPAI" ? "bg-rose-50 text-rose-600" : activeModal === "IKP" ? "bg-blue-50 text-blue-600" : "bg-teal-50 text-teal-600"}`}>
+                  {activeModal === "TERCAPAI" && <Target size={28} strokeWidth={2.5} />}
+                  {activeModal === "BELUM_TERCAPAI" && <AlertTriangle size={28} strokeWidth={2.5} />}
+                  {activeModal === "IKP" && <ShieldAlert size={28} strokeWidth={2.5} />}
+                  {activeModal === "ALL" && <ListTodo size={28} strokeWidth={2.5} />}
+                </div>
+                <div>
+                  <h2 className="text-xl md:text-2xl font-black text-slate-800 uppercase tracking-tight">
+                    {activeModal === "TERCAPAI" && "DETAIL PEMENUHAN TARGET INM"}
+                    {activeModal === "BELUM_TERCAPAI" && "INDIKATOR BELUM TERCAPAI"}
+                    {activeModal === "IKP" && "DETAIL LAPORAN INSIDEN KESELAMATAN PASIEN"}
+                    {activeModal === "ALL" && "SELURUH INDIKATOR MUTU"}
+                  </h2>
+                  <p className="text-sm font-bold text-slate-500 mt-1 capitalize shadow-sm inline-block px-3 py-1 bg-slate-50 border border-slate-100 rounded-full">
+                    Periode: {periodeText}
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-center gap-3">
+                 <button className="hidden md:flex items-center gap-2 px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl transition-all duration-200" onClick={() => {
+                    if (activeModal === 'TERCAPAI') exportCSV('Tercapai', summaryTercapai);
+                    if (activeModal === 'BELUM_TERCAPAI') exportCSV('Belum_Tercapai', summaryBelumTercapai);
+                    if (activeModal === 'ALL') exportCSV('Semua_Indikator', inmTableData);
+                    if (activeModal === 'IKP') exportCSV('Laporan_IKP', cleanIkpData);
+                 }}>
+                   <Download size={16} /> Export Excel
+                 </button>
+                <button className="p-3 font-bold text-slate-400 bg-white border border-gray-200 hover:text-rose-500 hover:border-rose-200 rounded-xl hover:bg-rose-50 transition-all duration-200 cursor-pointer active:scale-95" onClick={() => setActiveModal(null)}>
+                  <X size={20} className="stroke-[2.5]" />
+                </button>
+              </div>
             </div>
-            <div>
-              <h2 className="text-xl md:text-2xl font-black text-slate-800 uppercase tracking-tight">
-                {activeModal === "TERCAPAI" && "DETAIL PEMENUHAN TARGET INM"}
-                {activeModal === "BELUM_TERCAPAI" && "INDIKATOR BELUM TERCAPAI"}
-                {activeModal === "IKP" && "DETAIL LAPORAN INSIDEN KESELAMATAN PASIEN"}
-                {activeModal === "ALL" && "SELURUH INDIKATOR MUTU"}
-              </h2>
-              <p className="text-sm font-bold text-slate-500 mt-1 capitalize shadow-sm inline-block px-3 py-1 bg-slate-50 border border-slate-100 rounded-full">
-                Periode: {periodeText}
-              </p>
-            </div>
-          </div>
-          <div className="flex items-center gap-3">
-             <button className="hidden md:flex items-center gap-2 px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl transition" onClick={() => {
-                if (activeModal === 'TERCAPAI') exportCSV('Tercapai', summaryTercapai);
-                if (activeModal === 'BELUM_TERCAPAI') exportCSV('Belum_Tercapai', summaryBelumTercapai);
-                if (activeModal === 'ALL') exportCSV('Semua_Indikator', inmTableData);
-                if (activeModal === 'IKP') exportCSV('Laporan_IKP', cleanIkpData);
-             }}>
-               <Download size={16} /> Export Excel
-             </button>
-            <button className="p-3 font-bold text-slate-400 bg-white border border-gray-200 hover:text-rose-500 rounded-xl hover:bg-rose-50 transition" onClick={() => setActiveModal(null)}>
-              <X size={20} className="stroke-[2.5]" />
-            </button>
-          </div>
-        </div>
 
         {/* Content */}
         <div className="flex-1 overflow-y-auto p-5 md:p-8 flex flex-col md:flex-row gap-8 bg-slate-50/50">
@@ -510,6 +520,8 @@ export default function InteractiveDashboardModal({
 
         </div>
       </motion.div>
-    </div>
+        </motion.div>
+      )}
+    </AnimatePresence>
   );
 }

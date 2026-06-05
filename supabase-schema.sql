@@ -122,9 +122,31 @@ DROP POLICY IF EXISTS "Public All units" ON public.units;
 CREATE POLICY "Public Read units" ON public.units FOR SELECT USING (true);
 CREATE POLICY "Public All units" ON public.units FOR ALL USING (true) WITH CHECK (true);
 
+-- ==========================================
+-- 6. Tabel Data Visite DPJP (Khusus Monitor Visite)
+-- ==========================================
+CREATE TABLE IF NOT EXISTS public.visite_dpjp (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  tanggal_visite DATE,
+  nama_pasien TEXT,
+  visite_sebelum_14 BOOLEAN,
+  visite_setelah_14 BOOLEAN,
+  nama_dokter TEXT,
+  keterangan TEXT,
+  indikator_id TEXT,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()),
+  created_by UUID
+);
+
+ALTER TABLE public.visite_dpjp ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Public Read visite_dpjp" ON public.visite_dpjp;
+DROP POLICY IF EXISTS "Public All visite_dpjp" ON public.visite_dpjp;
+CREATE POLICY "Public Read visite_dpjp" ON public.visite_dpjp FOR SELECT USING (true);
+CREATE POLICY "Public All visite_dpjp" ON public.visite_dpjp FOR ALL USING (true) WITH CHECK (true);
+
 
 -- ==========================================
--- 6. Setup Supabase Storage (Bucket untuk Logo & Bukti Lampiran)
+-- 7. Setup Supabase Storage (Bucket untuk Logo & Bukti Lampiran)
 -- ==========================================
 -- (Harap pastikan skema storage telah aktif pada proyek Anda).
 INSERT INTO storage.buckets (id, name, public) 

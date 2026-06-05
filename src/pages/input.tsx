@@ -164,6 +164,11 @@ export default function InputData() {
     return indicatorProfiles.find((i) => i.id === watchIndikatorId);
   }, [indicatorProfiles, watchIndikatorId]);
 
+  const isVisiteDokter = watchIndikatorId === "7" || !!selectedIndikatorProfile?.indicator_title?.toLowerCase().includes("visite");
+  const isRisikoJatuh = watchIndikatorId === "11" || !!selectedIndikatorProfile?.indicator_title?.toLowerCase().includes("jatuh");
+  const isIdentifikasiPasien = watchIndikatorId === "3" || !!selectedIndikatorProfile?.indicator_title?.toLowerCase().includes("identifikasi pasien");
+  const isWaktuTunggu = watchIndikatorId === "5" || !!selectedIndikatorProfile?.indicator_title?.toLowerCase().includes("waktu tunggu");
+
   // States for dynamic custom subgrids/checklists inside section 7
   const [visiteGrid, setVisiteGrid] = useState<VisiteData[]>([]);
   const [jatuhGrid, setJatuhGrid] = useState<JatuhData[]>([]);
@@ -189,10 +194,10 @@ export default function InputData() {
     let den = watchDenominator !== undefined && watchDenominator > 0 ? watchDenominator : 1;
 
     // Special calculations
-    if (watchIndikatorId === "7") {
+    if (isVisiteDokter) {
       num = visiteGrid.filter((d) => d.jam_visite_kurang_14 && d.keterangan === "Sesuai Jadwal").length;
       den = visiteGrid.length || 1;
-    } else if (watchIndikatorId === "11") {
+    } else if (isRisikoJatuh) {
       num = jatuhGrid.reduce(
         (acc, curr) => acc + (curr.asesmen_awal ? 1 : 0) + (curr.asesmen_ulang ? 1 : 0) + (curr.intervensi ? 1 : 0),
         0
@@ -205,7 +210,7 @@ export default function InputData() {
 
     const val = parseFloat(((num / (den || 1)) * 100).toFixed(2));
     return isNaN(val) ? 0 : val;
-  }, [watchNumerator, watchDenominator, watchIndikatorId, visiteGrid, jatuhGrid, customNumerator, customDenominator]);
+  }, [watchNumerator, watchDenominator, isVisiteDokter, isRisikoJatuh, visiteGrid, jatuhGrid, customNumerator, customDenominator]);
 
   const achievementStatus = useMemo(() => {
     if (!selectedIndikatorProfile) return "N/A";
@@ -339,8 +344,14 @@ export default function InputData() {
       visiteGrid.map((r) => {
         if (r.id !== id) return r;
         const updated = { ...r, [field]: value };
-        if (field === "jam_visite_kurang_14" && value) updated.jam_visite_lebih_14 = false;
-        if (field === "jam_visite_lebih_14" && value) updated.jam_visite_kurang_14 = false;
+        if (field === "jam_visite_kurang_14" && value) {
+          updated.jam_visite_lebih_14 = false;
+          updated.keterangan = "Sesuai Jadwal";
+        }
+        if (field === "jam_visite_lebih_14" && value) {
+          updated.jam_visite_kurang_14 = false;
+          updated.keterangan = "Tidak Sesuai Jadwal";
+        }
         return updated;
       })
     );
@@ -384,10 +395,10 @@ export default function InputData() {
     let finalDen = data.denominator_val || 1;
 
     if (data.kategori !== "IKP") {
-      if (watchIndikatorId === "7") {
+      if (isVisiteDokter) {
         finalNum = visiteGrid.filter((d) => d.jam_visite_kurang_14 && d.keterangan === "Sesuai Jadwal").length;
         finalDen = visiteGrid.length || 1;
-      } else if (watchIndikatorId === "11") {
+      } else if (isRisikoJatuh) {
         finalNum = jatuhGrid.reduce(
           (acc, curr) => acc + (curr.asesmen_awal ? 1 : 0) + (curr.asesmen_ulang ? 1 : 0) + (curr.intervensi ? 1 : 0),
           0
@@ -420,8 +431,8 @@ export default function InputData() {
       ktc: data.kategori === "IKP" ? data.ktc || 0 : undefined,
       ktd: data.kategori === "IKP" ? data.ktd || 0 : undefined,
       sentinel: data.kategori === "IKP" ? data.sentinel || 0 : undefined,
-      visite_details: watchIndikatorId === "7" ? [...visiteGrid] : undefined,
-      jatuh_details: watchIndikatorId === "11" ? [...jatuhGrid] : undefined,
+      visite_details: isVisiteDokter ? [...visiteGrid] : undefined,
+      jatuh_details: isRisikoJatuh ? [...jatuhGrid] : undefined,
     };
 
     // 1. Save locally in Zustand instantly (Optimistic update)
@@ -451,6 +462,24 @@ export default function InputData() {
         attachment_url: uploadedProofName || null,
         created_at: new Date().toISOString(),
       });
+
+      // Simpan rincian data visite ke tabel visite_dpjp jika applicable
+      if (isVisiteDokter && visiteGrid.length > 0) {
+        const visitePayload = visiteGrid.map(v => ({
+          tanggal_visite: v.tanggal,
+          nama_pasien: v.nama_pasien,
+          visite_sebelum_14: v.jam_visite_kurang_14,
+          visite_setelah_14: v.jam_visite_lebih_14,
+          nama_dokter: v.dokter_visite,
+          keterangan: v.keterangan || (v.jam_visite_kurang_14 ? "Sesuai Jadwal" : "Tidak Sesuai Jadwal"),
+          indikator_id: data.indikator_id || null,
+        }));
+        try {
+          await supabase.from("visite_dpjp").insert(visitePayload);
+        } catch (e) {
+          console.warn("Failed saving into visite_dpjp:", e);
+        }
+      }
     } catch (supabaseError) {
       console.warn("Supabase sync skipped - data recorded in local Zustand and memory channels", supabaseError);
     }
@@ -778,13 +807,13 @@ export default function InputData() {
           {watchKategori !== "IKP" && selectedIndikatorProfile && (
             <div className="space-y-6">
               {/* Specialized Form For Visite Dokter (ID "7") */}
-              {watchIndikatorId === "7" && (
+              {isVisiteDokter && (
                 <div className="bg-white border border-emerald-100 rounded-[28px] overflow-hidden shadow-xs animate-in fade-in">
                   <div className="bg-emerald-600 p-5 flex items-center justify-between">
                     <div className="flex items-center gap-3">
                       <Activity size={20} className="text-white" />
                       <h3 className="font-extrabold text-white tracking-wide text-sm md:text-base">
-                        Data Registrasi Kepatuhan Visite Dokter
+                        Input Data Indikator Kepatuhan Waktu Visite Dokter
                       </h3>
                     </div>
                     <button
@@ -806,7 +835,7 @@ export default function InputData() {
                           <th className="py-3 px-4 font-extrabold text-xs uppercase text-center w-28 border-r border-emerald-100/30">Visite {'<'} 14.00</th>
                           <th className="py-3 px-4 font-extrabold text-xs uppercase text-center w-28 border-r border-emerald-100/30">Visite {'>'} 14.00</th>
                           <th className="py-3 px-4 font-extrabold text-xs uppercase border-r border-emerald-100/30 min-w-[200px]">Dokter Penanggung Jawab</th>
-                          <th className="py-3 px-4 font-extrabold text-xs uppercase w-48 border-r border-emerald-100/30">Kelayakan Keterangan</th>
+                          <th className="py-3 px-4 font-extrabold text-xs uppercase w-48 border-r border-emerald-100/30">Keterangan</th>
                           <th className="py-3 px-4 font-extrabold text-xs uppercase w-16 text-center rounded-tr-xl">Aksi</th>
                         </tr>
                       </thead>
@@ -864,11 +893,13 @@ export default function InputData() {
                                 >
                                   <option value="">-- Pilih Dokter Spesialis --</option>
                                   <option value="dr. Hijrah Saputra WR, Sp.PD">dr. Hijrah Saputra WR, Sp.PD</option>
-                                  <option value="dr. Niko Adhi H, Sp.PD., M.Kes., FINASIM">dr. Niko Adhi H, Sp.PD., FINASIM</option>
-                                  <option value="dr. Dhyniek Nurul FLA, Sp.A">dr. Dhyniek Nurul FLA, Sp.A</option>
-                                  <option value="dr. Ferry Sudarsono, Sp.B., FINACS">dr. Ferry Sudarsono, Sp.B., FINACS</option>
-                                  <option value="dr. Billy Nusa Anggara T, Sp.OG">dr. Billy Nusa Anggara T, Sp.OG</option>
-                                  <option value="dr. Haris Nut, Sp.N">dr. Haris Nut, Sp.N</option>
+                                  <option value="dr. Niko Adhi Husni, Sp.PD., M.Kes., FINASIM">dr. Niko Adhi Husni, Sp.PD., M.Kes., FINASIM</option>
+                                  <option value="dr. Dhyniek Nurul F.L.A., Sp.A">dr. Dhyniek Nurul F.L.A., Sp.A</option>
+                                  <option value="dr. Ferry Sudarsono, Sp.B">dr. Ferry Sudarsono, Sp.B</option>
+                                  <option value="dr. Haris Nur, Sp.N">dr. Haris Nur, Sp.N</option>
+                                  <option value="dr. Billy Nusa Anggara T., Sp.OG">dr. Billy Nusa Anggara T., Sp.OG</option>
+                                  <option value="dr. Muthiah Nurul Izzah, Sp.OG">dr. Muthiah Nurul Izzah, Sp.OG</option>
+                                  <option value="dr. Asep Tajul Mutaqin, Sp.B">dr. Asep Tajul Mutaqin, Sp.B</option>
                                 </select>
                               </td>
                               <td className="py-3 px-4 border-r border-emerald-50">
@@ -885,7 +916,11 @@ export default function InputData() {
                               <td className="py-3 px-4 text-center">
                                 <button
                                   type="button"
-                                  onClick={() => handleRemoveVisiteRow(row.id)}
+                                  onClick={() => {
+                                    if (window.confirm("Hapus data pasien ini?")) {
+                                      handleRemoveVisiteRow(row.id);
+                                    }
+                                  }}
                                   className="text-red-500 hover:text-red-700 hover:bg-red-50 p-1.5 rounded-lg transition-colors"
                                 >
                                   <Trash2 size={15} />
@@ -901,7 +936,7 @@ export default function InputData() {
               )}
 
               {/* Specialized Form For Upaya Risiko Jatuh (ID "11") */}
-              {watchIndikatorId === "11" && (
+              {isRisikoJatuh && (
                 <div className="bg-white border border-emerald-100 rounded-[28px] overflow-hidden shadow-xs animate-in fade-in">
                   <div className="bg-emerald-600 p-5 flex items-center justify-between">
                     <div className="flex items-center gap-3">
@@ -1015,7 +1050,7 @@ export default function InputData() {
               )}
 
               {/* Advanced Custom Form: Kepatuhan Identifikasi Pasien (ID "3") */}
-              {watchIndikatorId === "3" && (
+              {isIdentifikasiPasien && (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8 border-t border-emerald-100/10 pt-4">
                   <div className="bg-[#fbFdfC] border border-emerald-50 rounded-3xl p-6 space-y-4">
                     <span className="text-[10px] bg-emerald-100 text-emerald-800 px-3 py-1 rounded-md font-black">
@@ -1081,7 +1116,7 @@ export default function InputData() {
               )}
 
               {/* Advanced Custom Form: Waktu Tunggu Rawat Jalan (ID "5") */}
-              {watchIndikatorId === "5" && (
+              {isWaktuTunggu && (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8 border-t border-emerald-100/10 pt-4">
                   <div className="bg-[#fbFdfC] border border-emerald-50 rounded-3xl p-6 space-y-4">
                     <span className="text-[10px] bg-emerald-100 text-emerald-800 px-3 py-1 rounded-md font-black">
@@ -1154,7 +1189,7 @@ export default function InputData() {
               )}
 
               {/* C. Fallback Fields For Dynamic Standard Indicators */}
-              {watchIndikatorId !== "7" && watchIndikatorId !== "11" && watchIndikatorId !== "3" && watchIndikatorId !== "5" && (
+              {!isVisiteDokter && !isRisikoJatuh && !isIdentifikasiPasien && !isWaktuTunggu && (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8 border-t border-emerald-100/10 pt-4">
                   <div className="bg-[#fbFdfC] border border-emerald-50 rounded-3xl p-6 md:p-8 flex flex-col justify-between hover:shadow-xs hover:border-emerald-100 transition-all duration-300">
                     <div>
@@ -1242,7 +1277,7 @@ export default function InputData() {
             <button
               type="submit"
               disabled={isSubmitting}
-              className={`px-12 py-4 rounded-xl font-bold text-white transition-all transform hover:-translate-y-0.5 active:translate-y-0 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2.5 shadow-lg ${
+              className={`w-full md:w-auto px-12 py-4 rounded-xl font-bold text-white transition-all transform hover:-translate-y-0.5 active:translate-y-0 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2.5 shadow-lg ${
                 watchKategori === "IKP"
                   ? "bg-red-600 hover:bg-red-700 shadow-red-500/10"
                   : "bg-emerald-600 hover:bg-emerald-700 shadow-emerald-500/15"
