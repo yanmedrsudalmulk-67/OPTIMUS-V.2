@@ -161,4 +161,27 @@ DROP POLICY IF EXISTS "Public Update" ON storage.objects;
 CREATE POLICY "Public Access" ON storage.objects FOR SELECT USING (bucket_id = 'logos');
 CREATE POLICY "Public Insert" ON storage.objects FOR INSERT WITH CHECK (bucket_id = 'logos');
 CREATE POLICY "Public Delete" ON storage.objects FOR DELETE USING (bucket_id = 'logos');
-CREATE POLICY "Public Update" ON storage.objects FOR UPDATE USING (bucket_id = 'logos');
+-- ==========================================
+-- 8. Tabel Survei Budaya Keselamatan Pasien
+-- ==========================================
+CREATE TABLE IF NOT EXISTS public.survei_budaya (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  unit_kerja TEXT,
+  bagian_a JSONB,
+  bagian_b JSONB,
+  bagian_c JSONB,
+  bagian_d JSONB,
+  bagian_e TEXT,
+  bagian_f JSONB,
+  bagian_g TEXT,
+  bagian_h JSONB,
+  bagian_i_komentar TEXT,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now())
+);
+
+ALTER TABLE public.survei_budaya ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Public Read survei_budaya" ON public.survei_budaya;
+DROP POLICY IF EXISTS "Public All survei_budaya" ON public.survei_budaya;
+CREATE POLICY "Public Read survei_budaya" ON public.survei_budaya FOR SELECT USING (true);
+CREATE POLICY "Public All survei_budaya" ON public.survei_budaya FOR ALL USING (true) WITH CHECK (true);
+

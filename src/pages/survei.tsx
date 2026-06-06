@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import {
   ResponsiveContainer,
   RadarChart,
@@ -8,7 +8,8 @@ import {
   Radar,
   Legend,
 } from "recharts";
-import { Activity } from "lucide-react";
+import { Activity, Plus, ClipboardList } from "lucide-react";
+import SurveiForm from "@/components/survei/SurveiForm";
 
 const dataSurvei = [
   { subject: "Teamwork", A: 85, B: 65, fullMark: 100 },
@@ -20,9 +21,19 @@ const dataSurvei = [
 ];
 
 export default function SurveiBudaya() {
+  const [view, setView] = useState<"dashboard" | "form">("dashboard");
+
+  if (view === "form") {
+    return (
+      <div className="w-full">
+        <SurveiForm onBack={() => setView("dashboard")} />
+      </div>
+    );
+  }
+
   return (
     <div className="animate-in fade-in slide-in-from-bottom-4 duration-700 space-y-6 max-w-7xl mx-auto w-full p-2 md:p-0">
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-2">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-4 md:gap-2">
         <div>
           <h1 className="text-3xl font-bold text-[#10a37f] tracking-tight">
             Survei Budaya Keselamatan Pasien
@@ -31,6 +42,13 @@ export default function SurveiBudaya() {
             Evaluasi budaya keselamatan pasien per dimensi.
           </p>
         </div>
+        <button
+          onClick={() => setView("form")}
+          className="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white px-5 py-2.5 rounded-xl font-bold transition-all shadow-lg shadow-emerald-500/30"
+        >
+          <ClipboardList size={18} />
+          Isi Kuesioner Baru
+        </button>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6 w-full">
