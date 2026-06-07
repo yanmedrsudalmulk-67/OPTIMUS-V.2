@@ -251,7 +251,7 @@ export default function SurveiForm({ onBack }: { onBack: () => void }) {
               ${isHighlighted ? 'text-red-600' : 'text-slate-800'}`}>
               {idx + 1}. {q}
             </h4>
-            <div className="flex flex-col md:flex-row gap-2 md:gap-4 flex-wrap">
+            <div className="flex flex-col gap-3">
               {options.map((opt, oIdx) => {
                 const isSelected = (form[section as keyof typeof form] as any)[`${qKeyPrefix}_${idx}`] === opt;
                 return (
@@ -300,7 +300,7 @@ export default function SurveiForm({ onBack }: { onBack: () => void }) {
         {/* Header Title */}
         <div className="bg-gradient-to-r from-emerald-600 to-teal-700 p-8 md:p-10 text-white relative overflow-hidden">
           <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 blur-3xl rounded-full -translate-y-1/2 translate-x-1/3" />
-          <h2 className="text-2xl md:text-3xl text-center font-black mb-2 relative z-10">Kuesioner Survei Budaya Keselamatan Pasien</h2>
+          <h2 className="text-[27px] text-center font-black mb-2 relative z-10">Kuesioner Survei Budaya Keselamatan Pasien</h2>
           <p className="font-bold text-[25px] leading-[37.5px] text-[#fbfbf7] text-center whitespace-nowrap relative z-10 w-full overflow-x-auto scrollbar-hide">
             UOBK RSUD AL-MULK KOTA SUKABUMI
           </p>
@@ -416,7 +416,7 @@ export default function SurveiForm({ onBack }: { onBack: () => void }) {
                   `} />
                   <div className="w-full pl-3 md:pl-4">
                     <h4 className={`font-semibold mb-4 text-[13px] md:text-[13px] ${highlightedId === "bagian_e" ? 'text-red-600' : 'text-slate-800'}`}>Pilih tingkat keselamatan pasien pada unit anda</h4>
-                    <div className="flex flex-col md:flex-row gap-2 md:gap-4 flex-wrap">
+                    <div className="flex flex-col gap-3">
                       {["Sempurna", "Sangat Baik", "Bisa diterima", "Jelek/Buruk", "Gagal"].map((opt, idx) => (
                         <label key={idx} className={`flex items-center gap-3 cursor-pointer p-3 md:p-4 rounded-xl transition-all duration-200 flex-1 min-w-[140px]
                           ${form.bagian_e === opt ? 'bg-emerald-50 border-emerald-300 ring-1 ring-emerald-400 shadow-[0_0_15px_rgba(16,185,129,0.15)]' : 'bg-slate-50 border-slate-200 hover:bg-slate-100 border'}
@@ -468,7 +468,7 @@ export default function SurveiForm({ onBack }: { onBack: () => void }) {
                   `} />
                   <div className="w-full pl-3 md:pl-4">
                     <h4 className={`font-semibold mb-4 text-[13px] md:text-[13px] ${highlightedId === "bagian_g" ? 'text-red-600' : 'text-slate-800'}`}>Dalam 12 bulan terakhir jumlah laporan kejadian yang telah anda isi dan kirimkan</h4>
-                    <div className="flex flex-col md:flex-row gap-2 md:gap-4 flex-wrap">
+                    <div className="flex flex-col gap-3">
                       {["Tidak ada", "1 - 2 laporan", "3 - 5 laporan", "6 - 10 laporan", "11 - 20 laporan", "21 atau lebih laporan"].map((opt, idx) => (
                         <label key={idx} className={`flex items-center gap-3 cursor-pointer p-3 md:p-4 rounded-xl transition-all duration-200 flex-1 min-w-[140px]
                           ${form.bagian_g === opt ? 'bg-emerald-50 border-emerald-300 ring-1 ring-emerald-400 shadow-[0_0_15px_rgba(16,185,129,0.15)]' : 'bg-slate-50 border-slate-200 hover:bg-slate-100 border'}
@@ -514,7 +514,7 @@ export default function SurveiForm({ onBack }: { onBack: () => void }) {
                       `} />
                       <div className="w-full pl-3 md:pl-4">
                         <h4 className={`font-semibold mb-4 text-[13px] md:text-[13px] ${isHighlighted ? 'text-red-600' : 'text-slate-800'}`}>{idx + 1}. {qObj.q}</h4>
-                        <div className="flex flex-col md:flex-row gap-2 md:gap-4 flex-wrap">
+                        <div className="flex flex-col gap-3">
                           {qObj.options.map((opt, oIdx) => {
                             const isSelected = (form.bagian_h as any)[`h_${idx}`] === opt;
                             return (
