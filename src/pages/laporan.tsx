@@ -1,5 +1,5 @@
 import React, { useState, useRef, useMemo, useEffect } from "react";
-import { Download, FileText, Printer, FileSpreadsheet, RotateCcw, Filter, CheckCircle2, X, Calendar, Activity, ChevronRight, Calculator, PieChart, Info, BookOpen, Clock, Building2, User, Target } from "lucide-react";
+import { Download, FileText, Printer, FileSpreadsheet, RotateCcw, Filter, CheckCircle2, X, Calendar, Activity, ChevronRight, Calculator, PieChart, Info, BookOpen, Clock, Building2, User, Target, TrendingUp } from "lucide-react";
 import html2canvas from "html2canvas";
 import { jsPDF } from "jspdf";
 import { 
@@ -121,6 +121,9 @@ export default function Laporan() {
   const [tahun, setTahun] = useState(new Date().getFullYear().toString());
   const [kategori, setKategori] = useState("Mutu Keseluruhan");
 
+  // Display states
+  const [appliedFilters, setAppliedFilters] = useState({ periode, bulan, triwulan, semester, tahun, kategori });
+
   // Format number
   const formatNum = (num: number | undefined) => {
     if (num === undefined || isNaN(num)) return 0;
@@ -129,43 +132,83 @@ export default function Laporan() {
 
   // Detail Modal States
   const [selectedIndikatorDetail, setSelectedIndikatorDetail] = useState<any | null>(null);
-  const [activeHistoryIndex, setActiveHistoryIndex] = useState<number>(0);
   const [visiteDetails, setVisiteDetails] = useState<any[]>([]);
+  const [waktuTungguDetails, setWaktuTungguDetails] = useState<any[]>([]);
   const [isDetailLoading, setIsDetailLoading] = useState(false);
 
   const selectedProfileData = useMemo(() => {
     return indicatorProfiles.find(p => p.id === selectedIndikatorDetail?.id);
   }, [selectedIndikatorDetail, indicatorProfiles]);
 
-  const indicatorHistory = useMemo(() => {
+  const activePeriodInputs = useMemo(() => {
     if (!selectedIndikatorDetail) return [];
-    return dataMutuList
-      .filter(d => d.indikator_id === selectedIndikatorDetail.id)
-      .sort((a, b) => new Date(b.tanggal).getTime() - new Date(a.tanggal).getTime());
-  }, [dataMutuList, selectedIndikatorDetail]);
+    return dataMutuList.filter(d => {
+      if (d.indikator_id !== selectedIndikatorDetail.id) return false;
+      const date = new Date(d.tanggal);
+      const m = date.getMonth() + 1;
+      const y = date.getFullYear().toString();
+      
+      if (y !== appliedFilters.tahun) return false;
+      
+      if (appliedFilters.periode === "Bulanan" && date.getMonth().toString() !== appliedFilters.bulan) return false;
+      if (appliedFilters.periode === "Triwulan") {
+        if (appliedFilters.triwulan === "1" && m > 3) return false;
+        if (appliedFilters.triwulan === "2" && (m < 4 || m > 6)) return false;
+        if (appliedFilters.triwulan === "3" && (m < 7 || m > 9)) return false;
+        if (appliedFilters.triwulan === "4" && m < 10) return false;
+      }
+      if (appliedFilters.periode === "Semester") {
+        if (appliedFilters.semester === "1" && m > 6) return false;
+        if (appliedFilters.semester === "2" && m < 7) return false;
+      }
+      return true;
+    }).sort((a,b) => new Date(a.tanggal).getTime() - new Date(b.tanggal).getTime());
+  }, [dataMutuList, selectedIndikatorDetail, appliedFilters]);
 
-  const activeInput = indicatorHistory[activeHistoryIndex] || null;
+  const inputsGroupedByUnit = useMemo(() => {
+    const grouped: Record<string, DataMutuPayload[]> = {};
+    activePeriodInputs.forEach(input => {
+      if (!grouped[input.unit]) {
+        grouped[input.unit] = [];
+      }
+      grouped[input.unit].push(input);
+    });
+    return grouped;
+  }, [activePeriodInputs]);
 
-  const activeVisiteFiltered = useMemo(() => {
-    if (!activeInput || !visiteDetails) return [];
-    const activeDate = activeInput.tanggal; // e.g., "2026-06-07"
-    return visiteDetails.filter(v => v.tanggal_visite && v.tanggal_visite.startsWith(activeDate.substring(0, 7))); // show month
-  }, [activeInput, visiteDetails]);
+  const globalTotals = useMemo(() => {
+    let num = 0, den = 0, kpc = 0, knc = 0, ktc = 0, ktd = 0, sentinel = 0;
+    activePeriodInputs.forEach(u => {
+      num += Number(u.numerator) || 0;
+      den += Number(u.denominator) || 0;
+      kpc += Number(u.kpc) || 0;
+      knc += Number(u.knc) || 0;
+      ktc += Number(u.ktc) || 0;
+      ktd += Number(u.ktd) || 0;
+      sentinel += Number(u.sentinel) || 0;
+    });
+    
+    let capaian = 0;
+    let isTargetMet = false;
+    let targetVal = Number(selectedProfileData?.target || 0);
 
-  // Mini Chart data based on indicatorHistory
-  const chartData = useMemo(() => {
-     let data = [...indicatorHistory].reverse(); // chronological
-     return data.map(d => ({
-        name: new Date(d.tanggal).toLocaleString('id-ID', { month: 'short', day: 'numeric' }),
-        capaian: d.capaian,
-        target: d.target,
-        status: d.status
-     }));
-  }, [indicatorHistory]);
+    if (selectedProfileData) {
+      const isPersen = selectedProfileData.measurement_unit === "Persen (%)";
+      const isIndeks = selectedProfileData.measurement_unit === "Indeks";
+      const multiplier = isIndeks ? 25 : (isPersen ? 100 : 1);
+      capaian = den > 0 ? (num / den) * multiplier : 0;
+      isTargetMet = selectedProfileData.reverse ? capaian <= targetVal : capaian >= targetVal;
+    } else if (activePeriodInputs.length > 0) {
+       targetVal = Number(activePeriodInputs[0].target || 0);
+       capaian = den > 0 ? (num / den) * 100 : 0; // Default fallback calculation
+       isTargetMet = capaian >= targetVal;
+    }
+
+    return { num, den, kpc, knc, ktc, ktd, sentinel, capaian, targetVal, isTargetMet };
+  }, [activePeriodInputs, selectedProfileData]);
 
   const handleOpenDetail = async (indicator: any) => {
     setSelectedIndikatorDetail(indicator);
-    setActiveHistoryIndex(0);
     
     // Check if it's visite docter
     if (indicator.name.toLowerCase().includes("visite")) {
@@ -175,11 +218,15 @@ export default function Laporan() {
          if (data) setVisiteDetails(data);
        } catch(e) {}
        setIsDetailLoading(false);
+    } else if (indicator.name.toLowerCase().includes("waktu tunggu")) {
+       setIsDetailLoading(true);
+       try {
+         const { data, error } = await supabase.from("waktu_tunggu_rajal").select("*").eq("indikator_id", indicator.id).order("tanggal", { ascending: true });
+         if (data) setWaktuTungguDetails(data);
+       } catch(e) {}
+       setIsDetailLoading(false);
     }
   };
-
-  // Display states
-  const [appliedFilters, setAppliedFilters] = useState({ periode, bulan, triwulan, semester, tahun, kategori });
 
   const getMonths = () => {
     if (appliedFilters.periode === "Bulanan") {
@@ -199,6 +246,31 @@ export default function Laporan() {
       return [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11];
     }
     return [0, 1, 2];
+  };
+
+  const formattedMonthNames = ["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"];
+  
+  const getPeriodeText = () => {
+    if (appliedFilters.periode === "Bulanan") {
+      return `${formattedMonthNames[parseInt(appliedFilters.bulan)]} ${appliedFilters.tahun}`;
+    }
+    if (appliedFilters.periode === "Triwulan") {
+      const label = ["I", "II", "III", "IV"][parseInt(appliedFilters.triwulan) - 1];
+      let range = "";
+      if (appliedFilters.triwulan === "1") range = "Januari - Maret";
+      if (appliedFilters.triwulan === "2") range = "April - Juni";
+      if (appliedFilters.triwulan === "3") range = "Juli - September";
+      if (appliedFilters.triwulan === "4") range = "Oktober - Desember";
+      return `Triwulan ${label} (${range}) Tahun ${appliedFilters.tahun}`;
+    }
+    if (appliedFilters.periode === "Semester") {
+      const label = ["I", "II"][parseInt(appliedFilters.semester) - 1];
+      return `Semester ${label} Tahun ${appliedFilters.tahun}`;
+    }
+    if (appliedFilters.periode === "Tahunan") {
+      return `Tahun ${appliedFilters.tahun}`;
+    }
+    return "";
   };
 
   const monthNames = ["JANUARI", "FEBRUARI", "MARET", "APRIL", "MEI", "JUNI", "JULI", "AGUSTUS", "SEPTEMBER", "OKTOBER", "NOVEMBER", "DESEMBER"];
@@ -503,207 +575,310 @@ export default function Laporan() {
               </button>
             </div>
 
-            <div className="flex-1 overflow-y-auto p-6 space-y-6 scrollbar-thin scrollbar-thumb-gray-200">
+            <div className="flex-1 overflow-y-auto p-6 md:p-8 space-y-8 scrollbar-thin scrollbar-thumb-gray-200">
               {/* Period Selector of Input Records */}
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-slate-50 border border-slate-100 p-4 rounded-2xl">
-                <div className="space-y-0.5">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white border border-slate-100 p-5 rounded-2xl shadow-sm">
+                <div className="space-y-1">
                   <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider block">Periode Pengisian Terpilih</span>
-                  <div className="flex items-center gap-2 text-sm font-bold text-slate-800">
-                    <Calendar size={16} className="text-[#10a37f]" />
-                    <span>{activeInput ? new Date(activeInput.tanggal).toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" }) : "-"}</span>
+                  <div className="flex items-center gap-2 text-base font-bold text-slate-800">
+                    <Calendar size={18} className="text-[#10a37f]" />
+                    <span>{getPeriodeText()}</span>
                   </div>
                 </div>
-
-                {indicatorHistory.length > 0 && (
-                  <div className="flex items-center gap-3">
-                    <label className="text-xs font-bold text-slate-500 whitespace-nowrap">Pilih Riwayat Input:</label>
-                    <select
-                      value={activeHistoryIndex}
-                      onChange={(e) => setActiveHistoryIndex(Number(e.target.value))}
-                      className="px-4 py-2.5 text-xs font-black text-slate-700 bg-white border border-gray-200 rounded-xl outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-[#10a37f] transition-all cursor-pointer shadow-xs min-w-[200px]"
-                    >
-                      {indicatorHistory.map((hist, i) => (
-                        <option key={hist.id} value={i}>
-                          {new Date(hist.tanggal).toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" })} - {hist.unit} ({formatNum(hist.capaian)}%)
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                )}
               </div>
 
               {/* Detail Data Table */}
-              {activeInput ? (
-                <div className="space-y-6">
-                  {/* Specific Grids */}
-                  {isDetailLoading ? (
-                    <div className="p-12 text-center bg-slate-50 rounded-2xl border border-slate-100 animate-pulse flex flex-col items-center justify-center gap-2">
-                       <Activity className="animate-spin text-[#10a37f]" size={24} />
-                       <p className="text-xs font-bold text-slate-500">Memuat rincian data...</p>
-                    </div>
-                  ) : (
-                    <div className="space-y-4">
-                      <div className="flex items-center gap-2">
-                        <FileSpreadsheet size={18} className="text-[#10a37f]" />
-                        <h3 className="text-sm font-black text-slate-800 tracking-tight">Rincian Lembar Observasi Data</h3>
-                      </div>
+              {isDetailLoading ? (
+                  <div className="p-12 text-center bg-slate-50 rounded-2xl border border-slate-100 animate-pulse flex flex-col items-center justify-center gap-2">
+                     <Activity className="animate-spin text-[#10a37f]" size={24} />
+                     <p className="text-xs font-bold text-slate-500">Memuat rincian data...</p>
+                  </div>
+              ) : Object.keys(inputsGroupedByUnit).length > 0 ? (
+                <div className="space-y-12 pb-4">
+                  {Object.entries(inputsGroupedByUnit).map(([unitName, unitInputs], idx) => {
+                     // Calculate totals for this unit
+                     let totalNum = 0;
+                     let totalDen = 0;
+                     let totalKpc = 0, totalKnc = 0, totalKtc = 0, totalKtd = 0, totalSentinel = 0;
+                     
+                     unitInputs.forEach(u => {
+                        totalNum += Number(u.numerator) || 0;
+                        totalDen += Number(u.denominator) || 0;
+                        totalKpc += Number(u.kpc) || 0;
+                        totalKnc += Number(u.knc) || 0;
+                        totalKtc += Number(u.ktc) || 0;
+                        totalKtd += Number(u.ktd) || 0;
+                        totalSentinel += Number(u.sentinel) || 0;
+                     });
+                     
+                     const isPersen = selectedProfileData?.measurement_unit === "Persen (%)";
+                     const isIndeks = selectedProfileData?.measurement_unit === "Indeks";
+                     const formulaMultiplier = isIndeks ? 25 : (isPersen ? 100 : 1);
+                     
+                     // recalculate capaian based on formula type
+                     const capaian = totalDen > 0 ? (totalNum / totalDen) * formulaMultiplier : 0;
+                     const targetVal = Number(selectedProfileData?.target || unitInputs[0]?.target || 0);
+                     
+                     // reverse logic
+                     let isTargetMet = false;
+                     if (selectedProfileData?.reverse) {
+                        isTargetMet = capaian <= targetVal;
+                     } else {
+                        isTargetMet = capaian >= targetVal;
+                     }
 
-                      {selectedIndikatorDetail.name.toLowerCase().includes("visite") ? (
-                        <div className="bg-white border border-[#10a37f]/20 rounded-2xl overflow-hidden shadow-xs">
-                          <div className="bg-emerald-50/55 px-4 py-3 border-b border-[#10a37f]/10 flex items-center justify-between">
-                            <p className="text-[10px] font-black tracking-wider text-emerald-800 font-sans uppercase">TABEL PENGUMPULAN DATA - VISITE DPJP ({activeInput.unit})</p>
-                            <span className="text-[10px] font-black bg-emerald-100 text-emerald-700 border border-emerald-250/20 px-2.5 py-0.5 rounded-lg">Realtime Database</span>
+                     // Fetch Waktu Tunggu Detaisl
+                     let activeWaktuTungguFiltered = unitInputs.flatMap(u => {
+                        if (u.keterangan && u.keterangan.includes('details')) {
+                          try { return JSON.parse(u.keterangan).details || []; } catch(e){}
+                        }
+                        return [];
+                     });
+                     
+                     if (activeWaktuTungguFiltered.length === 0 && waktuTungguDetails.length > 0) {
+                        const validDates = unitInputs.map(u => u.tanggal.substring(0, 10));
+                        activeWaktuTungguFiltered = waktuTungguDetails.filter(wd => {
+                           return wd.tanggal && validDates.some(vd => wd.tanggal.startsWith(vd));
+                        });
+                     }
+                     
+                     // Fetch Visite
+                     let activeVisiteFiltered = visiteDetails.filter(vd => {
+                        const validDates = unitInputs.map(u => u.tanggal.substring(0, 10));
+                        return vd.tanggal_visite && validDates.some(vd_d => vd.tanggal_visite.startsWith(vd_d));
+                     });
+                     
+                     return (
+                       <div key={unitName} className="space-y-6">
+                          {/* Unit Section Header */}
+                          <div className="flex items-center gap-3 pl-4 border-l-4 border-[#059669] py-2 mb-2 bg-[#f8fafc] rounded-r-xl shadow-xs">
+                            <h3 className="text-sm font-black text-slate-800 uppercase tracking-widest">UNIT : {unitName}</h3>
                           </div>
-                          <div className="overflow-x-auto max-h-[350px] overflow-y-auto">
-                            <table className="w-full text-left text-xs border-collapse min-w-[600px]">
-                              <thead className="sticky top-0 bg-slate-50/90 border-b border-gray-250/50 h-10 select-none">
-                                <tr>
-                                  <th className="px-4 py-2 font-black text-slate-500 uppercase tracking-wider text-[10px]">Tanggal Visite</th>
-                                  <th className="px-4 py-2 font-black text-slate-500 uppercase tracking-wider text-[10px]">Nama Pasien No-RM</th>
-                                  <th className="px-4 py-2 font-black text-slate-500 uppercase tracking-wider text-[10px] text-center">≤ 14.00 (Tepat)</th>
-                                  <th className="px-4 py-2 font-black text-slate-500 uppercase tracking-wider text-[10px] text-center">&gt; 14.00 (Terlambat)</th>
-                                  <th className="px-4 py-2 font-black text-slate-500 uppercase tracking-wider text-[10px]">Dokter DPJP</th>
-                                  <th className="px-4 py-2 font-black text-slate-500 uppercase tracking-wider text-[10px]">Keterangan</th>
-                                </tr>
-                              </thead>
-                              <tbody>
-                                {activeVisiteFiltered.length > 0 ? activeVisiteFiltered.map((v, i) => (
-                                  <tr key={v.id || i} className="border-b border-gray-50 hover:bg-slate-50/50 transition-colors">
-                                    <td className="px-4 py-3 text-slate-600 font-semibold">{v.tanggal_visite && new Date(v.tanggal_visite).toLocaleDateString("id-ID")}</td>
-                                    <td className="px-4 py-3 text-slate-800 font-bold">{v.nama_pasien}</td>
-                                    <td className="px-4 py-3 text-center">
-                                      {v.visite_sebelum_14 ? (
-                                        <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-emerald-150/40 text-emerald-800 text-xs font-black">✓</span>
-                                      ) : "-"}
-                                    </td>
-                                    <td className="px-4 py-3 text-center">
-                                      {v.visite_setelah_14 ? (
-                                        <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-red-150/40 text-red-800 text-xs font-black">✗</span>
-                                      ) : "-"}
-                                    </td>
-                                    <td className="px-4 py-3 text-slate-700 font-bold">{v.nama_dokter}</td>
-                                    <td className="px-4 py-3 text-slate-500 font-medium">{v.keterangan || "-"}</td>
-                                  </tr>
-                                )) : (
-                                  <tr>
-                                    <td colSpan={6} className="text-center py-8 text-slate-400 font-bold bg-slate-50/50">
-                                      Tidak ada rincian data observasi di database.
-                                    </td>
-                                  </tr>
-                                )}
-                              </tbody>
-                            </table>
-                          </div>
+                          
+                          {/* Table Container */}
+                          {selectedIndikatorDetail.name.toLowerCase().includes("visite") ? (
+                            <div className="bg-white border border-[#10a37f]/20 rounded-2xl overflow-hidden shadow-xs">
+                              <div className="overflow-x-auto max-h-[350px] overflow-y-auto">
+                                <table className="w-full text-left text-xs border-collapse min-w-[600px]">
+                                  <thead className="sticky top-0 bg-[#059669] text-white h-11 select-none">
+                                    <tr>
+                                      <th className="px-4 py-2 font-bold uppercase tracking-wider text-[10px]">Tanggal Visite</th>
+                                      <th className="px-4 py-2 font-bold uppercase tracking-wider text-[10px]">Nama Pasien No-RM</th>
+                                      <th className="px-4 py-2 font-bold uppercase tracking-wider text-[10px] text-center">≤ 14.00 (Tepat)</th>
+                                      <th className="px-4 py-2 font-bold uppercase tracking-wider text-[10px] text-center">&gt; 14.00 (Terlambat)</th>
+                                      <th className="px-4 py-2 font-bold uppercase tracking-wider text-[10px]">Dokter DPJP</th>
+                                      <th className="px-4 py-2 font-bold uppercase tracking-wider text-[10px]">Keterangan</th>
+                                    </tr>
+                                  </thead>
+                                  <tbody>
+                                    {activeVisiteFiltered.length > 0 ? activeVisiteFiltered.map((v, i) => (
+                                      <tr key={v.id || i} className="border-b border-gray-50 hover:bg-slate-50/50 transition-colors">
+                                        <td className="px-4 py-3 text-slate-600 font-semibold">{v.tanggal_visite && new Date(v.tanggal_visite).toLocaleDateString("id-ID")}</td>
+                                        <td className="px-4 py-3 text-slate-800 font-bold">{v.nama_pasien}</td>
+                                        <td className="px-4 py-3 text-center">
+                                          {v.visite_sebelum_14 ? (
+                                            <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-emerald-150/40 text-emerald-800 text-xs font-black">✓</span>
+                                          ) : "-"}
+                                        </td>
+                                        <td className="px-4 py-3 text-center">
+                                          {v.visite_setelah_14 ? (
+                                            <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-red-150/40 text-red-800 text-xs font-black">✗</span>
+                                          ) : "-"}
+                                        </td>
+                                        <td className="px-4 py-3 text-slate-700 font-bold">{v.nama_dokter}</td>
+                                        <td className="px-4 py-3 text-slate-500 font-medium">{v.keterangan || "-"}</td>
+                                      </tr>
+                                    )) : (
+                                      <tr>
+                                        <td colSpan={6} className="text-center py-8 text-slate-400 font-bold bg-slate-50/50">
+                                          Tidak ada rincian data observasi di database untuk unit ini.
+                                        </td>
+                                      </tr>
+                                    )}
+                                  </tbody>
+                                </table>
+                              </div>
+                            </div>
+                          ) : selectedIndikatorDetail.name.toLowerCase().includes("waktu tunggu") ? (
+                            <div className="bg-white border border-[#10a37f]/20 rounded-2xl overflow-hidden shadow-xs">
+                              <div className="overflow-x-auto max-h-[350px] overflow-y-auto">
+                                <table className="w-full text-left text-xs border-collapse min-w-[700px]">
+                                  <thead className="sticky top-0 bg-[#059669] text-white h-11 select-none">
+                                    <tr>
+                                      <th className="px-4 py-2 font-bold uppercase tracking-wider text-[10px] text-center">NO</th>
+                                      <th className="px-4 py-2 font-bold uppercase tracking-wider text-[10px]">TANGGAL</th>
+                                      <th className="px-4 py-2 font-bold uppercase tracking-wider text-[10px]">NAMA PASIEN</th>
+                                      <th className="px-4 py-2 font-bold uppercase tracking-wider text-[10px]">NO RM</th>
+                                      <th className="px-4 py-2 font-bold uppercase tracking-wider text-[10px] text-center">JAM DATANG</th>
+                                      <th className="px-4 py-2 font-bold uppercase tracking-wider text-[10px] text-center">JAM PEMERIKSAAN<br/>DOKTER</th>
+                                      <th className="px-4 py-2 font-bold uppercase tracking-wider text-[10px] text-center">SELISIH WAKTU</th>
+                                    </tr>
+                                  </thead>
+                                  <tbody>
+                                    {activeWaktuTungguFiltered.length > 0 ? activeWaktuTungguFiltered.map((v, i) => {
+                                      const hours = Math.floor(v.selisih_menit / 60);
+                                      const minutes = v.selisih_menit % 60;
+                                      const isStandar = v.memenuhi_standar !== undefined ? v.memenuhi_standar : v.selisih_menit <= 60;
+                                      
+                                      return (
+                                        <tr key={v.id || i} className="border-b border-gray-50 hover:bg-slate-50/50 transition-colors">
+                                          <td className="px-4 py-3 text-slate-600 font-semibold text-center">{i + 1}</td>
+                                          <td className="px-4 py-3 text-slate-600 font-semibold">{v.tanggal && new Date(v.tanggal).toLocaleDateString("id-ID")}</td>
+                                          <td className="px-4 py-3 text-slate-800 font-bold">{v.nama_pasien}</td>
+                                          <td className="px-4 py-3 text-slate-800 font-semibold">{v.no_rm}</td>
+                                          <td className="px-4 py-3 text-center font-semibold text-slate-700">{v.jam_datang}</td>
+                                          <td className="px-4 py-3 text-center font-semibold text-slate-700">{v.jam_dilayani}</td>
+                                          <td className="px-4 py-3 text-center font-bold">
+                                            <span className={`${isStandar ? 'text-[#059669]' : 'text-red-600'} text-[11px]`}>
+                                              {hours > 0 ? `${hours} Jam ` : ""}{minutes} Menit
+                                            </span>
+                                          </td>
+                                        </tr>
+                                      );
+                                    }) : (
+                                      <tr>
+                                        <td colSpan={7} className="text-center py-8 text-slate-400 font-bold bg-slate-50/50">
+                                          Tidak ada data pasien di tabulasi database untuk periode ini.
+                                        </td>
+                                      </tr>
+                                    )}
+                                  </tbody>
+                                </table>
+                              </div>
+                            </div>
+                          ) : selectedIndikatorDetail.category === "IKP" ? (
+                            <div className="bg-white border border-gray-205 rounded-2xl overflow-hidden shadow-xs flex flex-col md:flex-row">
+                              <div className="bg-rose-50 px-5 py-5 md:w-52 flex flex-col items-center justify-center border-b md:border-b-0 md:border-r border-rose-100/50 select-none">
+                                <p className="text-[10px] font-black tracking-widest text-[#991b1b] uppercase">TOTAL IKP</p>
+                                <span className="text-[9px] font-bold bg-rose-100 text-rose-700 px-2 py-0.5 rounded-md mt-1">Pada Unit Ini</span>
+                              </div>
+                              <div className="flex-1 w-full overflow-x-auto">
+                                <table className="w-full text-left text-xs border-collapse">
+                                  <thead className="bg-[#fffdfd] border-b border-gray-150 select-none">
+                                    <tr>
+                                      <th className="px-5 py-3 font-black text-slate-500 text-center uppercase tracking-wider text-[10px]">KPC</th>
+                                      <th className="px-5 py-3 font-black text-slate-500 text-center uppercase tracking-wider text-[10px]">KNC</th>
+                                      <th className="px-5 py-3 font-black text-slate-500 text-center uppercase tracking-wider text-[10px]">KTC</th>
+                                      <th className="px-5 py-3 font-black text-rose-600 text-center uppercase tracking-wider text-[10px]">KTD</th>
+                                      <th className="px-5 py-3 font-black text-rose-600 text-center uppercase tracking-wider text-[10px]">Sentinel</th>
+                                    </tr>
+                                  </thead>
+                                  <tbody>
+                                    <tr className="hover:bg-slate-50/20">
+                                      <td className="px-5 py-5 text-slate-800 font-black text-center text-xl bg-slate-50/40">{totalKpc}</td>
+                                      <td className="px-5 py-5 text-slate-800 font-black text-center text-xl">{totalKnc}</td>
+                                      <td className="px-5 py-5 text-slate-800 font-black text-center text-xl bg-slate-50/40">{totalKtc}</td>
+                                      <td className="px-5 py-5 text-rose-600 font-black text-center text-xl">{totalKtd}</td>
+                                      <td className="px-5 py-5 text-rose-600 font-black text-center text-xl bg-slate-50/40">{totalSentinel}</td>
+                                    </tr>
+                                  </tbody>
+                                </table>
+                              </div>
+                            </div>
+                          ) : (
+                            <div className="bg-white border border-gray-200 rounded-2xl overflow-hidden shadow-xs">
+                              <div className="w-full overflow-x-auto max-h-[350px]">
+                                <table className="w-full text-left text-xs border-collapse">
+                                  <thead className="sticky top-0 bg-[#059669] text-white h-11 select-none">
+                                    <tr>
+                                      <th className="px-5 py-3 font-bold uppercase text-[10px]">Tanggal Input</th>
+                                      <th className="px-5 py-3 font-bold uppercase text-[10px] text-right">Numerator</th>
+                                      <th className="px-5 py-3 font-bold uppercase text-[10px] text-right">Denominator</th>
+                                      <th className="px-5 py-3 font-bold uppercase text-[10px] text-center">Target</th>
+                                      <th className="px-5 py-3 font-bold uppercase text-[10px] text-right">Capaian Aktual</th>
+                                    </tr>
+                                  </thead>
+                                  <tbody>
+                                    {unitInputs.map((u, i) => (
+                                      <tr key={u.id || i} className="hover:bg-slate-50/40 border-b border-gray-50">
+                                        <td className="px-5 py-4 text-slate-600 font-bold">{new Date(u.tanggal).toLocaleDateString("id-ID", {day:"numeric", month:"long", year:"numeric"})}</td>
+                                        <td className="px-5 py-4 text-emerald-600 font-black text-right text-sm">{formatNum(u.numerator)}</td>
+                                        <td className="px-5 py-4 text-indigo-600 font-black text-right text-sm">{formatNum(u.denominator)}</td>
+                                        <td className="px-5 py-4 text-slate-800 font-bold text-center text-xs">{selectedProfileData?.target || u.target}%</td>
+                                        <td className="px-5 py-4 font-black text-[#10a37f] text-right text-sm">{formatNum(u.capaian)}%</td>
+                                      </tr>
+                                    ))}
+                                  </tbody>
+                                </table>
+                              </div>
+                            </div>
+                          )}
+                       </div>
+                     );
+                  })}
+                  
+                  {/* Integrated Global Recap Card */}
+                  {selectedIndikatorDetail.category !== "IKP" && activePeriodInputs.length > 0 && (
+                    <div className="pt-8 border-t border-gray-100 flex justify-center mt-6">
+                      <div className="w-full max-w-4xl bg-white border border-gray-200 rounded-3xl shadow-[0_4px_24px_-8px_rgba(0,0,0,0.08)] overflow-hidden">
+                        <div className="bg-slate-50 border-b border-gray-100 py-4 px-6 text-center">
+                           <h3 className="text-sm font-black text-slate-800 uppercase tracking-widest">REKAPITULASI CAPAIAN INDIKATOR TERINTEGRASI</h3>
                         </div>
-                      ) : selectedIndikatorDetail.category === "IKP" ? (
-                        <div className="bg-white border border-gray-205 rounded-2xl overflow-hidden shadow-xs flex flex-col md:flex-row">
-                          <div className="bg-rose-50 px-5 py-5 md:w-52 flex flex-col items-center justify-center border-b md:border-b-0 md:border-r border-rose-100/50 select-none">
-                            <p className="text-[10px] font-black tracking-widest text-[#991b1b] uppercase">FORMAT INPUT IKP</p>
-                            <span className="text-[9px] font-bold bg-rose-100 text-rose-700 px-2 py-0.5 rounded-md mt-1">Insiden Keselamatan</span>
+                        <div className="p-8 md:p-10 flex flex-col items-center">
+                          <div className="flex flex-col md:flex-row justify-between w-full max-w-2xl gap-8 mb-10">
+                            <div className="flex items-center gap-3">
+                              <div className="w-12 h-12 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center">
+                                <Calculator size={24} />
+                              </div>
+                              <div className="flex flex-col">
+                                <span className="text-xs font-black text-slate-500 uppercase tracking-wider">Total Numerator</span>
+                                <span className="text-3xl font-black text-slate-800">{formatNum(globalTotals.num)}</span>
+                              </div>
+                            </div>
+                            
+                            <div className="hidden md:block w-px bg-gray-200"></div>
+                            
+                            <div className="flex items-center gap-3">
+                              <div className="w-12 h-12 rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center">
+                                <Activity size={24} />
+                              </div>
+                              <div className="flex flex-col">
+                                <span className="text-xs font-black text-slate-500 uppercase tracking-wider">Total Denominator</span>
+                                <span className="text-3xl font-black text-slate-800">{formatNum(globalTotals.den)}</span>
+                              </div>
+                            </div>
                           </div>
-                          <div className="flex-1 w-full overflow-x-auto">
-                            <table className="w-full text-left text-xs border-collapse">
-                              <thead className="bg-[#fffdfd] border-b border-gray-150 select-none">
-                                <tr>
-                                  <th className="px-5 py-3 font-black text-slate-500 text-center uppercase tracking-wider text-[10px]">KPC</th>
-                                  <th className="px-5 py-3 font-black text-slate-500 text-center uppercase tracking-wider text-[10px]">KNC</th>
-                                  <th className="px-5 py-3 font-black text-slate-500 text-center uppercase tracking-wider text-[10px]">KTC</th>
-                                  <th className="px-5 py-3 font-black text-rose-600 text-center uppercase tracking-wider text-[10px]">KTD</th>
-                                  <th className="px-5 py-3 font-black text-rose-600 text-center uppercase tracking-wider text-[10px]">Sentinel</th>
-                                </tr>
-                              </thead>
-                              <tbody>
-                                <tr className="hover:bg-slate-50/20">
-                                  <td className="px-5 py-5 text-slate-800 font-black text-center text-xl bg-slate-50/40">{activeInput.kpc}</td>
-                                  <td className="px-5 py-5 text-slate-800 font-black text-center text-xl">{activeInput.knc}</td>
-                                  <td className="px-5 py-5 text-slate-800 font-black text-center text-xl bg-slate-50/40">{activeInput.ktc}</td>
-                                  <td className="px-5 py-5 text-rose-600 font-black text-center text-xl">{activeInput.ktd}</td>
-                                  <td className="px-5 py-5 text-rose-600 font-black text-center text-xl bg-slate-50/40">{activeInput.sentinel}</td>
-                                </tr>
-                              </tbody>
-                            </table>
+                          
+                          <div className="flex flex-col items-center text-center">
+                            <span className="text-sm font-bold text-slate-500 uppercase tracking-widest mb-2">
+                               Target {selectedProfileData?.reverse ? '≤' : '≥'} {globalTotals.targetVal}%
+                            </span>
+                            <span className={`text-[80px] md:text-[100px] font-black leading-none tracking-tight ${
+                               globalTotals.isTargetMet ? "text-[#10a37f]" : "text-red-500"
+                            }`}>
+                              {formatNum(globalTotals.capaian)}%
+                            </span>
+                            <span className={`mt-6 px-6 py-2.5 rounded-full text-xs font-black tracking-widest uppercase shadow-sm ${
+                               globalTotals.isTargetMet ? "bg-emerald-100 text-emerald-700 border border-emerald-200" : "bg-red-100 text-red-700 border border-red-200"
+                            }`}>
+                              {globalTotals.isTargetMet ? "🟢 TARGET TERCAPAI" : "🔴 BELUM TERCAPAI"}
+                            </span>
                           </div>
-                        </div>
-                      ) : (
-                        <div className="bg-white border border-gray-200 rounded-2xl overflow-hidden shadow-xs">
-                          <div className="bg-[#fbFdfC] px-4 py-3 border-b border-gray-200/60 font-black text-[10px] text-slate-600 tracking-wider">
-                            TABEL OBSERVASI INDIKATOR MUTU ({selectedIndikatorDetail.category})
-                          </div>
-                          <div className="w-full overflow-x-auto">
-                            <table className="w-full text-left text-xs border-collapse">
-                              <thead className="bg-slate-50/80 h-10 select-none">
-                                <tr>
-                                  <th className="px-5 py-3 font-bold text-slate-500 text-[10px] uppercase">Tanggal Input</th>
-                                  <th className="px-5 py-3 font-bold text-slate-500 text-[10px] uppercase">Unit Penginput</th>
-                                  <th className="px-5 py-3 font-bold text-emerald-600 text-right text-[10px] uppercase">
-                                    {selectedIndikatorDetail.name.toLowerCase().includes("kebersihan tangan") ? "Patuh Kebersihan Tangan" : 
-                                     selectedIndikatorDetail.name.toLowerCase().includes("apd") ? "Kepatuhan APD" : 
-                                     selectedIndikatorDetail.name.toLowerCase().includes("identifikasi") ? "Teridentifikasi Patuh" : "Numerator (Pembilang)"}
-                                  </th>
-                                  <th className="px-5 py-3 font-bold text-indigo-600 text-right text-[10px] uppercase">
-                                    {selectedIndikatorDetail.name.toLowerCase().includes("kebersihan tangan") ? "Total Peluang Observasi" :
-                                     selectedIndikatorDetail.name.toLowerCase().includes("apd") ? "Total Observasi APD" :
-                                     selectedIndikatorDetail.name.toLowerCase().includes("identifikasi") ? "Total Peluang Observasi" : "Denominator (Penyebut)"}
-                                  </th>
-                                  <th className="px-5 py-3 font-bold text-slate-500 text-center text-[10px] uppercase">Target</th>
-                                  <th className="px-5 py-3 font-bold text-slate-600 text-right text-[10px] uppercase">Capaian Aktual</th>
-                                </tr>
-                              </thead>
-                              <tbody>
-                                <tr className="hover:bg-slate-50/40">
-                                  <td className="px-5 py-5 text-slate-600 font-bold">{new Date(activeInput.tanggal).toLocaleDateString("id-ID", {day:"numeric", month:"long", year:"numeric"})}</td>
-                                  <td className="px-5 py-5 text-slate-800 font-black">{activeInput.unit}</td>
-                                  <td className="px-5 py-5 text-emerald-600 font-black text-right text-base">{formatNum(activeInput.numerator)}</td>
-                                  <td className="px-5 py-5 text-indigo-600 font-black text-right text-base">{formatNum(activeInput.denominator)}</td>
-                                  <td className="px-5 py-5 text-slate-800 font-bold text-center text-sm">{selectedProfileData?.target || activeInput.target}%</td>
-                                  <td className="px-5 py-5 font-black text-[#10a37f] text-right text-base">{formatNum(activeInput.capaian)}%</td>
-                                </tr>
-                              </tbody>
-                            </table>
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  )}
-
-                  {/* Under table: Calculation summary */}
-                  {selectedIndikatorDetail.category !== "IKP" && (
-                    <div className="bg-[#fbFdfC] border border-[#10a37f]/20 rounded-3xl p-6 shadow-xs mt-6 space-y-4">
-                      <div className="flex items-center gap-2">
-                        <Calculator size={16} className="text-[#10a37f]" />
-                        <h4 className="text-xs font-black text-[#10a37f] uppercase tracking-wider">HASIL PERHITUNGAN CAPAIAN</h4>
-                      </div>
-                      
-                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                        <div className="p-4 rounded-2xl bg-white border border-gray-150 flex flex-col justify-between shadow-xs">
-                          <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Numerator</span>
-                          <span className="text-xl font-black text-emerald-600 mt-2">{formatNum(activeInput.numerator)}</span>
-                        </div>
-                        <div className="p-4 rounded-2xl bg-white border border-gray-150 flex flex-col justify-between shadow-xs">
-                          <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Denominator</span>
-                          <span className="text-xl font-black text-indigo-600 mt-2">{formatNum(activeInput.denominator)}</span>
                         </div>
                         
-                        <div className="p-4 flex flex-col items-center justify-center bg-emerald-50/60 rounded-2xl border border-emerald-100">
-                          <span className="text-[9px] font-bold text-emerald-700 uppercase tracking-wider font-sans">Persentase Capaian</span>
-                          <div className="mt-1 flex items-baseline gap-1.5">
-                            <span className="text-2xl font-black text-[#10a37f]">{formatNum(activeInput.capaian)}%</span>
-                            <span className="text-xs font-semibold text-slate-400">/ target {selectedProfileData?.target || activeInput.target}%</span>
-                          </div>
-                          <span className={`mt-2 px-2.5 py-0.5 rounded-full text-[9px] font-black tracking-wider ${
-                            activeInput.status === "Tercapai" ? "bg-emerald-600 text-white" : "bg-red-500 text-white"
-                          }`}>
-                            {activeInput.status}
-                          </span>
+                        <div className="bg-slate-50 border-t border-gray-100 p-6 flex flex-wrap justify-center gap-6 md:gap-10 text-center text-xs font-bold text-slate-600">
+                           <div className="flex flex-col">
+                             <span className="text-[10px] text-slate-400 uppercase tracking-widest mb-1">Unit Berpartisipasi</span>
+                             <span>{Object.keys(inputsGroupedByUnit).length} Unit</span>
+                           </div>
+                           <div className="flex flex-col">
+                             <span className="text-[10px] text-slate-400 uppercase tracking-widest mb-1">Data Observasi</span>
+                             <span>{selectedIndikatorDetail.category === "IKP" ? "-" : formatNum(globalTotals.den)} Data</span>
+                           </div>
+                           <div className="flex flex-col">
+                             <span className="text-[10px] text-slate-400 uppercase tracking-widest mb-1">Periode</span>
+                             <span>{getPeriodeText()}</span>
+                           </div>
+                           <div className="flex flex-col">
+                             <span className="text-[10px] text-slate-400 uppercase tracking-widest mb-1">Kategori</span>
+                             <span>{selectedIndikatorDetail.category}</span>
+                           </div>
+                           <div className="flex flex-col">
+                             <span className="text-[10px] text-slate-400 uppercase tracking-widest mb-1">Indikator</span>
+                             <span>{selectedIndikatorDetail.name}</span>
+                           </div>
                         </div>
                       </div>
-
-                      {activeInput.keterangan && (
-                        <div className="bg-slate-50 border border-slate-150 p-4 rounded-2xl text-xs font-medium text-slate-600 leading-relaxed">
-                          <span className="text-[10px] font-black text-slate-400 block uppercase mb-1">Keterangan / Analisis Capaian:</span>
-                          {activeInput.keterangan}
-                        </div>
-                      )}
                     </div>
                   )}
                 </div>

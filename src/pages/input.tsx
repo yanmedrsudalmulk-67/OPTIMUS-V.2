@@ -23,7 +23,7 @@ import {
   ChevronDown,
   Save,
 } from "lucide-react";
-import { useStore, DataMutuPayload, VisiteData, JatuhData, Unit, IndicatorProfile } from "@/store/useStore";
+import { useStore, DataMutuPayload, VisiteData, JatuhData, Unit, IndicatorProfile, WaktuTungguData } from "@/store/useStore";
 import { supabase } from "@/lib/supabase";
 import { motion } from "motion/react";
 
@@ -180,6 +180,7 @@ export default function InputData() {
   // States for dynamic custom subgrids/checklists inside section 7
   const [visiteGrid, setVisiteGrid] = useState<VisiteData[]>([]);
   const [jatuhGrid, setJatuhGrid] = useState<JatuhData[]>([]);
+  const [waktuTungguGrid, setWaktuTungguGrid] = useState<WaktuTungguData[]>([]);
   const [averageWaktuTunggu, setAverageWaktuTunggu] = useState<number | undefined>(undefined);
   const [customNumerator, setCustomNumerator] = useState<number | undefined>(undefined);
   const [customDenominator, setCustomDenominator] = useState<number | undefined>(undefined);
@@ -211,6 +212,9 @@ export default function InputData() {
         0
       );
       den = jatuhGrid.length * 3 || 1;
+    } else if (isWaktuTunggu) {
+      num = waktuTungguGrid.filter((d) => d.selisih_menit <= 60).length;
+      den = waktuTungguGrid.length || 1;
     } else if (customNumerator !== undefined && customDenominator !== undefined) {
       num = customNumerator;
       den = customDenominator > 0 ? customDenominator : 1;
@@ -218,7 +222,7 @@ export default function InputData() {
 
     const val = parseFloat(((num / (den || 1)) * 100).toFixed(2));
     return isNaN(val) ? 0 : val;
-  }, [watchNumerator, watchDenominator, isVisiteDokter, isRisikoJatuh, visiteGrid, jatuhGrid, customNumerator, customDenominator]);
+  }, [watchNumerator, watchDenominator, isVisiteDokter, isRisikoJatuh, isWaktuTunggu, visiteGrid, jatuhGrid, waktuTungguGrid, customNumerator, customDenominator]);
 
   const achievementStatus = useMemo(() => {
     if (!selectedIndikatorProfile) return "N/A";
@@ -386,6 +390,49 @@ export default function InputData() {
     setJatuhGrid(jatuhGrid.map((r) => (r.id === id ? { ...r, [field]: value } : r)));
   };
 
+  const handleAddWaktuTungguRow = () => {
+    setWaktuTungguGrid([
+      ...waktuTungguGrid,
+      {
+        id: Math.random().toString(36).substring(7),
+        tanggal: new Date().toISOString().split("T")[0],
+        nama_pasien: "",
+        no_rm: "",
+        jam_datang: "",
+        jam_dilayani: "",
+        selisih_menit: 0,
+      },
+    ]);
+  };
+
+  const handleRemoveWaktuTungguRow = (id: string) => {
+    if (window.confirm("Apakah Anda yakin ingin menghapus data ini?")) {
+      setWaktuTungguGrid(waktuTungguGrid.filter((r) => r.id !== id));
+    }
+  };
+
+  const calculateMinutesDiff = (start: string, end: string) => {
+    if (!start || !end) return 0;
+    const [sH, sM] = start.split(":").map(Number);
+    const [eH, eM] = end.split(":").map(Number);
+    
+    let diff = (eH * 60 + eM) - (sH * 60 + sM);
+    if (diff < 0) diff += 24 * 60; // handle overnight if occurs though rare in outpatient
+    return diff;
+  };
+
+  const handleUpdateWaktuTunggu = (id: string, field: keyof WaktuTungguData, value: any) => {
+    setWaktuTungguGrid(waktuTungguGrid.map((r) => {
+      if (r.id !== id) return r;
+      const updated = { ...r, [field]: value };
+      
+      if (field === "jam_datang" || field === "jam_dilayani") {
+        updated.selisih_menit = calculateMinutesDiff(updated.jam_datang, updated.jam_dilayani);
+      }
+      return updated;
+    }));
+  };
+
   // Mock upload handler helper
   const handleFileUploadMock = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -412,6 +459,9 @@ export default function InputData() {
           0
         );
         finalDen = jatuhGrid.length * 3 || 1;
+      } else if (isWaktuTunggu) {
+        finalNum = waktuTungguGrid.filter((d) => d.selisih_menit <= 60).length;
+        finalDen = waktuTungguGrid.length || 1;
       } else if (customNumerator !== undefined && customDenominator !== undefined) {
         finalNum = customNumerator;
         finalDen = customDenominator;
@@ -455,6 +505,7 @@ export default function InputData() {
       sentinel: data.kategori === "IKP" ? data.sentinel || 0 : undefined,
       visite_details: isVisiteDokter ? [...visiteGrid] : undefined,
       jatuh_details: isRisikoJatuh ? [...jatuhGrid] : undefined,
+      waktu_tunggu_details: isWaktuTunggu ? [...waktuTungguGrid] : undefined,
     };
 
     // 1. Save locally in Zustand instantly (Optimistic update)
@@ -480,6 +531,9 @@ export default function InputData() {
           ktd: payload.ktd,
           sentinel: payload.sentinel,
           keterangan: payload.keterangan
+        }) : isWaktuTunggu ? JSON.stringify({ // Store WaktuTunggu serialize here for simple retrieval just in case table fails
+          details: payload.waktu_tunggu_details,
+          keterangan: payload.keterangan
         }) : (data.keterangan || ""),
         attachment_url: uploadedProofName || null,
         created_at: new Date().toISOString(),
@@ -502,6 +556,25 @@ export default function InputData() {
           console.warn("Failed saving into visite_dpjp:", e);
         }
       }
+
+      // Simpan rincian data waktu tunggu ke tabel waktu_tunggu_rajal 
+      if (isWaktuTunggu && waktuTungguGrid.length > 0) {
+        const wtPayload = waktuTungguGrid.map(v => ({
+          tanggal: v.tanggal,
+          nama_pasien: v.nama_pasien,
+          no_rm: v.no_rm,
+          jam_datang: v.jam_datang,
+          jam_dilayani: v.jam_dilayani,
+          selisih_menit: v.selisih_menit,
+          memenuhi_standar: v.selisih_menit <= 60,
+          indikator_id: data.indikator_id || null,
+        }));
+        try {
+          await supabase.from("waktu_tunggu_rajal").insert(wtPayload);
+        } catch (e) {
+          console.warn("Failed saving into waktu_tunggu_rajal:", e);
+        }
+      }
     } catch (supabaseError) {
       console.warn("Supabase sync skipped - data recorded in local Zustand and memory channels", supabaseError);
     }
@@ -511,6 +584,7 @@ export default function InputData() {
     setSuccessMsg(true);
     setVisiteGrid([]);
     setJatuhGrid([]);
+    setWaktuTungguGrid([]);
     setCustomNumerator(undefined);
     setCustomDenominator(undefined);
     setAverageWaktuTunggu(undefined);
@@ -1139,73 +1213,134 @@ export default function InputData() {
 
               {/* Advanced Custom Form: Waktu Tunggu Rawat Jalan (ID "5") */}
               {isWaktuTunggu && (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-8 border-t border-emerald-100/10 pt-4">
-                  <div className="bg-[#fbFdfC] border border-emerald-50 rounded-3xl p-6 space-y-4">
-                    <span className="text-[10px] bg-emerald-100 text-emerald-800 px-3 py-1 rounded-md font-black">
-                      INPUT SURVEI RAWAT JALAN
-                    </span>
-
-                    <div className="space-y-4 pt-2">
-                      <div className="space-y-1.5">
-                        <label className="block text-xs font-extrabold text-slate-800">
-                          Jumlah Pasien dengan Waktu Tunggu ≤ 60 Menit
-                        </label>
-                        <input
-                          type="number"
-                          placeholder="Jumlah sesuai standar"
-                          onChange={(e) => setCustomNumerator(Number(e.target.value))}
-                          className="w-full px-4 py-3 bg-white border border-gray-200 focus:ring-2 focus:ring-emerald-500 outline-none rounded-xl text-sm font-bold text-slate-800"
-                          min="0"
-                          required
-                        />
-                      </div>
-
-                      <div className="space-y-1.5">
-                        <label className="block text-xs font-extrabold text-slate-800">
-                          Total Seluruh Pasien Rawat Jalan yang Disurvei
-                        </label>
-                        <input
-                          type="number"
-                          placeholder="Jumlah seluruh pasien"
-                          onChange={(e) => setCustomDenominator(Number(e.target.value))}
-                          className="w-full px-4 py-3 bg-white border border-gray-200 focus:ring-2 focus:ring-emerald-500 outline-none rounded-xl text-sm font-bold text-slate-800"
-                          min="1"
-                          required
-                        />
-                      </div>
+                <div className="space-y-4 border-t border-emerald-100/10 pt-4 animate-in fade-in duration-300">
+                  <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                    <div>
+                      <h4 className="font-extrabold text-sm text-[#0c2415] uppercase tracking-wide">
+                        TABEL PENGUMPULAN DATA - WAKTU TUNGGU RAWAT JALAN
+                      </h4>
+                      <p className="text-xs text-slate-500 font-semibold mt-1">
+                        Catat data waktu pelayanan pasien untuk kalkulasi indikator secara otomatis. Waktu tunggu terhitung standar jika selisih ≤ 60 Menit.
+                      </p>
                     </div>
                   </div>
 
-                  <div className="bg-[#fbFdfC] border border-emerald-50 rounded-3xl p-6 space-y-4 flex flex-col justify-between">
-                    <div className="space-y-1.5">
-                      <span className="text-[10px] bg-orange-100 text-orange-800 px-3 py-1 rounded-md font-black">
-                        RATA-RATA WAKTU TUNGGU
-                      </span>
-                      <p className="text-[11px] text-gray-400 font-semibold pt-1">
-                        Opsional masukkan estimasi rata-rata pelayanan poli terpadu hari ini (unit: menit).
-                      </p>
-                      <input
-                        type="number"
-                        placeholder="Misal: 45 menit"
-                        value={averageWaktuTunggu || ""}
-                        onChange={(e) => setAverageWaktuTunggu(Number(e.target.value))}
-                        className="w-full px-4 py-3 bg-white border border-gray-200 focus:ring-2 focus:ring-emerald-500 outline-none rounded-xl text-sm font-bold text-slate-805"
-                      />
-                    </div>
+                  <div className="bg-white border text-left border-gray-200 rounded-2xl shadow-sm overflow-x-auto w-full">
+                    <table className="w-full text-left text-xs border-collapse min-w-[750px]">
+                      <thead className="bg-[#059669] text-white select-none">
+                        <tr>
+                          <th className="px-4 py-3 font-bold uppercase tracking-wider text-center w-12 rounded-tl-xl">No</th>
+                          <th className="px-4 py-3 font-bold uppercase tracking-wider w-40">Tanggal</th>
+                          <th className="px-4 py-3 font-bold uppercase tracking-wider w-64">Nama Pasien</th>
+                          <th className="px-4 py-3 font-bold uppercase tracking-wider w-36">No. RM</th>
+                          <th className="px-4 py-3 font-bold uppercase tracking-wider text-center w-36">Jam Datang</th>
+                          <th className="px-4 py-3 font-bold uppercase tracking-wider text-center w-36">Jam Pemeriksaan<br />Dokter</th>
+                          <th className="px-4 py-3 font-bold uppercase tracking-wider text-center w-40">Selisih Waktu</th>
+                          <th className="px-4 py-3 font-bold uppercase tracking-wider text-center w-16 rounded-tr-xl">Aksi</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {waktuTungguGrid.length === 0 ? (
+                          <tr>
+                            <td colSpan={8} className="text-center py-10 font-bold text-gray-500 bg-slate-50/50">
+                              Belum ada data pasien diinput. Klik tombol &quot;Tambah Pasien&quot; di bawah judul tabel untuk memulai.
+                            </td>
+                          </tr>
+                        ) : (
+                          waktuTungguGrid.map((row, idx) => {
+                            const hours = Math.floor(row.selisih_menit / 60);
+                            const minutes = row.selisih_menit % 60;
+                            const isStandar = row.selisih_menit <= 60 && row.jam_datang !== "" && row.jam_dilayani !== "";
 
-                    <div className="space-y-2">
-                      <span className="text-[10px] text-gray-400 font-black tracking-widest block uppercase">UPLOAD BUKTI FISIK</span>
-                      <label className="border-2 border-dashed border-gray-200 rounded-2xl p-4 hover:bg-slate-50 cursor-pointer flex items-center justify-center gap-2">
-                        <FileUp className="text-gray-400" size={18} />
-                        <span className="text-xs font-bold text-slate-700">Pilih Lembar Audit (Formulir)</span>
-                        <input type="file" onChange={handleFileUploadMock} className="hidden" accept=".jpg,.png,.pdf" />
-                      </label>
-                      {uploadedProofName && (
-                        <p className="text-xs font-black text-emerald-600 flex items-center gap-1 bg-emerald-50 px-2 py-0.5 rounded-lg w-fit">
-                          📎 {uploadedProofName}
-                        </p>
-                      )}
-                    </div>
+                            return (
+                              <tr key={row.id} className={`border-b border-gray-50 transition-colors ${idx % 2 === 0 ? "bg-white" : "bg-[#F9FAFB]"} hover:bg-emerald-50/20`}>
+                                <td className="py-3 px-4 text-center text-sm font-semibold text-gray-800 border-r border-gray-100">{idx + 1}</td>
+                                <td className="py-3 px-4 border-r border-gray-100">
+                                  <input
+                                    type="date"
+                                    value={row.tanggal}
+                                    onChange={(e) => handleUpdateWaktuTunggu(row.id, "tanggal", e.target.value)}
+                                    className="w-full bg-transparent outline-none text-xs font-bold text-[#374151]"
+                                    required
+                                  />
+                                </td>
+                                <td className="py-3 px-4 border-r border-gray-100">
+                                  <input
+                                    type="text"
+                                    placeholder="Masukkan nama pasien"
+                                    value={row.nama_pasien}
+                                    onChange={(e) => handleUpdateWaktuTunggu(row.id, "nama_pasien", e.target.value)}
+                                    className="w-full bg-transparent outline-none text-xs font-bold text-[#374151]"
+                                    required
+                                  />
+                                </td>
+                                <td className="py-3 px-4 border-r border-gray-100">
+                                  <input
+                                    type="text"
+                                    placeholder="No RM"
+                                    value={row.no_rm}
+                                    onChange={(e) => {
+                                      const val = e.target.value.replace(/[^0-9]/g, "");
+                                      handleUpdateWaktuTunggu(row.id, "no_rm", val);
+                                    }}
+                                    className="w-full bg-transparent outline-none text-xs font-bold text-[#374151]"
+                                    required
+                                  />
+                                </td>
+                                <td className="py-3 px-4 text-center border-r border-gray-100">
+                                  <input
+                                    type="time"
+                                    value={row.jam_datang}
+                                    onChange={(e) => handleUpdateWaktuTunggu(row.id, "jam_datang", e.target.value)}
+                                    className="w-full bg-transparent outline-none text-xs font-bold text-[#374151] text-center"
+                                    required
+                                  />
+                                </td>
+                                <td className="py-3 px-4 text-center border-r border-gray-100">
+                                  <input
+                                    type="time"
+                                    value={row.jam_dilayani}
+                                    onChange={(e) => handleUpdateWaktuTunggu(row.id, "jam_dilayani", e.target.value)}
+                                    className="w-full bg-transparent outline-none text-xs font-bold text-[#374151] text-center"
+                                    required
+                                  />
+                                </td>
+                                <td className="py-3 px-4 text-center border-r border-gray-100 font-bold">
+                                  {(row.jam_datang && row.jam_dilayani) ? (
+                                     <span className={`${isStandar ? 'text-[#059669]' : 'text-red-600'} text-[11px]`}>
+                                        {hours > 0 ? `${hours} Jam ` : ""}{minutes} Menit
+                                     </span>
+                                  ) : (
+                                     <span className="text-gray-400 font-normal">-</span>
+                                  )}
+                                </td>
+                                <td className="py-3 px-4 text-center">
+                                  <button
+                                    type="button"
+                                    onClick={() => handleRemoveWaktuTungguRow(row.id)}
+                                    className="text-gray-400 hover:text-red-600 hover:bg-red-50 p-1.5 rounded-lg transition-colors inline-block"
+                                    title="Hapus Baris"
+                                  >
+                                    <Trash2 size={16} />
+                                  </button>
+                                </td>
+                              </tr>
+                            );
+                          })
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+
+                  <div className="flex justify-start">
+                    <button
+                      type="button"
+                      onClick={handleAddWaktuTungguRow}
+                      className="flex items-center gap-2 bg-[#059669] hover:bg-[#047857] text-white px-4 py-2.5 rounded-xl text-xs font-bold transition-all shadow-sm"
+                    >
+                      <Plus size={16} strokeWidth={3} />
+                      Tambah Baris Pasien
+                    </button>
                   </div>
                 </div>
               )}

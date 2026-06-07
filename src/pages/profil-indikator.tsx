@@ -106,8 +106,7 @@ const adaptToSupabase = (profile: IndicatorProfile, email?: string) => {
     created_by: email || "admin@optimus.hospital",
     updated_at: new Date().toISOString(),
     satuan_pengukuran: profile.measurement_unit === "Indeks" ? "Indeks" : profile.measurement_unit,
-    formula_type: profile.measurement_unit === "Indeks" ? "index" : "percent",
-    formula_multiplier: profile.measurement_unit === "Indeks" ? 25 : (profile.measurement_unit === "Persen (%)" ? 100 : 1)
+    formula_type: profile.measurement_unit === "Indeks" ? "index" : "percent"
   };
 };
 

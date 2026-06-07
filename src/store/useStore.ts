@@ -49,6 +49,16 @@ export interface JatuhData {
   intervensi: boolean;
 }
 
+export interface WaktuTungguData {
+  id: string;
+  tanggal: string;
+  nama_pasien: string;
+  no_rm: string;
+  jam_datang: string;
+  jam_dilayani: string;
+  selisih_menit: number;
+}
+
 export interface DataMutuPayload {
   id: string;
   unit: string;
@@ -69,6 +79,7 @@ export interface DataMutuPayload {
   sentinel?: number;
   visite_details?: VisiteData[];
   jatuh_details?: JatuhData[];
+  waktu_tunggu_details?: WaktuTungguData[];
 }
 
 const initialDataMutu: DataMutuPayload[] = [];
