@@ -410,8 +410,22 @@ export default function InputData() {
       }
     }
 
-    let persentase = Number(((finalNum / (finalDen || 1)) * 100).toFixed(2));
-    if (isNaN(persentase)) persentase = 0;
+    let computedCapaian = 0;
+    if (selectedIndikatorProfile) {
+      const unit = selectedIndikatorProfile.measurement_unit;
+      if (unit === "Indeks" || unit === "Rasio") { // Handle old "Rasio" values just in case
+        computedCapaian = Number(((finalNum / (finalDen || 1)) * 25).toFixed(2));
+      } else if (unit === "Jumlah Kasus") {
+        computedCapaian = finalNum;
+      } else if (["Menit", "Jam", "Hari"].includes(unit)) {
+        computedCapaian = Number((finalNum / (finalDen || 1)).toFixed(2));
+      } else {
+        computedCapaian = Number(((finalNum / (finalDen || 1)) * 100).toFixed(2));
+      }
+    } else {
+      computedCapaian = Number(((finalNum / (finalDen || 1)) * 100).toFixed(2));
+    }
+    if (isNaN(computedCapaian)) computedCapaian = 0;
 
     const payload: DataMutuPayload = {
       id: Math.random().toString(36).substring(7),
@@ -423,7 +437,7 @@ export default function InputData() {
       numerator: finalNum,
       denominator: finalDen,
       target: selectedIndikatorProfile?.target || undefined,
-      capaian: data.kategori === "IKP" ? undefined : persentase,
+      capaian: data.kategori === "IKP" ? undefined : computedCapaian,
       status: data.kategori === "IKP" ? "N/A" : (achievementStatus as any),
       keterangan: data.keterangan || "",
       kpc: data.kategori === "IKP" ? data.kpc || 0 : undefined,
@@ -450,7 +464,7 @@ export default function InputData() {
         numerator_value: finalNum,
         denominator_value: finalDen,
         target: selectedIndikatorProfile?.target || null,
-        achievement_percentage: data.kategori === "IKP" ? null : persentase,
+        achievement_percentage: data.kategori === "IKP" ? null : computedCapaian,
         notes: data.kategori === "IKP" ? JSON.stringify({
           kpc: payload.kpc,
           knc: payload.knc,

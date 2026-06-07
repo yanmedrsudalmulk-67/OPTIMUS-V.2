@@ -51,7 +51,7 @@ function GlobalInitializer() {
             objective: d.purpose,
             operational_definition: d.operational_definition,
             indicator_type: d.indicator_type,
-            measurement_unit: d.measurement_unit,
+            measurement_unit: d.measurement_unit === "Rasio" ? "Indeks" : d.measurement_unit,
             numerator: d.numerator,
             denominator: d.denominator,
             target: d.target === null || d.target === undefined ? "" : String(d.target),

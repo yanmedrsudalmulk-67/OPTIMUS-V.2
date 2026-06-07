@@ -578,7 +578,7 @@ export default function Dashboard() {
   return (
     <div className="space-y-6 md:space-y-10 animate-in fade-in slide-in-from-bottom-4 duration-700 pb-4 w-full max-w-full px-2 sm:px-4 md:px-0 md:overflow-visible">
       {/* Header and Filter */}
-      <div className="flex flex-col 2xl:flex-row 2xl:items-center justify-between gap-4 border-b border-gray-100 pb-6 mb-4">
+      <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-4 border-b border-gray-100 pb-6 mb-4">
         <div>
           <div className="flex items-start md:items-center gap-3">
             <h1 className="text-2xl md:text-3xl font-extrabold text-[#10a37f] tracking-tight leading-tight">
@@ -593,7 +593,7 @@ export default function Dashboard() {
           </p>
         </div>
 
-        <div className="flex flex-wrap items-center gap-2 md:gap-3 w-full 2xl:w-auto justify-start mt-2 2xl:mt-0">
+        <div className="flex flex-wrap items-center gap-2 md:gap-3 w-full xl:w-auto justify-start xl:justify-end mt-2 xl:mt-0">
           <div className="flex items-center gap-1.5 bg-white border border-gray-200 rounded-lg md:rounded-xl px-2.5 md:px-2 lg:px-2.5 shadow-sm shrink-0">
             <Filter size={14} className="text-emerald-600 hidden md:block" />
             <select

@@ -56,7 +56,7 @@ const adaptFromSupabase = (dbItem: any): IndicatorProfile => {
     objective: dbItem.purpose || dbItem.objective || "—",
     operational_definition: dbItem.operational_definition || "—",
     indicator_type: dbItem.indicator_type || "—",
-    measurement_unit: dbItem.measurement_unit || "—",
+    measurement_unit: (dbItem.measurement_unit === "Rasio" ? "Indeks" : dbItem.measurement_unit) || "—",
     numerator: dbItem.numerator || "—",
     denominator: dbItem.denominator || "—",
     target: dbItem.target ? String(dbItem.target) : "—",
@@ -104,7 +104,10 @@ const adaptToSupabase = (profile: IndicatorProfile, email?: string) => {
     person_in_charge: profile.person_responsible,
     reverse: profile.reverse || false,
     created_by: email || "admin@optimus.hospital",
-    updated_at: new Date().toISOString()
+    updated_at: new Date().toISOString(),
+    satuan_pengukuran: profile.measurement_unit === "Indeks" ? "Indeks" : profile.measurement_unit,
+    formula_type: profile.measurement_unit === "Indeks" ? "index" : "percent",
+    formula_multiplier: profile.measurement_unit === "Indeks" ? 25 : (profile.measurement_unit === "Persen (%)" ? 100 : 1)
   };
 };
 
@@ -260,12 +263,28 @@ export default function ProfilIndikator() {
   // Real-time automatic formula generator
   useEffect(() => {
     if (!isFormulaManual && showForm) {
-      if (watchNum && watchDen) {
-        const hasPercent = watchUnit?.includes("%") || watchUnit?.toLowerCase().includes("persen");
-        const formattedFormula = `("${watchNum.trim()}" / "${watchDen.trim()}")${hasPercent ? ' × 100%' : ''}`;
-        setValue("formula", formattedFormula);
+      if (watchUnit === "Indeks") {
+        if (watchNum && watchDen) {
+          setValue("formula", `("${watchNum.trim()}" / "${watchDen.trim()}") × 25`);
+        } else {
+          setValue("formula", "");
+        }
+      } else if (watchUnit === "Persen (%)") {
+        if (watchNum && watchDen) {
+          setValue("formula", `("${watchNum.trim()}" / "${watchDen.trim()}") × 100%`);
+        } else {
+          setValue("formula", "");
+        }
+      } else if (watchUnit === "Jumlah Kasus") {
+        setValue("formula", "Hasil = Total Kasus");
+      } else if (["Menit", "Jam", "Hari"].includes(watchUnit || "")) {
+         setValue("formula", "Hasil = Rata-rata waktu");
       } else {
-        setValue("formula", "");
+        if (watchNum && watchDen) {
+          setValue("formula", `("${watchNum.trim()}" / "${watchDen.trim()}")`);
+        } else {
+          setValue("formula", "");
+        }
       }
     }
   }, [watchNum, watchDen, watchUnit, isFormulaManual, setValue, showForm]);
@@ -325,10 +344,29 @@ export default function ProfilIndikator() {
           // SEED DATABASE: if Supabase contains 0 profiles, upload defaults.
           const localProfiles = useStore.getState().indicatorProfiles;
           if (localProfiles.length > 0) {
-            const seedData = localProfiles.map(p => adaptToSupabase(p));
-            const { error: seedError } = await supabase
+            const seedPayloads = localProfiles.map(p => adaptToSupabase(p));
+            let { error: seedError } = await supabase
               .from('master_indikator')
-              .insert(seedData);
+              .insert(seedPayloads);
+
+            if (seedError && (seedError.code === 'PGRST204' || (seedError.message && (
+              seedError.message.includes('formula_multiplier') || 
+              seedError.message.includes('formula_type') || 
+              seedError.message.includes('satuan_pengukuran')
+            )))) {
+              console.log("Retrying DB Seed without custom columns...");
+              const cleanedPayloads = seedPayloads.map(p => {
+                const cleaned = { ...p };
+                delete (cleaned as any).satuan_pengukuran;
+                delete (cleaned as any).formula_type;
+                delete (cleaned as any).formula_multiplier;
+                return cleaned;
+              });
+              const retrySeed = await supabase
+                .from('master_indikator')
+                .insert(cleanedPayloads);
+              seedError = retrySeed.error;
+            }
 
             if (!seedError) {
               const { data: refreshed } = await supabase
@@ -383,13 +421,34 @@ export default function ProfilIndikator() {
 
       console.log("Saving dbPayload to supabase:", dbPayload);
 
-      const { error } = await supabase
+      let { error } = await supabase
         .from('master_indikator')
         .upsert(dbPayload);
 
       if (error) {
-        console.error("Supabase upsert error:", error);
-        throw error;
+        console.warn("First upsert attempt failed:", error);
+        if (error.code === 'PGRST204' || (error.message && (
+          error.message.includes('formula_multiplier') || 
+          error.message.includes('formula_type') || 
+          error.message.includes('satuan_pengukuran')
+        ))) {
+          console.log("Retrying upsert without custom columns...");
+          const cleanedPayload = { ...dbPayload };
+          delete (cleanedPayload as any).satuan_pengukuran;
+          delete (cleanedPayload as any).formula_type;
+          delete (cleanedPayload as any).formula_multiplier;
+          
+          const retryResult = await supabase
+            .from('master_indikator')
+            .upsert(cleanedPayload);
+            
+          if (retryResult.error) {
+            console.error("Retry upsert failed:", retryResult.error);
+            throw retryResult.error;
+          }
+        } else {
+          throw error;
+        }
       }
       
       return payload;
@@ -485,6 +544,7 @@ export default function ProfilIndikator() {
     setIsFormulaManual(true); // default to true on edit so we keep manual formula modifications
     reset({
       ...profile,
+      measurement_unit: profile.measurement_unit === "Rasio" ? "Indeks" : profile.measurement_unit,
       target: profile.target
     } as any);
     setShowForm(true);
@@ -1040,12 +1100,18 @@ export default function ProfilIndikator() {
                       <option value="Menit">Menit</option>
                       <option value="Jam">Jam</option>
                       <option value="Hari">Hari</option>
-                      <option value="Rasio">Rasio</option>
+                      <option value="Indeks">Indeks</option>
                       <option value="Jumlah Kasus">Jumlah Kasus</option>
                       <option value="Skor">Skor</option>
                       <option value="Nilai">Nilai</option>
                     </select>
                     {errors.measurement_unit && <p className="text-red-500 text-[10px] uppercase font-black mt-1">{errors.measurement_unit.message}</p>}
+                    
+                    {watchUnit === "Indeks" && (
+                      <div className="mt-2 p-2 bg-blue-50 border border-blue-100 rounded-lg text-[10px] sm:text-xs text-blue-700 font-semibold leading-relaxed">
+                        Perhitungan Indeks menggunakan standar: <strong className="font-black text-blue-800">(Nilai Rata-Rata × 25)</strong> sesuai metode perhitungan Indeks Kepuasan.
+                      </div>
+                    )}
                   </div>
 
                   {/* Field 8: Numerator (Pembilang) */}
@@ -1164,9 +1230,20 @@ export default function ProfilIndikator() {
                           
                           {/* Unit automatically suffix multiply */}
                           <span className="text-xs md:text-sm font-black shrink-0 text-emerald-700 select-none pb-0.5">
-                            {watchUnit?.includes("%") ? "× 100%" : (watchUnit ? `× ${watchUnit}` : "× 100%")}
+                            {watchUnit === "Indeks" ? "× 25" : watchUnit?.includes("%") ? "× 100%" : (watchUnit ? `× ${watchUnit}` : "× 100%")}
                           </span>
                         </div>
+                        
+                        {watchUnit === "Persen (%)" && (
+                          <div className="mt-4 mb-2 bg-emerald-50 text-emerald-700 px-3 py-1.5 rounded-xl border border-emerald-200 text-[10px] font-bold uppercase tracking-wider flex items-center justify-center w-full">
+                            Formula Persentase (×100)
+                          </div>
+                        )}
+                        {watchUnit === "Indeks" && (
+                          <div className="mt-4 mb-2 bg-blue-50 text-blue-700 px-3 py-1.5 rounded-xl border border-blue-200 text-[10px] font-bold uppercase tracking-wider flex items-center justify-center w-full">
+                            Formula Indeks Kepuasan (×25)
+                          </div>
+                        )}
 
                         {/* Copy formula command button */}
                         <button 
@@ -1486,9 +1563,20 @@ export default function ProfilIndikator() {
                               </span>
                             </div>
                             <span className="text-xs md:text-sm font-black shrink-0 text-emerald-700 select-none pb-0.5">
-                              {viewingProfile.measurement_unit?.includes("%") ? "× 100%" : (viewingProfile.measurement_unit ? `× ${viewingProfile.measurement_unit}` : "× 100%")}
+                              {viewingProfile.measurement_unit === "Indeks" ? "× 25" : viewingProfile.measurement_unit?.includes("%") ? "× 100%" : (viewingProfile.measurement_unit ? `× ${viewingProfile.measurement_unit}` : "× 100%")}
                             </span>
                           </div>
+                          
+                          {viewingProfile.measurement_unit === "Persen (%)" && (
+                            <div className="mt-4 mb-2 bg-emerald-50 text-emerald-700 px-3 py-1.5 rounded-xl border border-emerald-200 text-[10px] font-bold uppercase tracking-wider flex items-center justify-center w-full">
+                              Formula Persentase (×100)
+                            </div>
+                          )}
+                          {viewingProfile.measurement_unit === "Indeks" && (
+                            <div className="mt-4 mb-2 bg-blue-50 text-blue-700 px-3 py-1.5 rounded-xl border border-blue-200 text-[10px] font-bold uppercase tracking-wider flex items-center justify-center w-full">
+                              Formula Indeks Kepuasan (×25)
+                            </div>
+                          )}
                         </div>
                       } 
                       id="formula-row"
