@@ -78,6 +78,121 @@ const TwoDShadowBar = (props: any) => {
   );
 };
 
+const CustomLineLabel = (props: any) => {
+  const { x, y, value, index, type, data } = props;
+  if (value === undefined || value === null) return null;
+
+  const entry = data[index] || {};
+  const targetVal = entry.target !== undefined ? entry.target : 0;
+  const capaianVal = entry.capaian !== undefined ? entry.capaian : 0;
+  
+  const isClose = Math.abs(targetVal - capaianVal) < 5;
+  const isSame = targetVal === capaianVal;
+  
+  let yOffset = type === 'target' ? -22 : 22;
+  if (isSame || isClose) {
+    yOffset = type === 'target' ? -26 : 26;
+  }
+
+  const color = type === 'target' ? '#DC2626' : '#2563EB';
+  const strokeColor = type === 'target' ? '#fecaca' : '#bfdbfe';
+  const bgColor = 'rgba(255, 255, 255, 0.9)';
+  
+  const textStr = `${value}%`;
+  // Responsive width heuristic
+  const charWidth = 7;
+  const rectWidth = textStr.length * charWidth + 18;
+  const rectHeight = 22;
+  
+  let xOffset = -(rectWidth / 2);
+  
+  // Prevent clipping on edges
+  if (index === 0) xOffset = -(rectWidth / 2) + 12;
+  if (index === data.length - 1) xOffset = -(rectWidth / 2) - 12;
+
+  return (
+    <g transform={`translate(${x},${y})`} style={{ transition: 'all 0.3s ease' }}>
+      <rect
+        x={xOffset}
+        y={yOffset - (rectHeight / 2)}
+        width={rectWidth}
+        height={rectHeight}
+        fill={bgColor}
+        stroke={strokeColor}
+        strokeWidth="1"
+        rx="6"
+        ry="6"
+      />
+      <text
+        x={xOffset + (rectWidth / 2)}
+        y={yOffset + 4}
+        fill={color}
+        fontSize="11"
+        fontWeight="bold"
+        textAnchor="middle"
+      >
+        {textStr}
+      </text>
+    </g>
+  );
+};
+
+const LineChartTooltip = ({ active, payload, label, indicatorName, isReverse }: any) => {
+  if (active && payload && payload.length) {
+    const capaianEntry = payload.find((p: any) => p.dataKey === 'capaian');
+    const targetEntry = payload.find((p: any) => p.dataKey === 'target');
+    
+    const capaian = capaianEntry ? capaianEntry.value : 0;
+    const target = targetEntry ? targetEntry.value : 0;
+    
+    // Using string conversion to avoid floating point issues
+    let diff = (capaian - target).toFixed(2);
+    // remove .00
+    if (diff.endsWith('.00')) diff = diff.split('.')[0];
+    
+    const isSuccess = isReverse ? capaian <= target : capaian >= target;
+    const statusText = isSuccess ? "Tercapai" : "Belum Tercapai";
+    const statusColor = isSuccess ? "text-emerald-700 bg-emerald-50 border-emerald-200" : "text-red-700 bg-red-50 border-red-200";
+    
+    return (
+      <div className="bg-white p-4 border border-gray-100 shadow-xl rounded-xl min-w-[200px] z-50">
+        <h4 className="text-[13px] font-bold text-gray-800 mb-1 leading-tight">{indicatorName}</h4>
+        <p className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider mb-3">Periode: {label}</p>
+        
+        <div className="flex flex-col gap-2 mb-3">
+          <div className="flex justify-between items-center bg-blue-50/50 p-2 rounded-lg border border-blue-100/50">
+             <div className="flex items-center gap-1.5">
+               <div className="w-2 h-2 rounded-full bg-blue-600"></div>
+               <span className="text-xs font-semibold text-slate-600">Capaian</span>
+             </div>
+             <span className="text-sm font-bold text-blue-700">{capaian}%</span>
+          </div>
+          <div className="flex justify-between items-center bg-red-50/50 p-2 rounded-lg border border-red-100/50">
+             <div className="flex items-center gap-1.5">
+               <div className="w-2 h-2 rounded-full bg-red-600"></div>
+               <span className="text-xs font-semibold text-slate-600">Target</span>
+             </div>
+             <span className="text-sm font-bold text-red-700">{target}%</span>
+          </div>
+        </div>
+        
+        <div className="border-t border-slate-100 pt-3 flex items-center justify-between">
+           <div className="flex flex-col">
+             <span className="text-[10px] text-slate-500 font-medium tracking-wide">SELISIH</span>
+             <span className={`text-[13px] font-black ${capaian >= target ? 'text-emerald-600' : 'text-red-600'}`}>
+               {capaian >= target ? '+' : ''}{diff}%
+             </span>
+           </div>
+           <div className={`px-2.5 py-1 rounded-md border text-[10px] font-black uppercase tracking-wider ${statusColor}`}>
+             {statusText}
+           </div>
+        </div>
+      </div>
+    );
+  }
+  return null;
+};
+
 export default function Grafik() {
   const dataMutuList = useStore((state) => state.dataMutuList);
   const setDataMutuList = useStore((state) => state.setDataMutuList);
@@ -148,11 +263,21 @@ export default function Grafik() {
 
   // Compute Active Indicators based on Category
   const activeProfilesInCategory = useMemo(() => {
-    return indicatorProfiles.filter(p => {
+    let profiles = indicatorProfiles.filter(p => {
       if (categoryFilter === "Semua") return true;
       if (categoryFilter === "IMP-UNIT") return p.category === "IMP Unit" || p.category === "IMP-Unit";
       return p.category === categoryFilter;
     });
+    
+    profiles.sort((a, b) => {
+      const aIsKKT = (a.indicator_title || "").toLowerCase().includes("kebersihan tangan");
+      const bIsKKT = (b.indicator_title || "").toLowerCase().includes("kebersihan tangan");
+      if (aIsKKT && !bIsKKT) return -1;
+      if (!aIsKKT && bIsKKT) return 1;
+      return 0;
+    });
+    
+    return profiles;
   }, [indicatorProfiles, categoryFilter]);
 
   // Compute values for each indicator in the category, aggregated by the selected period
@@ -336,7 +461,8 @@ export default function Grafik() {
         narasi,
         trendStr,
         conclusion,
-        recommendations
+        recommendations,
+        isReverse: isReverse
       };
     });
   }, [activeProfilesInCategory, dataMutuList, periodeMode, selectedBulan, selectedTriwulan, selectedSemester, selectedTahun]);
@@ -517,7 +643,7 @@ export default function Grafik() {
             return (
               <div key={d.id} className="bg-white p-6 rounded-3xl border border-gray-100 shadow-[0_8px_30px_rgb(0,0,0,0.06)] hover:shadow-[0_20px_40px_rgb(0,0,0,0.12)] transition-all duration-300 flex flex-col items-center">
                 <div className="text-center mb-6 w-full px-4">
-                  <h3 className="text-lg font-bold text-slate-800 leading-tight">{d.name}</h3>
+                  <h3 className="text-base font-bold text-slate-800 leading-tight">{d.name}</h3>
                   <p className="text-xs font-bold text-slate-500 mt-1.5 uppercase tracking-wider">UOBK RSUD AL-MULK KOTA SUKABUMI</p>
                   <p className="text-[11px] text-slate-400 mt-0.5">{longPeriodName}</p>
                 </div>
@@ -570,13 +696,13 @@ export default function Grafik() {
                             tickLine={false}
                             tickCount={5}
                           />
-                          <RechartsTooltip content={<CustomTooltip />} cursor={{strokeDasharray: '3 3'}} />
+                          <RechartsTooltip content={<LineChartTooltip indicatorName={d.name} isReverse={d.isReverse} />} cursor={{strokeDasharray: '3 3'}} />
                           <RechartsLegend verticalAlign="bottom" align="center" iconType="circle" wrapperStyle={{ fontSize: '11px', fontWeight: 600, paddingTop: '15px' }} />
-                          <Line dataKey="capaian" name="Capaian" type="monotone" stroke="#2563EB" strokeWidth={4} dot={{ r: 6, fill: '#2563EB', strokeWidth: 2, stroke: '#fff' }} activeDot={{ r: 8 }}>
-                             <LabelList dataKey="capaian" position="top" offset={10} formatter={(val: number) => val + "%"} style={{ fontSize: '12px', fontWeight: 'bold', fill: '#2563EB' }} />
+                          <Line dataKey="target" name="Target" type="monotone" stroke="#DC2626" strokeWidth={4} dot={{ r: 6, fill: '#DC2626', strokeWidth: 2, stroke: '#fff', style: { transition: 'all 0.3s ease' } }} activeDot={{ r: 8, strokeWidth: 0 }}>
+                             <LabelList dataKey="target" content={(props) => <CustomLineLabel {...props} type="target" data={d.series} />} />
                           </Line>
-                          <Line dataKey="target" name="Target" type="monotone" stroke="#DC2626" strokeWidth={4} dot={{ r: 6, fill: '#DC2626', strokeWidth: 2, stroke: '#fff' }} activeDot={{ r: 8 }}>
-                             <LabelList dataKey="target" position="top" offset={10} formatter={(val: number) => val + "%"} style={{ fontSize: '12px', fontWeight: 'bold', fill: '#DC2626' }} />
+                          <Line dataKey="capaian" name="Capaian" type="monotone" stroke="#2563EB" strokeWidth={4} dot={{ r: 6, fill: '#2563EB', strokeWidth: 2, stroke: '#fff', style: { transition: 'all 0.3s ease' } }} activeDot={{ r: 8, strokeWidth: 0 }} animationDuration={1500}>
+                             <LabelList dataKey="capaian" content={(props) => <CustomLineLabel {...props} type="capaian" data={d.series} />} />
                           </Line>
                         </LineChart>
                       )}

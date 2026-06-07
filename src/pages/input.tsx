@@ -157,7 +157,15 @@ export default function InputData() {
 
   // Filter indicator profiles dynamically from state/database
   const filteredIndikators = useMemo(() => {
-    return indicatorProfiles.filter((i) => i.category === watchKategori);
+    let filtered = indicatorProfiles.filter((i) => i.category === watchKategori);
+    filtered.sort((a, b) => {
+      const aIsKKT = (a.indicator_title || "").toLowerCase().includes("kebersihan tangan");
+      const bIsKKT = (b.indicator_title || "").toLowerCase().includes("kebersihan tangan");
+      if (aIsKKT && !bIsKKT) return -1;
+      if (!aIsKKT && bIsKKT) return 1;
+      return 0;
+    });
+    return filtered;
   }, [indicatorProfiles, watchKategori]);
 
   const selectedIndikatorProfile = useMemo(() => {

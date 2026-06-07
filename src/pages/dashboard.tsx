@@ -151,8 +151,26 @@ export default function Dashboard() {
   >(null);
   const [modalSearch, setModalSearch] = useState("");
 
+  const filteredDropdownProfiles = useMemo(() => {
+    let profiles = indicatorProfiles.filter(
+      (p) =>
+        !dropdownSearch ||
+        p.indicator_title.toLowerCase().includes(dropdownSearch.toLowerCase()),
+    );
+    
+    profiles.sort((a, b) => {
+      const aIsKKT = (a.indicator_title || "").toLowerCase().includes("kebersihan tangan");
+      const bIsKKT = (b.indicator_title || "").toLowerCase().includes("kebersihan tangan");
+      if (aIsKKT && !bIsKKT) return -1;
+      if (!aIsKKT && bIsKKT) return 1;
+      return 0;
+    });
+    
+    return profiles;
+  }, [indicatorProfiles, dropdownSearch]);
+
   const activeIndikatorId =
-    selectedIndikatorId || indicatorProfiles[0]?.id || "";
+    selectedIndikatorId || filteredDropdownProfiles[0]?.id || indicatorProfiles[0]?.id || "";
 
   // Fetch inputs from Supabase on mount to show correct user inputs in real-time
   useEffect(() => {
@@ -298,7 +316,9 @@ export default function Dashboard() {
   ]);
 
   // Map 13 indicators table data based on dynamic input records
-  const inmTableData = indicatorProfiles.map((item, index) => {
+  let inmTableData = indicatorProfiles
+    .filter((item) => item.category === "INM")
+    .map((item, index) => {
     const matchingEntries = filteredDataMutu.filter(
       (d) => d.indikator_id === item.id,
     );
@@ -352,6 +372,20 @@ export default function Dashboard() {
           ? matchingEntries[matchingEntries.length - 1].tanggal
           : "-",
     };
+  });
+
+  // Sort "Kepatuhan Kebersihan Tangan" to the top
+  inmTableData.sort((a, b) => {
+    const aIsKKT = (a.name || "").toLowerCase().includes("kebersihan tangan");
+    const bIsKKT = (b.name || "").toLowerCase().includes("kebersihan tangan");
+    if (aIsKKT && !bIsKKT) return -1;
+    if (!aIsKKT && bIsKKT) return 1;
+    return 0;
+  });
+
+  // Re-assign sequential numbers
+  inmTableData.forEach((item, index) => {
+    item.no = index + 1;
   });
 
   const tercapaiCount = inmTableData.filter((i) => i.status === "green").length;
@@ -1008,7 +1042,7 @@ export default function Dashboard() {
           <div>
             <div className="flex items-center gap-2">
               <BarChart3 className="text-[#10a37f] h-[18px] w-[18px] md:h-5 md:w-5" />
-              <h3 className="text-sm md:text-xl font-extrabold text-[#10a37f] tracking-tight leading-normal">
+              <h3 className="text-sm md:text-xl font-extrabold text-[#10a37f] tracking-tight leading-normal" style={{ fontSize: "16px" }}>
                 GRAFIK CAPAIAN MUTU INM
               </h3>
             </div>
@@ -1045,25 +1079,12 @@ export default function Dashboard() {
                   />
                 </div>
                 <div className="max-h-60 overflow-y-auto scrollbar-thin scrollbar-thumb-emerald-200 scrollbar-track-transparent">
-                  {indicatorProfiles.filter(
-                    (p) =>
-                      !dropdownSearch ||
-                      p.indicator_title
-                        .toLowerCase()
-                        .includes(dropdownSearch.toLowerCase()),
-                  ).length === 0 ? (
+                  {filteredDropdownProfiles.length === 0 ? (
                     <div className="p-4 text-center text-xs text-gray-400 font-bold">
                       Tidak ada hasil ditemukan
                     </div>
                   ) : (
-                    indicatorProfiles
-                      .filter(
-                        (p) =>
-                          !dropdownSearch ||
-                          p.indicator_title
-                            .toLowerCase()
-                            .includes(dropdownSearch.toLowerCase()),
-                      )
+                    filteredDropdownProfiles
                       .map((p) => {
                         const isSelected = p.id === activeIndikatorId;
                         return (

@@ -3,7 +3,7 @@ import {
   Plus, X, Search, Edit, Trash2, Eye, FileText, Download, 
   AlertTriangle, CheckCircle, Award, Layers, Users, Compass, 
   Network, HelpCircle, Copy, Check, Calculator, AlertCircle, 
-  Calendar, RefreshCw, ChevronDown, Filter, Printer, FileDown, Target
+  Calendar, RefreshCw, ChevronDown, Filter, Printer, FileDown, Target, Lock
 } from 'lucide-react';
 
 import { useForm } from 'react-hook-form';
@@ -192,6 +192,9 @@ export default function ProfilIndikator() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [viewingProfile, setViewingProfile] = useState<IndicatorProfile | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [deleteStep, setDeleteStep] = useState<'confirm' | 'password'>('confirm');
+  const [deletePassword, setDeletePassword] = useState('');
+  const [deleteError, setDeleteError] = useState('');
 
   // Search & Filters state
   const [searchQuery, setSearchQuery] = useState("");
@@ -552,12 +555,26 @@ export default function ProfilIndikator() {
 
   const confirmDelete = (id: string) => {
     setDeletingId(id);
+    setDeleteStep('confirm');
+    setDeletePassword('');
+    setDeleteError('');
+  };
+
+  const closeDeleteModal = () => {
+    setDeletingId(null);
+    setDeleteStep('confirm');
+    setDeletePassword('');
+    setDeleteError('');
   };
 
   const handleDeleteExecute = () => {
     if (deletingId) {
+      if (deletePassword !== '230489') {
+        setDeleteError('Password salah.');
+        return;
+      }
       deleteMutation.mutate(deletingId);
-      setDeletingId(null);
+      closeDeleteModal();
     }
   };
 
@@ -612,6 +629,12 @@ export default function ProfilIndikator() {
   const filteredData = useMemo(() => {
     const sortedProfiles = [...(profiles || [])];
     sortedProfiles.sort((a, b) => {
+      // Prioritize Kepatuhan Kebersihan Tangan
+      const aIsKKT = (a.indicator_title || "").toLowerCase().includes("kebersihan tangan");
+      const bIsKKT = (b.indicator_title || "").toLowerCase().includes("kebersihan tangan");
+      if (aIsKKT && !bIsKKT) return -1;
+      if (!aIsKKT && bIsKKT) return 1;
+
       const dateA = a.created_at ? new Date(a.created_at).getTime() : 0;
       const dateB = b.created_at ? new Date(b.created_at).getTime() : 0;
       if (dateA !== dateB) return dateA - dateB;
@@ -1234,17 +1257,6 @@ export default function ProfilIndikator() {
                           </span>
                         </div>
                         
-                        {watchUnit === "Persen (%)" && (
-                          <div className="mt-4 mb-2 bg-emerald-50 text-emerald-700 px-3 py-1.5 rounded-xl border border-emerald-200 text-[10px] font-bold uppercase tracking-wider flex items-center justify-center w-full">
-                            Formula Persentase (×100)
-                          </div>
-                        )}
-                        {watchUnit === "Indeks" && (
-                          <div className="mt-4 mb-2 bg-blue-50 text-blue-700 px-3 py-1.5 rounded-xl border border-blue-200 text-[10px] font-bold uppercase tracking-wider flex items-center justify-center w-full">
-                            Formula Indeks Kepuasan (×25)
-                          </div>
-                        )}
-
                         {/* Copy formula command button */}
                         <button 
                           id="copy-formula-btn"
@@ -1551,14 +1563,14 @@ export default function ProfilIndikator() {
                     <DetailRow 
                       label="Formula" 
                       value={
-                        <div className="flex items-center justify-center py-5 w-full bg-white border border-gray-200 rounded-2xl p-4 md:p-6 shadow-sm">
+                        <div className="flex flex-col items-center justify-center py-5 w-full bg-white border border-gray-200 rounded-2xl p-4 md:p-6 shadow-sm">
                           <div className="flex items-center gap-4 text-slate-900 w-full max-w-full">
                             <div className="flex flex-col items-center flex-1 min-w-0 select-text">
-                              <span className="text-[9px] font-semibold text-center w-full px-4 pb-2.5 leading-relaxed text-gray-700 break-words whitespace-normal [word-break:break-word] [overflow-wrap:break-word]">
+                              <span className="text-sm font-semibold text-center w-full px-4 pb-2.5 leading-relaxed text-gray-700 break-words whitespace-normal [word-break:break-word] [overflow-wrap:break-word]">
                                 {viewingProfile.numerator || "—"}
                               </span>
                               <div className="w-full border-t border-gray-300 my-0.5"></div>
-                              <span className="text-[9px] font-semibold text-center w-full px-4 pt-2.5 leading-relaxed text-emerald-800 break-words whitespace-normal [word-break:break-word] [overflow-wrap:break-word]">
+                              <span className="text-sm font-semibold text-center w-full px-4 pt-2.5 leading-relaxed text-emerald-800 break-words whitespace-normal [word-break:break-word] [overflow-wrap:break-word]">
                                 {viewingProfile.denominator || "—"}
                               </span>
                             </div>
@@ -1566,17 +1578,6 @@ export default function ProfilIndikator() {
                               {viewingProfile.measurement_unit === "Indeks" ? "× 25" : viewingProfile.measurement_unit?.includes("%") ? "× 100%" : (viewingProfile.measurement_unit ? `× ${viewingProfile.measurement_unit}` : "× 100%")}
                             </span>
                           </div>
-                          
-                          {viewingProfile.measurement_unit === "Persen (%)" && (
-                            <div className="mt-4 mb-2 bg-emerald-50 text-emerald-700 px-3 py-1.5 rounded-xl border border-emerald-200 text-[10px] font-bold uppercase tracking-wider flex items-center justify-center w-full">
-                              Formula Persentase (×100)
-                            </div>
-                          )}
-                          {viewingProfile.measurement_unit === "Indeks" && (
-                            <div className="mt-4 mb-2 bg-blue-50 text-blue-700 px-3 py-1.5 rounded-xl border border-blue-200 text-[10px] font-bold uppercase tracking-wider flex items-center justify-center w-full">
-                              Formula Indeks Kepuasan (×25)
-                            </div>
-                          )}
                         </div>
                       } 
                       id="formula-row"
@@ -1666,35 +1667,85 @@ export default function ProfilIndikator() {
               className="relative bg-white rounded-3xl border border-red-100 shadow-2xl w-full max-w-md overflow-hidden z-10 p-6 text-center space-y-4"
             >
               
-              {/* Animated Danger Icon */}
-              <div className="mx-auto w-14 h-14 rounded-full bg-red-50 flex items-center justify-center text-red-500 border border-red-100 animate-pulse">
-                <AlertTriangle size={26} strokeWidth={2.3} />
-              </div>
+              {deleteStep === 'confirm' ? (
+                <>
+                  {/* Animated Danger Icon */}
+                  <div className="mx-auto w-14 h-14 rounded-full bg-red-50 flex items-center justify-center text-red-500 border border-red-100 animate-pulse">
+                    <AlertTriangle size={26} strokeWidth={2.3} />
+                  </div>
 
-              <div>
-                <h3 className="text-lg font-black text-gray-900 leading-snug">Hapus Profil Indikator?</h3>
-                <p className="text-xs text-gray-500 font-medium mt-1.5 leading-relaxed">
-                  Apakah Anda yakin ingin menghapus indikator klinis ini? Data yang terhapus dari tabel <strong className="text-slate-800">master_indikator</strong> tidak dapat dikembalikan dan akan memengaruhi riwayat pelaporan secara realtime.
-                </p>
-              </div>
+                  <div>
+                    <h3 className="text-lg font-black text-gray-900 leading-snug">Hapus Profil Indikator?</h3>
+                    <p className="text-xs text-gray-500 font-medium mt-1.5 leading-relaxed">
+                      Apakah anda yakin menghapus data profil indikator ini?
+                    </p>
+                  </div>
 
-              {/* Action Buttons */}
-              <div className="pt-2 flex gap-3">
-                <button 
-                  id="cancel-delete-btn"
-                  onClick={() => setDeletingId(null)}
-                  className="flex-1 py-3 border border-gray-200 hover:bg-gray-50 text-gray-600 hover:text-gray-800 text-xs font-extrabold rounded-xl transition-all cursor-pointer"
-                >
-                  Batal
-                </button>
-                <button 
-                  id="confirm-delete-btn"
-                  onClick={handleDeleteExecute}
-                  className="flex-1 py-3 bg-red-50 hover:bg-red-100 text-red-600 hover:text-red-700 text-xs font-black rounded-xl border border-red-100 transition-all cursor-pointer"
-                >
-                  Ya, Hapus
-                </button>
-              </div>
+                  {/* Action Buttons */}
+                  <div className="pt-2 flex gap-3">
+                    <button 
+                      id="cancel-delete-btn"
+                      onClick={closeDeleteModal}
+                      className="flex-1 py-3 border border-gray-200 hover:bg-gray-50 text-gray-600 hover:text-gray-800 text-xs font-extrabold rounded-xl transition-all cursor-pointer"
+                    >
+                      Tidak
+                    </button>
+                    <button 
+                      id="confirm-delete-btn"
+                      onClick={() => setDeleteStep('password')}
+                      className="flex-1 py-3 bg-red-50 hover:bg-red-100 text-red-600 hover:text-red-700 text-xs font-black rounded-xl border border-red-100 transition-all cursor-pointer"
+                    >
+                      Ya
+                    </button>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div className="mx-auto w-14 h-14 rounded-full bg-orange-50 flex items-center justify-center text-orange-500 border border-orange-100 mb-2">
+                    <Lock size={26} strokeWidth={2.3} />
+                  </div>
+
+                  <div>
+                    <h3 className="text-lg font-black text-gray-900 leading-snug">Masukan Password</h3>
+                    <p className="text-xs text-gray-500 font-medium mt-1.5 leading-relaxed mb-4">
+                      Silakan masukan password untuk konfirmasi.
+                    </p>
+                    <input 
+                      type="password" 
+                      value={deletePassword}
+                      onChange={(e) => {
+                        setDeletePassword(e.target.value);
+                        setDeleteError('');
+                      }}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') handleDeleteExecute();
+                      }}
+                      className="w-full text-center px-4 py-3 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-red-500 font-mono tracking-widest text-lg"
+                      placeholder="******"
+                      autoFocus
+                    />
+                    {deleteError && (
+                      <p className="text-xs text-red-500 mt-2 font-medium bg-red-50 py-1 rounded">{deleteError}</p>
+                    )}
+                  </div>
+
+                  {/* Action Buttons */}
+                  <div className="pt-2 flex gap-3">
+                    <button 
+                      onClick={closeDeleteModal}
+                      className="flex-1 py-3 border border-gray-200 hover:bg-gray-50 text-gray-600 hover:text-gray-800 text-xs font-extrabold rounded-xl transition-all cursor-pointer"
+                    >
+                      Batal
+                    </button>
+                    <button 
+                      onClick={handleDeleteExecute}
+                      className="flex-1 py-3 bg-red-50 hover:bg-red-100 text-red-600 hover:text-red-700 text-xs font-black rounded-xl border border-red-100 transition-all cursor-pointer"
+                    >
+                      Konfirmasi Hapus
+                    </button>
+                  </div>
+                </>
+              )}
 
             </motion.div>
           </div>

@@ -131,12 +131,12 @@ export default function Sidebar() {
             </div>
             <div className="flex flex-col min-w-0">
               <span 
-                className="text-xs font-bold text-white truncate font-sans tracking-wide"
-                style={{ color: "#ded92d" }}
+                className="text-xs truncate font-sans tracking-wide"
+                style={{ color: "#cffae5", fontWeight: "bold" }}
               >
                 Pengguna
               </span>
-              <span className="text-[10px] text-emerald-100/80 font-medium">Tim Mutu RS</span>
+              <span className="text-emerald-100/80" style={{ color: "#ded92d", fontWeight: "bold", fontSize: "13px" }}>Tim Mutu RS</span>
             </div>
           </div>
           <motion.div
