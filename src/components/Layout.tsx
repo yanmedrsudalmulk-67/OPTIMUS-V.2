@@ -61,7 +61,7 @@ export default function Layout({ children, router }: LayoutProps) {
       <Sidebar />
 
       {/* Content flex alignment container */}
-      <div className="flex-1 flex flex-col min-h-screen md:pl-64">
+      <div className="flex-1 flex flex-col min-h-screen md:pl-64 w-full min-w-0 overflow-x-hidden">
         {/* PREMIUM UNIFIED GLASSMORPHISM TOP HEADER */}
         <header className="sticky top-0 z-30 flex items-center justify-between min-h-20 md:h-[88px] py-4 md:py-2 px-4 md:px-8 bg-white/75 backdrop-blur-lg border-b border-gray-100/80 shadow-xs pt-6 md:pt-8 w-full">
           <div className="absolute bottom-0 left-0 right-0 h-[2px] bg-gradient-to-r from-emerald-400 via-emerald-500 to-emerald-400 shadow-[0_2px_15px_rgba(16,163,127,0.8)] z-40" />

@@ -25,7 +25,7 @@ export default function SurveiBudaya() {
 
   if (view === "form") {
     return (
-      <div className="w-full">
+      <div className="w-full px-2 md:px-0">
         <SurveiForm onBack={() => setView("dashboard")} />
       </div>
     );
@@ -58,18 +58,18 @@ export default function SurveiBudaya() {
             Radar Capaian Dimensi
           </h3>
           <div className="relative w-full h-[280px] md:h-[320px] shrink-0 mt-4 overflow-hidden">
-            <div className="absolute inset-0">
-              <ResponsiveContainer width="100%" height="100%" debounce={0}>
+            <div className="absolute inset-0 overflow-hidden">
+              <ResponsiveContainer width="100%" height="100%" debounce={50} minWidth={0}>
                 <RadarChart cx="50%" cy="50%" outerRadius="60%" data={dataSurvei}>
                   <PolarGrid stroke="#e5e7eb" />
                   <PolarAngleAxis
                     dataKey="subject"
-                    tick={{ fill: "#4b5563", fontSize: typeof window !== 'undefined' && window.innerWidth < 640 ? 9 : 12 }}
+                    tick={{ fill: "#4b5563", fontSize: 10 }}
                   />
                   <PolarRadiusAxis
                     angle={30}
                     domain={[0, 100]}
-                    tick={{ fill: "#9ca3af", fontSize: typeof window !== 'undefined' && window.innerWidth < 640 ? 8 : 10 }}
+                    tick={{ fill: "#9ca3af", fontSize: 9 }}
                   />
 
                   <Radar
@@ -87,7 +87,7 @@ export default function SurveiBudaya() {
           </div>
         </div>
 
-        <div className="bg-white text-emerald-950 rounded-2xl shadow-sm border border-emerald-100 p-8 flex flex-col justify-center items-center text-center">
+        <div className="bg-white text-emerald-950 rounded-2xl shadow-sm border border-emerald-100 p-8 flex flex-col justify-center items-center text-center w-full min-w-0 overflow-hidden">
           <h3 className="text-2xl font-bold mb-2">Nilai Rata-Rata Budaya</h3>
           <div className="text-6xl font-black text-emerald-600 mb-4 drop-shadow-sm">
             80.5%

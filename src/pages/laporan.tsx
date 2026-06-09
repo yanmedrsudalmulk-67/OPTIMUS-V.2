@@ -190,7 +190,7 @@ export default function Laporan() {
     
     let capaian = 0;
     let isTargetMet = false;
-    let targetVal = Number(selectedProfileData?.target || 0);
+    let targetVal = parseFloat(String(selectedProfileData?.target || 0).replace(/[^0-9.]/g, '')) || 0;
 
     if (selectedProfileData) {
       const isPersen = selectedProfileData.measurement_unit === "Persen (%)";
@@ -199,17 +199,73 @@ export default function Laporan() {
       capaian = den > 0 ? (num / den) * multiplier : 0;
       isTargetMet = selectedProfileData.reverse ? capaian <= targetVal : capaian >= targetVal;
     } else if (activePeriodInputs.length > 0) {
-       targetVal = Number(activePeriodInputs[0].target || 0);
+       targetVal = parseFloat(String(activePeriodInputs[0].target || 0).replace(/[^0-9.]/g, '')) || 0;
        capaian = den > 0 ? (num / den) * 100 : 0; // Default fallback calculation
        isTargetMet = capaian >= targetVal;
     }
 
-    return { num, den, kpc, knc, ktc, ktd, sentinel, capaian, targetVal, isTargetMet };
-  }, [activePeriodInputs, selectedProfileData]);
+    // Previous Period Calculation
+    let prevNum = 0, prevDen = 0, prevCapaian = 0;
+    if (selectedIndikatorDetail && dataMutuList) {
+      const prevInputs = dataMutuList.filter(d => {
+        if (d.indikator_id !== selectedIndikatorDetail.id) return false;
+        const date = new Date(d.tanggal);
+        const m = date.getMonth() + 1;
+        const y = parseInt(date.getFullYear().toString());
+        
+        const currYear = parseInt(appliedFilters.tahun);
+        
+        if (appliedFilters.periode === "Bulanan") {
+          const currMonth = parseInt(appliedFilters.bulan) + 1;
+          const prevMonth = currMonth === 1 ? 12 : currMonth - 1;
+          const targetYear = currMonth === 1 ? currYear - 1 : currYear;
+          return m === prevMonth && y === targetYear;
+        }
+        if (appliedFilters.periode === "Triwulan") {
+          const currTriwulan = parseInt(appliedFilters.triwulan);
+          const prevTriwulan = currTriwulan === 1 ? 4 : currTriwulan - 1;
+          const targetYear = currTriwulan === 1 ? currYear - 1 : currYear;
+          if (y !== targetYear) return false;
+          if (prevTriwulan === 1 && m <= 3) return true;
+          if (prevTriwulan === 2 && m >= 4 && m <= 6) return true;
+          if (prevTriwulan === 3 && m >= 7 && m <= 9) return true;
+          if (prevTriwulan === 4 && m >= 10) return true;
+          return false;
+        }
+        if (appliedFilters.periode === "Semester") {
+          const currSemester = parseInt(appliedFilters.semester);
+          const prevSemester = currSemester === 1 ? 2 : 1;
+          const targetYear = currSemester === 1 ? currYear - 1 : currYear;
+          if (y !== targetYear) return false;
+          if (prevSemester === 1 && m <= 6) return true;
+          if (prevSemester === 2 && m >= 7) return true;
+          return false;
+        }
+        if (appliedFilters.periode === "Tahunan") {
+          return y === currYear - 1;
+        }
+        return false;
+      });
 
-  const handleOpenDetail = async (indicator: any) => {
-    setSelectedIndikatorDetail(indicator);
-    
+      prevInputs.forEach(u => {
+         prevNum += Number(u.numerator) || 0;
+         prevDen += Number(u.denominator) || 0;
+      });
+      
+      if (selectedProfileData) {
+        const isPersen = selectedProfileData.measurement_unit === "Persen (%)";
+        const isIndeks = selectedProfileData.measurement_unit === "Indeks";
+        const multiplier = isIndeks ? 25 : (isPersen ? 100 : 1);
+        prevCapaian = prevDen > 0 ? (prevNum / prevDen) * multiplier : 0;
+      }
+    }
+
+    const tren = prevDen > 0 ? capaian - prevCapaian : 0;
+
+    return { num, den, kpc, knc, ktc, ktd, sentinel, capaian, targetVal, isTargetMet, tren, prevDen };
+  }, [activePeriodInputs, selectedProfileData, appliedFilters, dataMutuList, selectedIndikatorDetail]);
+
+  const loadDetailData = async (indicator: any) => {
     // Check if it's visite docter
     if (indicator.name.toLowerCase().includes("visite")) {
        setIsDetailLoading(true);
@@ -226,6 +282,37 @@ export default function Laporan() {
        } catch(e) {}
        setIsDetailLoading(false);
     }
+  };
+
+  useEffect(() => {
+    if (!selectedIndikatorDetail) return;
+    
+    let channel: any = null;
+    
+    if (selectedIndikatorDetail.name.toLowerCase().includes("visite")) {
+      channel = supabase
+        .channel("laporan-visite-realtime")
+        .on("postgres_changes", { event: "*", schema: "public", table: "visite_dpjp" }, () => {
+          loadDetailData(selectedIndikatorDetail);
+        })
+        .subscribe();
+    } else if (selectedIndikatorDetail.name.toLowerCase().includes("waktu tunggu")) {
+      channel = supabase
+        .channel("laporan-waktu-tunggu-realtime")
+        .on("postgres_changes", { event: "*", schema: "public", table: "waktu_tunggu_rajal" }, () => {
+          loadDetailData(selectedIndikatorDetail);
+        })
+        .subscribe();
+    }
+    
+    return () => {
+      if (channel) supabase.removeChannel(channel);
+    };
+  }, [selectedIndikatorDetail]);
+
+  const handleOpenDetail = (indicator: any) => {
+    setSelectedIndikatorDetail(indicator);
+    loadDetailData(indicator);
   };
 
   const getMonths = () => {
@@ -555,37 +642,33 @@ export default function Laporan() {
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/40 backdrop-blur-sm p-4 md:p-8 animate-in fade-in duration-200">
           <div className="bg-white w-full max-w-7xl max-h-[90vh] rounded-3xl shadow-2xl flex flex-col overflow-hidden border border-gray-100">
             {/* Header */}
-            <div className="px-6 py-5 border-b border-gray-100 flex items-center justify-between bg-emerald-50/30">
+            <div className="px-6 py-5 border-b border-gray-100 flex flex-col md:flex-row items-start md:items-center justify-between gap-4 bg-emerald-50/30">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-emerald-100/50 flex items-center justify-center border border-emerald-200">
-                  <BookOpen className="text-emerald-600" size={20} />
+                <div className="w-10 h-10 md:w-12 md:h-12 rounded-xl bg-emerald-100/50 flex items-center justify-center border border-emerald-200 shrink-0">
+                  <BookOpen className="text-emerald-600" size={24} />
                 </div>
                 <div>
                   <h2 className="text-lg md:text-xl font-black text-slate-800 tracking-tight leading-tight">Detail Riwayat Input Indikator</h2>
-                  <p className="text-xs font-semibold text-emerald-700/80">
+                  <p className="text-xs font-semibold text-emerald-700/80 mt-0.5">
                     {selectedIndikatorDetail.name} • {selectedIndikatorDetail.category}
                   </p>
                 </div>
               </div>
-              <button 
-                onClick={() => setSelectedIndikatorDetail(null)}
-                className="p-2 hover:bg-slate-100 rounded-lg transition-colors text-slate-400 hover:text-slate-600"
-              >
-                <X size={24} />
-              </button>
+              <div className="flex items-center gap-4 w-full md:w-auto mt-2 md:mt-0">
+                <div className="flex items-center gap-2.5 bg-white border border-emerald-500/20 px-4 py-2.5 rounded-2xl shadow-sm text-sm font-bold text-slate-800 shrink-0">
+                  <Calendar size={18} className="text-[#10a37f]" />
+                  <span>{getPeriodeText()}</span>
+                </div>
+                <button 
+                  onClick={() => setSelectedIndikatorDetail(null)}
+                  className="p-2 hover:bg-slate-200/50 rounded-xl transition-colors text-slate-400 hover:text-slate-600 bg-white border border-gray-100 shadow-sm ml-auto md:ml-0"
+                >
+                  <X size={20} />
+                </button>
+              </div>
             </div>
 
             <div className="flex-1 overflow-y-auto p-6 md:p-8 space-y-8 scrollbar-thin scrollbar-thumb-gray-200">
-              {/* Period Selector of Input Records */}
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white border border-slate-100 p-5 rounded-2xl shadow-sm">
-                <div className="space-y-1">
-                  <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider block">Periode Pengisian Terpilih</span>
-                  <div className="flex items-center gap-2 text-base font-bold text-slate-800">
-                    <Calendar size={18} className="text-[#10a37f]" />
-                    <span>{getPeriodeText()}</span>
-                  </div>
-                </div>
-              </div>
 
               {/* Detail Data Table */}
               {isDetailLoading ? (
@@ -617,7 +700,7 @@ export default function Laporan() {
                      
                      // recalculate capaian based on formula type
                      const capaian = totalDen > 0 ? (totalNum / totalDen) * formulaMultiplier : 0;
-                     const targetVal = Number(selectedProfileData?.target || unitInputs[0]?.target || 0);
+                     const targetVal = parseFloat(String(selectedProfileData?.target || unitInputs[0]?.target || 0).replace(/[^0-9.]/g, '')) || 0;
                      
                      // reverse logic
                      let isTargetMet = false;
@@ -778,26 +861,53 @@ export default function Laporan() {
                           ) : (
                             <div className="bg-white border border-gray-200 rounded-2xl overflow-hidden shadow-xs">
                               <div className="w-full overflow-x-auto max-h-[350px]">
-                                <table className="w-full text-left text-xs border-collapse">
+                                <table className="w-full text-center text-xs border-collapse min-w-[700px]">
                                   <thead className="sticky top-0 bg-[#059669] text-white h-11 select-none">
                                     <tr>
-                                      <th className="px-5 py-3 font-bold uppercase text-[10px]">Tanggal Input</th>
-                                      <th className="px-5 py-3 font-bold uppercase text-[10px] text-right">Numerator</th>
-                                      <th className="px-5 py-3 font-bold uppercase text-[10px] text-right">Denominator</th>
-                                      <th className="px-5 py-3 font-bold uppercase text-[10px] text-center">Target</th>
-                                      <th className="px-5 py-3 font-bold uppercase text-[10px] text-right">Capaian Aktual</th>
+                                      <th className="px-5 py-3 font-bold uppercase text-[10px] w-[15%] text-center align-middle">Tanggal</th>
+                                      <th className="px-5 py-3 font-bold uppercase text-[10px] w-[20%] text-center align-middle">Unit</th>
+                                      <th className="px-5 py-3 font-bold uppercase text-[10px] w-[15%] text-center align-middle">Numerator</th>
+                                      <th className="px-5 py-3 font-bold uppercase text-[10px] w-[15%] text-center align-middle">Denominator</th>
+                                      <th className="px-5 py-3 font-bold uppercase text-[10px] w-[15%] text-center align-middle">Target</th>
+                                      <th className="px-5 py-3 font-bold uppercase text-[10px] w-[20%] text-center align-middle">Capaian</th>
                                     </tr>
                                   </thead>
                                   <tbody>
-                                    {unitInputs.map((u, i) => (
-                                      <tr key={u.id || i} className="hover:bg-slate-50/40 border-b border-gray-50">
-                                        <td className="px-5 py-4 text-slate-600 font-bold">{new Date(u.tanggal).toLocaleDateString("id-ID", {day:"numeric", month:"long", year:"numeric"})}</td>
-                                        <td className="px-5 py-4 text-emerald-600 font-black text-right text-sm">{formatNum(u.numerator)}</td>
-                                        <td className="px-5 py-4 text-indigo-600 font-black text-right text-sm">{formatNum(u.denominator)}</td>
-                                        <td className="px-5 py-4 text-slate-800 font-bold text-center text-xs">{selectedProfileData?.target || u.target}%</td>
-                                        <td className="px-5 py-4 font-black text-[#10a37f] text-right text-sm">{formatNum(u.capaian)}%</td>
-                                      </tr>
-                                    ))}
+                                    {unitInputs.map((u, i) => {
+                                      const uTarget = parseFloat(String(selectedProfileData?.target || u.target || 0).replace(/[^0-9.]/g, '')) || 0;
+                                      const uCapaian = Number(u.capaian);
+                                      let statusBadge = null;
+                                      if (selectedProfileData?.reverse) {
+                                        if (uCapaian <= uTarget) {
+                                          statusBadge = <div className="mt-1 flex justify-center"><span className="text-[9px] px-2 py-1 bg-emerald-100 text-emerald-700 font-bold rounded-md whitespace-nowrap">🟢 Target Tercapai</span></div>;
+                                        } else if (uCapaian - uTarget <= 5) {
+                                          statusBadge = <div className="mt-1 flex justify-center"><span className="text-[9px] px-2 py-1 bg-yellow-100 text-yellow-700 font-bold rounded-md whitespace-nowrap">🟡 Mendekati Target</span></div>;
+                                        } else {
+                                          statusBadge = <div className="mt-1 flex justify-center"><span className="text-[9px] px-2 py-1 bg-red-100 text-red-700 font-bold rounded-md whitespace-nowrap">🔴 Belum Tercapai</span></div>;
+                                        }
+                                      } else {
+                                        if (uCapaian >= uTarget) {
+                                          statusBadge = <div className="mt-1 flex justify-center"><span className="text-[9px] px-2 py-1 bg-emerald-100 text-emerald-700 font-bold rounded-md whitespace-nowrap">🟢 Target Tercapai</span></div>;
+                                        } else if (uTarget - uCapaian <= 5) {
+                                          statusBadge = <div className="mt-1 flex justify-center"><span className="text-[9px] px-2 py-1 bg-yellow-100 text-yellow-700 font-bold rounded-md whitespace-nowrap">🟡 Mendekati Target</span></div>;
+                                        } else {
+                                          statusBadge = <div className="mt-1 flex justify-center"><span className="text-[9px] px-2 py-1 bg-red-100 text-red-700 font-bold rounded-md whitespace-nowrap">🔴 Belum Tercapai</span></div>;
+                                        }
+                                      }
+                                      return (
+                                        <tr key={u.id || i} className="hover:bg-slate-50/40 border-b border-gray-50">
+                                          <td className="px-5 py-4 text-slate-600 font-bold text-center align-middle whitespace-nowrap">{new Date(u.tanggal).toLocaleDateString("id-ID", {day:"numeric", month:"short", year:"numeric"})}</td>
+                                          <td className="px-5 py-4 text-slate-800 font-bold text-center align-middle">{u.unit || unitName}</td>
+                                          <td className="px-5 py-4 text-slate-800 font-black text-center align-middle text-sm">{formatNum(u.numerator)}</td>
+                                          <td className="px-5 py-4 text-slate-800 font-black text-center align-middle text-sm">{formatNum(u.denominator)}</td>
+                                          <td className="px-5 py-4 text-slate-500 font-bold text-center align-middle text-xs">{selectedProfileData?.reverse ? '≤' : '≥'} {uTarget}%</td>
+                                          <td className="px-5 py-4 font-black text-center align-middle">
+                                            <div className="text-sm text-slate-800">{formatNum(uCapaian)}%</div>
+                                            {statusBadge}
+                                          </td>
+                                        </tr>
+                                      );
+                                    })}
                                   </tbody>
                                 </table>
                               </div>
@@ -809,74 +919,84 @@ export default function Laporan() {
                   
                   {/* Integrated Global Recap Card */}
                   {selectedIndikatorDetail.category !== "IKP" && activePeriodInputs.length > 0 && (
-                    <div className="pt-8 border-t border-gray-100 flex justify-center mt-6">
-                      <div className="w-full max-w-4xl bg-white border border-gray-200 rounded-3xl shadow-[0_4px_24px_-8px_rgba(0,0,0,0.08)] overflow-hidden">
-                        <div className="bg-slate-50 border-b border-gray-100 py-4 px-6 text-center">
-                           <h3 className="text-sm font-black text-slate-800 uppercase tracking-widest">REKAPITULASI CAPAIAN INDIKATOR TERINTEGRASI</h3>
-                        </div>
-                        <div className="p-8 md:p-10 flex flex-col items-center">
-                          <div className="flex flex-col md:flex-row justify-between w-full max-w-2xl gap-8 mb-10">
-                            <div className="flex items-center gap-3">
-                              <div className="w-12 h-12 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center">
-                                <Calculator size={24} />
+                    <div className="pt-8 border-t border-gray-100 flex flex-col items-center mt-6 gap-8">
+                      <div className="w-full max-w-4xl bg-white border border-emerald-100/60 rounded-[32px] shadow-[0_8px_32px_-12px_rgba(16,163,127,0.15)] overflow-hidden transition-all hover:shadow-[0_16px_48px_-12px_rgba(16,163,127,0.25)] group relative">
+                        <div className="absolute inset-0 bg-gradient-to-br from-white via-white to-emerald-50/30 opacity-50 z-0 pointer-events-none"></div>
+                        <div className="relative z-10">
+                          <div className="bg-white/80 backdrop-blur-sm border-b border-gray-100 py-5 px-8 text-center flex items-center justify-center gap-3">
+                             <div className="w-8 h-8 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center shadow-sm">
+                               <TrendingUp size={16} />
+                             </div>
+                             <h3 className="text-sm font-black text-slate-800 uppercase tracking-widest">REKAPITULASI CAPAIAN INDIKATOR TERINTEGRASI</h3>
+                          </div>
+                          <div className="p-8 md:p-12 flex flex-col items-center">
+                            {/* Numerator & Denominator Modules */}
+                            <div className="flex flex-col md:flex-row justify-center w-full gap-6 md:gap-16 mb-12">
+                              <div className="flex-1 flex flex-col items-center p-6 rounded-3xl bg-emerald-50/50 border border-emerald-100/50">
+                                  <span className="text-xs font-black text-slate-500 uppercase tracking-widest mb-1 shadow-sm">Total Numerator</span>
+                                  <span className="text-4xl md:text-5xl font-black text-slate-800">{formatNum(globalTotals.num)}</span>
                               </div>
-                              <div className="flex flex-col">
-                                <span className="text-xs font-black text-slate-500 uppercase tracking-wider">Total Numerator</span>
-                                <span className="text-3xl font-black text-slate-800">{formatNum(globalTotals.num)}</span>
+                              <div className="flex-1 flex flex-col items-center p-6 rounded-3xl bg-indigo-50/50 border border-indigo-100/50">
+                                  <span className="text-xs font-black text-slate-500 uppercase tracking-widest mb-1 shadow-sm">Total Denominator</span>
+                                  <span className="text-4xl md:text-5xl font-black text-slate-800">{formatNum(globalTotals.den)}</span>
                               </div>
                             </div>
                             
-                            <div className="hidden md:block w-px bg-gray-200"></div>
-                            
-                            <div className="flex items-center gap-3">
-                              <div className="w-12 h-12 rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center">
-                                <Activity size={24} />
+                            <div className="flex flex-col items-center text-center relative w-full">
+                              <span className="text-sm rounded-full px-4 py-1.5 bg-slate-100 text-slate-600 font-bold uppercase tracking-widest mb-4 shadow-sm border border-slate-200/50">
+                                 Target {selectedProfileData?.reverse ? '≤' : '≥'} {globalTotals.targetVal}%
+                              </span>
+                              
+                              <div className="relative flex items-center justify-center">
+                                <span className={`text-[90px] md:text-[120px] font-black leading-none tracking-tighter ${
+                                  globalTotals.isTargetMet ? "text-[#10a37f]" : (selectedProfileData?.reverse ? (globalTotals.capaian - globalTotals.targetVal <= 5 ? "text-yellow-500" : "text-red-500") : (globalTotals.targetVal - globalTotals.capaian <= 5 ? "text-yellow-500" : "text-red-500"))
+                                }`}>
+                                  {formatNum(globalTotals.capaian)}<span className="text-5xl md:text-6xl">%</span>
+                                </span>
                               </div>
-                              <div className="flex flex-col">
-                                <span className="text-xs font-black text-slate-500 uppercase tracking-wider">Total Denominator</span>
-                                <span className="text-3xl font-black text-slate-800">{formatNum(globalTotals.den)}</span>
+
+                              <div className="mt-8 flex flex-col md:flex-row items-center gap-4">
+                                <span className={`px-8 py-3 rounded-2xl text-sm font-black tracking-widest uppercase shadow-sm ${
+                                  globalTotals.isTargetMet 
+                                    ? "bg-emerald-500 text-white shadow-emerald-500/20" 
+                                    : (selectedProfileData?.reverse ? (globalTotals.capaian - globalTotals.targetVal <= 5 ? "bg-yellow-500 text-white shadow-yellow-500/20" : "bg-red-500 text-white shadow-red-500/20") : (globalTotals.targetVal - globalTotals.capaian <= 5 ? "bg-yellow-500 text-white shadow-yellow-500/20" : "bg-red-500 text-white shadow-red-500/20"))
+                                }`}>
+                                  {globalTotals.isTargetMet ? "🟢 TARGET TERCAPAI" : (selectedProfileData?.reverse ? (globalTotals.capaian - globalTotals.targetVal <= 5 ? "🟡 MENDEKATI TARGET" : "🔴 BELUM TERCAPAI") : (globalTotals.targetVal - globalTotals.capaian <= 5 ? "🟡 MENDEKATI TARGET" : "🔴 BELUM TERCAPAI"))}
+                                </span>
+                                
+                                {globalTotals.prevDen > 0 && (
+                                  <div className="flex flex-col items-center justify-center px-6 py-2 rounded-2xl bg-slate-50 border border-slate-100">
+                                    <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Tren Periode Lali</span>
+                                    <div className={`flex items-center gap-1 font-black ${globalTotals.tren > 0 ? "text-emerald-500" : (globalTotals.tren < 0 ? "text-red-500" : "text-slate-500")}`}>
+                                      {globalTotals.tren > 0 ? "▲" : (globalTotals.tren < 0 ? "▼" : "—")} {globalTotals.tren > 0 ? "+" : ""}{formatNum(globalTotals.tren)}%
+                                    </div>
+                                    <span className="text-[9px] font-bold text-slate-400 mt-0.5">
+                                      {globalTotals.tren > 0 ? "Naik" : (globalTotals.tren < 0 ? "Turun" : "Sama")} dibanding sebelumnya
+                                    </span>
+                                  </div>
+                                )}
                               </div>
                             </div>
                           </div>
                           
-                          <div className="flex flex-col items-center text-center">
-                            <span className="text-sm font-bold text-slate-500 uppercase tracking-widest mb-2">
-                               Target {selectedProfileData?.reverse ? '≤' : '≥'} {globalTotals.targetVal}%
-                            </span>
-                            <span className={`text-[80px] md:text-[100px] font-black leading-none tracking-tight ${
-                               globalTotals.isTargetMet ? "text-[#10a37f]" : "text-red-500"
-                            }`}>
-                              {formatNum(globalTotals.capaian)}%
-                            </span>
-                            <span className={`mt-6 px-6 py-2.5 rounded-full text-xs font-black tracking-widest uppercase shadow-sm ${
-                               globalTotals.isTargetMet ? "bg-emerald-100 text-emerald-700 border border-emerald-200" : "bg-red-100 text-red-700 border border-red-200"
-                            }`}>
-                              {globalTotals.isTargetMet ? "🟢 TARGET TERCAPAI" : "🔴 BELUM TERCAPAI"}
-                            </span>
+                          <div className="bg-slate-50/80 backdrop-blur-sm border-t border-gray-100 p-6 md:px-12 flex flex-wrap justify-center md:justify-between gap-6 md:gap-4 text-center text-xs font-bold text-slate-600">
+                             <div className="flex flex-col">
+                               <span className="text-[10px] text-slate-400 uppercase tracking-widest mb-1">Periode</span>
+                               <span>{getPeriodeText()}</span>
+                             </div>
+                             <div className="flex flex-col">
+                               <span className="text-[10px] text-slate-400 uppercase tracking-widest mb-1">Kategori</span>
+                               <span>{selectedIndikatorDetail.category}</span>
+                             </div>
+                             <div className="flex flex-col">
+                               <span className="text-[10px] text-slate-400 uppercase tracking-widest mb-1">Unit Berpartisipasi</span>
+                               <span>{Object.keys(inputsGroupedByUnit).length} Unit</span>
+                             </div>
+                             <div className="flex flex-col">
+                               <span className="text-[10px] text-slate-400 uppercase tracking-widest mb-1">Data Observasi</span>
+                               <span>{formatNum(globalTotals.den)} Data</span>
+                             </div>
                           </div>
-                        </div>
-                        
-                        <div className="bg-slate-50 border-t border-gray-100 p-6 flex flex-wrap justify-center gap-6 md:gap-10 text-center text-xs font-bold text-slate-600">
-                           <div className="flex flex-col">
-                             <span className="text-[10px] text-slate-400 uppercase tracking-widest mb-1">Unit Berpartisipasi</span>
-                             <span>{Object.keys(inputsGroupedByUnit).length} Unit</span>
-                           </div>
-                           <div className="flex flex-col">
-                             <span className="text-[10px] text-slate-400 uppercase tracking-widest mb-1">Data Observasi</span>
-                             <span>{selectedIndikatorDetail.category === "IKP" ? "-" : formatNum(globalTotals.den)} Data</span>
-                           </div>
-                           <div className="flex flex-col">
-                             <span className="text-[10px] text-slate-400 uppercase tracking-widest mb-1">Periode</span>
-                             <span>{getPeriodeText()}</span>
-                           </div>
-                           <div className="flex flex-col">
-                             <span className="text-[10px] text-slate-400 uppercase tracking-widest mb-1">Kategori</span>
-                             <span>{selectedIndikatorDetail.category}</span>
-                           </div>
-                           <div className="flex flex-col">
-                             <span className="text-[10px] text-slate-400 uppercase tracking-widest mb-1">Indikator</span>
-                             <span>{selectedIndikatorDetail.name}</span>
-                           </div>
                         </div>
                       </div>
                     </div>

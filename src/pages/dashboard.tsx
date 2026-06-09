@@ -1157,8 +1157,8 @@ export default function Dashboard() {
             </div>
 
             <div className="relative w-full h-[280px] shrink-0 mt-4">
-              <div className="absolute inset-0">
-                <ResponsiveContainer width="99%" height="100%" debounce={0}>
+              <div className="absolute inset-0 overflow-hidden">
+                <ResponsiveContainer width="100%" height="100%" debounce={50} minWidth={0}>
                   <ComposedChart
                     data={selectedChartData}
                     margin={{ top: 20, right: 10, left: -20, bottom: 0 }}
@@ -1303,7 +1303,7 @@ export default function Dashboard() {
               </div>
             ) : (
               <div className="relative w-full h-full shrink-0 flex justify-center items-center">
-                <ResponsiveContainer width="100%" height="100%" debounce={0}>
+                <ResponsiveContainer width="100%" height="100%" debounce={50} minWidth={0}>
                   <PieChart>
                     <Pie
                       data={ikpPieData}

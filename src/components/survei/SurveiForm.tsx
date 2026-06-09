@@ -300,8 +300,8 @@ export default function SurveiForm({ onBack }: { onBack: () => void }) {
         {/* Header Title */}
         <div className="bg-gradient-to-r from-emerald-600 to-teal-700 p-8 md:p-10 text-white relative overflow-hidden">
           <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 blur-3xl rounded-full -translate-y-1/2 translate-x-1/3" />
-          <h2 className="text-[27px] text-center font-black mb-2 relative z-10">KUESIONER SURVEI BUDAYA KESELAMATAN PASIEN</h2>
-          <p className="font-bold text-[25px] leading-[37.5px] text-[#fbfbf7] text-center whitespace-nowrap relative z-10 w-full overflow-x-auto scrollbar-hide">
+          <h2 className="text-[20px] sm:text-[27px] text-center font-black mb-2 relative z-10 break-words">KUESIONER SURVEI BUDAYA KESELAMATAN PASIEN</h2>
+          <p className="font-bold text-[18px] sm:text-[25px] leading-snug sm:leading-[37.5px] text-[#fbfbf7] text-center whitespace-normal break-words relative z-10 w-full">
             UOBK RSUD AL-MULK KOTA SUKABUMI
           </p>
 

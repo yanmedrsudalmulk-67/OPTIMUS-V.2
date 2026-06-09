@@ -2,7 +2,7 @@ import React, { useState, useMemo, useEffect } from "react";
 import Link from "next/link";
 import { useStore } from "@/store/useStore";
 import { supabase } from "@/lib/supabase";
-import { Filter, Activity } from "lucide-react";
+import { Filter, Activity, Check } from "lucide-react";
 import { formatTarget } from "../../lib/utils";
 import {
   BarChart,
@@ -381,71 +381,128 @@ export default function Grafik() {
       const avgCap = parseFloat(overallCapaian.toFixed(2));
       const indTitle = profile.indicator_title;
 
-      let narasi = "";
-      if (shortPeriod === "Bulanan") {
-        narasi = `Berdasarkan hasil pemantauan ${longPeriodName} di UOBK RSUD Al-Mulk Kota Sukabumi, capaian indikator ${indTitle} sebesar ${avgCap}%, `;
+      let rekomendasiList: string[] = [];
+      let pdsa = { plan: "", do: "", study: "", action: "" };
+
+      const lowerName = indTitle ? indTitle.toLowerCase() : "";
+
+      if (lowerName.includes("kebersihan tangan")) {
+        rekomendasiList = [
+          "Melakukan observasi kepatuhan hand hygiene minimal 100 observasi per unit setiap bulan.",
+          "Melaksanakan refresh training WHO Five Moments.",
+          "Melakukan audit ketersediaan handrub dan wastafel.",
+          "Memberikan umpan balik hasil observasi kepada unit.",
+          "Menetapkan unit dengan kepatuhan terendah sebagai prioritas pembinaan.",
+          "Melaksanakan supervisi langsung oleh IPCN dan kepala unit.",
+        ];
+        pdsa = {
+          plan: "Melakukan edukasi ulang kepatuhan kebersihan tangan.",
+          do: "Pelaksanaan sosialisasi dan refresh training kepada seluruh petugas pelayanan.",
+          study: "Evaluasi perubahan capaian indikator pada bulan/periode berikutnya.",
+          action: "Menetapkan pelaksanaan monitoring rutin dan audit fasilitas sebagai standar kerja unit."
+        };
+      } else if (lowerName.includes("identifikasi") || lowerName.includes("gelang")) {
+        rekomendasiList = [
+          "Melakukan audit kepatuhan identifikasi pasien menggunakan minimal dua identitas.",
+          "Mengoptimalkan penggunaan dan pengecekan gelang identitas pada setiap tindakan.",
+          "Melakukan simulasi patient safety terkait identifikasi.",
+          "Meningkatkan supervisi pada area rawat inap dan IGD terkait proses serah terima.",
+        ];
+        pdsa = {
+          plan: "Meningkatkan kepatuhan identifikasi pasien sebelum tindakan dan pemberian obat.",
+          do: "Edukasi di tempat (bedside teaching) dan penekanan SOP identifikasi pasien.",
+          study: "Memantau angka insiden near miss terkait kesalahan identifikasi.",
+          action: "Diseminasi SOP identifikasi pasien terbaru dan penetapan zero tolerance untuk pelanggaran."
+        };
+      } else if (lowerName.includes("waktu tunggu") || lowerName.includes("response time")) {
+        rekomendasiList = [
+          "Melakukan analisis bottleneck pelayanan dari pendaftaran hingga penyelesaian.",
+          "Mengoptimalkan jadwal dokter dan ketepatan waktu kehadiran.",
+          "Mengurangi waktu tunggu administrasi dengan inovasi digitalisasi atau e-rekam medis.",
+          "Melakukan redistribusi petugas pada jam-jam sibuk kunjungan pasien.",
+        ];
+        pdsa = {
+          plan: "Mempercepat waktu pelayanan poli rawat jalan sesuai standar mutu.",
+          do: "Pengaturan ulang jam pelayanan, penyesuaian penugasan petugas triage, dan percepatan rekam medis.",
+          study: "Membandingkan rata-rata waktu tunggu sebelum dan sesudah intervensi manajemen jalur pasien.",
+          action: "Standarisasi jadwal operasional poli integrasi berbasis antrean elektronik."
+        };
+      } else if (lowerName.includes("apd") || lowerName.includes("alat pelindung diri")) {
+        rekomendasiList = [
+          "Melakukan audit kepatuhan penggunaan APD di ruang isolasi dan tindakan.",
+          "Perencanaan dan monitoring ketersediaan logistik APD di setiap ruangan.",
+          "Edukasi ulang penggunaan jenis APD sesuai level risiko paparan.",
+          "Supervisi lapangan secara berkala oleh tim PPI dan penanggung jawab safety.",
+        ];
+        pdsa = {
+          plan: "Meningkatkan kepatuhan pemakaian dan pelepasan APD yang benar.",
+          do: "Pelatihan doffing dan donning APD serta penyediaan poster kepatuhan di area tindakan.",
+          study: "Audit penggunaan APD pada titik poin intervensi dan memantau ketersediaan stok harian.",
+          action: "Pemasangan cctv monitoring (bila perlu) dan penetapan sanksi edukatif bagi ketidakpatuhan berulang."
+        };
+      } else if (lowerName.includes("infeksi") || lowerName.includes("phlebitis") || lowerName.includes("isk") || lowerName.includes("vap") || lowerName.includes("ido") || profile.category === "PPI") {
+        rekomendasiList = [
+          "Melakukan audit kepatuhan bundel pencegahan infeksi (bundle prevention).",
+          "Monitoring HAIs secara ketat dan pelaporan real-time.",
+          "Peningkatan kepatuhan hand hygiene dan teknik aseptik perawat.",
+          "Evaluasi pelaksanaan kewaspadaan standar dan kewaspadaan transmisi.",
+        ];
+        pdsa = {
+          plan: "Menurunkan potensi angka kejadian HAIs (Hospital Acquired Infections).",
+          do: "Penerapan bundle PPI secara paripurna pada setiap tindakan invasif dan operasi.",
+          study: "Analisis laporan surveilans rate infeksi bulanan antar unit risiko tinggi.",
+          action: "Pembuatan regulasi tata ruang baru untuk meminimalisasi kontaminasi silang."
+        };
+      } else if (profile.category === "IKP" || profile.category === "Keselamatan Pasien" || lowerName.includes("jatuh") || lowerName.includes("insiden")) {
+        rekomendasiList = [
+          "Melakukan analisis tren dan jenis insiden keselamatan pasien bulanan.",
+          "Menyusun Root Cause Analysis (RCA) pada insiden berulang atau Sentinel.",
+          "Implementasi 'lesson learned' melalui diskusi kasus di tiap unit.",
+          "Monitoring penyelesaian rekomendasi dan rencana tindak lanjut (RTL) insiden.",
+        ];
+        pdsa = {
+          plan: "Meminimalisasi angka medication error, pasien jatuh, atau insiden lainnya.",
+          do: "Penguatan asesmen awal risiko (misal: Morse Fall Scale), double check obat high alert.",
+          study: "Evaluasi tingkat kelengkapan pelaporan insiden dalam 2x24 jam dan validasi gradasi risiko.",
+          action: "Revisi panduan keselamatan pasien berbasis hasil investigasi insiden terkini."
+        };
       } else {
-        narasi = `Berdasarkan hasil pemantauan ${longPeriodName} di UOBK RSUD Al-Mulk Kota Sukabumi, diperoleh rata-rata capaian indikator ${indTitle} sebesar ${avgCap}%, `;
+        rekomendasiList = [
+          "Melakukan analisis hambatan pencapaian secara komprehensif di unit pelayanan.",
+          "Menyusun program kerja perbaikan mutu berbasis data empiris.",
+          "Mengoptimalkan peran penanggung jawab pengumpul data dalam validasi kelengkapan form.",
+          "Berkoordinasi dengan Komite Mutu untuk penyelenggaraan in-house training.",
+        ];
+        pdsa = {
+          plan: "Merumuskan strategi perbaikan indikator mutu terkait kinerja unit.",
+          do: "Sosialisasi instruksi kerja dan pendampingan implementasi SOP langsung ke lapangan.",
+          study: "Pemantauan berkala dan analisis capaian untuk mengidentifikasi keberhasilan maupun celah baru.",
+          action: "Penyempurnaan panduan/kebijakan serta integrasi evaluasi capaian ke dalam laporan manajemen."
+        };
       }
 
       const opTargetText = isReverse ? `≤${parsedTargetOverall}%` : `≥${parsedTargetOverall}%`;
-      if (isSuccess) {
-        narasi += `telah mencapai target nasional yaitu ${opTargetText}.`;
+      
+      let analisa = "";
+      if (countWithData === 0) {
+          analisa = `Belum ada data observasi yang dimasukkan untuk indikator ini pada periode ${shortPeriod} terkait tahun ${selectedTahun}. Silakan memastikan kelengkapan input data di formulir observasi.`;
       } else {
-        narasi += `masih berada di bawah target nasional yaitu ${opTargetText}.`;
-      }
-
-      let trendStr = "";
-      if (series.length > 1) {
-        const firstCap = series[0].capaian;
-        const lastCap = series[series.length - 1].capaian;
-        const diff = lastCap - firstCap;
-
-        let isMonotonicIncrease = true;
-        let isMonotonicDecrease = true;
-
-        for (let i = 1; i < series.length; i++) {
-          const prev = series[i - 1].capaian;
-          const curr = series[i].capaian;
-          if (curr < prev) isMonotonicIncrease = false;
-          if (curr > prev) isMonotonicDecrease = false;
-        }
-
-        if (isMonotonicIncrease && diff > 0) {
-          trendStr = `Terdapat tren peningkatan capaian dari bulan ${series[0].name.toLowerCase()} hingga ${series[series.length - 1].name.toLowerCase()} yang menunjukkan adanya perbaikan kepatuhan petugas terhadap indikator yang diukur.`;
-        } else if (isMonotonicDecrease && diff < 0) {
-          trendStr = `Terdapat tren penurunan capaian dari bulan ${series[0].name.toLowerCase()} hingga ${series[series.length - 1].name.toLowerCase()} yang perlu menjadi perhatian untuk dilakukan evaluasi lebih lanjut.`;
-        } else if (diff > 5) {
-          trendStr = "Terdapat tren peningkatan capaian pada beberapa periode terakhir yang menunjukkan perbaikan berkelanjutan.";
-        } else if (diff < -5) {
-          trendStr = "Terdapat tren penurunan capaian pada beberapa periode yang perlu menjadi perhatian untuk dilakukan evaluasi lebih lanjut.";
-        } else {
-          trendStr = "Capaian indikator relatif stabil pada seluruh periode pemantauan.";
-        }
-      }
-
-      let conclusion = "";
-      if (isSuccess) {
-        conclusion = "Walaupun terdapat variasi capaian antar periode, indikator telah memenuhi target yang ditetapkan sehingga mutu pelayanan dinilai baik.";
-      } else {
-        conclusion = "Hal ini menunjukkan pencapaian masih belum optimal. Indikator masih belum mencapai target yang ditetapkan sehingga diperlukan upaya perbaikan berkelanjutan melalui monitoring dan evaluasi rutin.";
-      }
-
-      let recommendations: string[] = [];
-      if (!isSuccess) {
-         recommendations = [
-          "Meningkatkan sosialisasi kepada petugas.",
-          "Melakukan audit internal secara berkala.",
-          "Memperkuat supervisi kepala unit.",
-          "Memberikan umpan balik hasil monitoring.",
-          "Menyusun rencana tindak lanjut perbaikan."
-        ];
-      } else {
-        recommendations = [
-          "Mempertahankan capaian yang sudah baik.",
-          "Melakukan monitoring rutin.",
-          "Menjadikan unit dengan capaian tinggi sebagai role model."
-        ];
+          const gapValue = Math.abs(avgCap - parsedTargetOverall).toFixed(1);
+          const gapStr = gapValue.endsWith(".0") ? gapValue.slice(0, -2) : gapValue;
+          
+          if (status === "Tercapai") {
+              analisa = `Berdasarkan hasil pemantauan pada ${longPeriodName}, indikator ${indTitle} memperoleh capaian sebesar ${avgCap}%, melampaui target nasional ${opTargetText}.\n\nCapaian ini menunjukkan implementasi program telah berjalan efektif dan konsisten di unit pelayanan. Keberhasilan ini perlu dipertahankan melalui monitoring rutin, supervisi berkala, dan penguatan budaya mutu serta keselamatan pasien.`;
+          } else if (status === "Mendekati Target") {
+              analisa = `Capaian indikator ${indTitle} pada ${longPeriodName} adalah sebesar ${avgCap}%. Hasil ini telah mendekati target namun masih terdapat gap sebesar ${gapStr}% dari standar mutu nasional (${opTargetText}).\n\nHal ini menunjukkan proses pelayanan sudah berjalan cukup baik namun masih memerlukan penguatan dengan fokus pada beberapa area pelayanan kritis untuk mencapai target secara 100% optimal.`;
+          } else {
+              let specificProblemStr = `Hasil ini menunjukkan masih terdapat ketidakpatuhan atau kendala sistemis dalam penerapan standar pelayanan sehingga berpotensi menurunkan mutu asuhan.`;
+              if (lowerName.includes("kebersihan tangan")) specificProblemStr = `Hasil ini menunjukkan masih terdapat ketidakpatuhan petugas dalam penerapan kebersihan tangan sesuai standar WHO Five Moments for Hand Hygiene sehingga berpotensi meningkatkan risiko infeksi terkait pelayanan kesehatan (HAIs).`;
+              else if (lowerName.includes("identifikasi") || lowerName.includes("gelang")) specificProblemStr = `Hasil ini menunjukkan kurangnya kedisiplinan dalam mematuhi prosedur verifikasi pasien berbasis bukti sebelum pemberian layanan klinis.`;
+              else if (lowerName.includes("waktu tunggu")) specificProblemStr = `Hasil ini merepresentasikan adanya hambatan durasi pada siklus perjalanan pasien dari pendaftaran hingga penyelesaian medis yang belum mencapai standar tepat waktu.`;
+              else if (lowerName.includes("apd") || lowerName.includes("alat pelindung diri")) specificProblemStr = `Hal ini berpotensi memberikan risiko paparan infeksi nosokomial kepada tenaga medis akibat ketidakpatuhan perlindungan standar.`;
+              
+              analisa = `Berdasarkan hasil pemantauan ${longPeriodName}, indikator ${indTitle} hanya mencapai ${avgCap}%. Capaian tersebut berada ${gapStr}% ${isReverse ? 'di atas' : 'di bawah'} target yang diwajibkan (${opTargetText}).\n\n${specificProblemStr}`;
+          }
       }
 
       return {
@@ -458,11 +515,11 @@ export default function Grafik() {
         rawTargetStr: profile.target,
         unit: profile.measurement_unit,
         series: series,
-        narasi,
-        trendStr,
-        conclusion,
-        recommendations,
-        isReverse: isReverse
+        analisa,
+        rekomendasiList,
+        pdsa,
+        isReverse: isReverse,
+        longPeriodName
       };
     });
   }, [activeProfilesInCategory, dataMutuList, periodeMode, selectedBulan, selectedTriwulan, selectedSemester, selectedTahun]);
@@ -614,46 +671,24 @@ export default function Grafik() {
           </Link>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-6 w-full">
+        <div className="grid grid-cols-1 gap-8 w-full">
           {chartData.map((d, idx) => {
             if (d.status === "Belum Ada Data") return null;
 
-            const periodName = (() => {
-              if (periodeMode === "Bulanan") return selectedBulan;
-              if (periodeMode === "Triwulan") return `Triwulan ${selectedTriwulan}`;
-              if (periodeMode === "Semester") return `Semester ${selectedSemester}`;
-              return `Tahun ${selectedTahun}`;
-            })();
-
-            const longPeriodName = (() => {
-              if (periodeMode === "Bulanan") return `Periode Bulan ${selectedBulan} Tahun ${selectedTahun}`;
-              if (periodeMode === "Triwulan") {
-                  if (selectedTriwulan === "1") return `Periode Triwulan I (Januari - Maret) Tahun ${selectedTahun}`;
-                  if (selectedTriwulan === "2") return `Periode Triwulan II (April - Juni) Tahun ${selectedTahun}`;
-                  if (selectedTriwulan === "3") return `Periode Triwulan III (Juli - September) Tahun ${selectedTahun}`;
-                  if (selectedTriwulan === "4") return `Periode Triwulan IV (Oktober - Desember) Tahun ${selectedTahun}`;
-              }
-              if (periodeMode === "Semester") {
-                  if (selectedSemester === "1") return `Periode Semester I (Januari - Juni) Tahun ${selectedTahun}`;
-                  if (selectedSemester === "2") return `Periode Semester II (Juli - Desember) Tahun ${selectedTahun}`;
-              }
-              return `Periode Tahun ${selectedTahun}`;
-            })();
-
             return (
-              <div key={d.id} className="bg-white p-6 rounded-3xl border border-gray-100 shadow-[0_8px_30px_rgb(0,0,0,0.06)] hover:shadow-[0_20px_40px_rgb(0,0,0,0.12)] transition-all duration-300 flex flex-col items-center">
-                <div className="text-center mb-6 w-full px-4">
-                  <h3 className="text-base font-bold text-slate-800 leading-tight">{d.name}</h3>
-                  <p className="text-xs font-bold text-slate-500 mt-1.5 uppercase tracking-wider">UOBK RSUD AL-MULK KOTA SUKABUMI</p>
-                  <p className="text-[11px] text-slate-400 mt-0.5">{longPeriodName}</p>
+              <div key={d.id} className="bg-white p-4 sm:p-6 md:p-8 rounded-[20px] border border-emerald-500/20 shadow-[0_8px_30px_rgb(16,163,127,0.06)] hover:shadow-[0_16px_40px_rgb(16,163,127,0.12)] transition-all flex flex-col w-full min-w-0 overflow-hidden box-border">
+                <div className="mb-6 border-b border-gray-100 pb-5 flex flex-col items-center text-center">
+                  <h3 className="text-xl md:text-2xl font-black text-slate-800 uppercase leading-snug break-words">{d.name}</h3>
+                  <p className="text-xs font-bold text-slate-500 uppercase tracking-widest mt-1.5 break-words">UOBK RSUD AL-MULK KOTA SUKABUMI</p>
+                  <p className="text-[11px] font-semibold text-emerald-700 bg-emerald-50 px-3 py-1 rounded-md w-fit mt-3 border border-emerald-100/50 break-words">Periode: {d.longPeriodName}</p>
                 </div>
                 
-                <div className="relative w-full h-[280px] shrink-0 mt-4">
-                  <div className="absolute inset-0">
-                    <ResponsiveContainer width="99%" height="100%" debounce={0}>
+                <div className="relative w-full h-[300px] md:h-[400px] lg:h-[450px] shrink-0 mt-2 mb-8">
+                  <div className="absolute inset-0 overflow-hidden">
+                    <ResponsiveContainer width="100%" height="100%" debounce={50} minWidth={0}>
                       {chartType === "bar" ? (
                         <ComposedChart data={d.series} margin={{ top: 20, right: 10, left: -20, bottom: 0 }}>
-                          <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                          <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E2E8F0" />
                           <XAxis 
                             dataKey="name" 
                             tick={{ fontSize: 11, fill: '#64748b', fontWeight: 600 }}
@@ -671,16 +706,16 @@ export default function Grafik() {
                           />
                           <RechartsTooltip content={<CustomTooltip />} cursor={{fill: 'transparent'}} />
                           <RechartsLegend verticalAlign="bottom" align="center" iconType="circle" wrapperStyle={{ fontSize: '11px', fontWeight: 600, paddingTop: '15px' }} />
-                          <Bar shape={<TwoDShadowBar />} dataKey="capaian" name="Capaian" fill="#2563EB" maxBarSize={48}>
+                          <Bar shape={<TwoDShadowBar />} dataKey="capaian" name="Capaian" fill="#2563EB" maxBarSize={48} isAnimationActive={false}>
                             <LabelList dataKey="capaian" position="top" offset={10} formatter={(val: number) => val + "%"} style={{ fontSize: '12px', fontWeight: 'bold', fill: '#2563EB' }} />
                           </Bar>
-                          <Bar shape={<TwoDShadowBar />} dataKey="target" name="Target" fill="#DC2626" maxBarSize={48}>
+                          <Bar shape={<TwoDShadowBar />} dataKey="target" name="Target" fill="#DC2626" maxBarSize={48} isAnimationActive={false}>
                             <LabelList dataKey="target" position="top" offset={10} formatter={(val: number) => val + "%"} style={{ fontSize: '12px', fontWeight: 'bold', fill: '#DC2626' }} />
                           </Bar>
                         </ComposedChart>
                       ) : (
                         <LineChart data={d.series} margin={{ top: 20, right: 30, left: -20, bottom: 0 }}>
-                          <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                          <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E2E8F0" />
                           <XAxis 
                             dataKey="name" 
                             tick={{ fontSize: 11, fill: '#64748b', fontWeight: 600 }}
@@ -696,12 +731,12 @@ export default function Grafik() {
                             tickLine={false}
                             tickCount={5}
                           />
-                          <RechartsTooltip content={<LineChartTooltip indicatorName={d.name} isReverse={d.isReverse} />} cursor={{strokeDasharray: '3 3'}} />
+                          <RechartsTooltip content={<LineChartTooltip indicatorName={d.name} isReverse={d.isReverse} />} cursor={{strokeDasharray: '3 3', stroke: '#cbd5e1'}} />
                           <RechartsLegend verticalAlign="bottom" align="center" iconType="circle" wrapperStyle={{ fontSize: '11px', fontWeight: 600, paddingTop: '15px' }} />
-                          <Line dataKey="target" name="Target" type="monotone" stroke="#DC2626" strokeWidth={4} dot={{ r: 6, fill: '#DC2626', strokeWidth: 2, stroke: '#fff', style: { transition: 'all 0.3s ease' } }} activeDot={{ r: 8, strokeWidth: 0 }}>
+                          <Line dataKey="target" name="Target" type="monotone" stroke="#DC2626" strokeWidth={4} dot={{ r: 6, fill: '#DC2626', strokeWidth: 2, stroke: '#fff', style: { transition: 'none' } }} activeDot={{ r: 8, strokeWidth: 0 }} isAnimationActive={false}>
                              <LabelList dataKey="target" content={(props) => <CustomLineLabel {...props} type="target" data={d.series} />} />
                           </Line>
-                          <Line dataKey="capaian" name="Capaian" type="monotone" stroke="#2563EB" strokeWidth={4} dot={{ r: 6, fill: '#2563EB', strokeWidth: 2, stroke: '#fff', style: { transition: 'all 0.3s ease' } }} activeDot={{ r: 8, strokeWidth: 0 }} animationDuration={1500}>
+                          <Line dataKey="capaian" name="Capaian" type="monotone" stroke="#2563EB" strokeWidth={4} dot={{ r: 6, fill: '#2563EB', strokeWidth: 2, stroke: '#fff', style: { transition: 'none' } }} activeDot={{ r: 8, strokeWidth: 0 }} isAnimationActive={false}>
                              <LabelList dataKey="capaian" content={(props) => <CustomLineLabel {...props} type="capaian" data={d.series} />} />
                           </Line>
                         </LineChart>
@@ -710,27 +745,55 @@ export default function Grafik() {
                   </div>
                 </div>
                 
-                <div className="w-full mt-6 bg-slate-50/70 p-5 md:p-6 rounded-2xl border border-slate-100/80">
-                  <h4 className="text-sm font-bold text-slate-800 mb-3 flex items-center gap-2">
-                    <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                <div className="bg-slate-50/80 p-5 md:p-6 rounded-2xl border border-slate-100 mb-6 w-full overflow-hidden">
+                  <h4 className="text-xs font-black text-slate-800 uppercase tracking-widest mb-3 flex items-center gap-2">
+                    <span className="w-2 h-2 rounded-full bg-blue-500"></span>
                     Analisa Capaian
                   </h4>
-                  <p className="text-sm text-slate-600 leading-relaxed font-medium mb-4 text-justify">
-                    {d.narasi} {d.trendStr} {d.conclusion}
-                  </p>
-                  
-                  <div className="bg-white p-4 rounded-xl border border-slate-100 shadow-sm mt-4">
-                    <h5 className="text-[13px] font-bold text-slate-800 mb-2 uppercase tracking-wide">
-                      Rekomendasi Tindak Lanjut:
-                    </h5>
-                    <ul className="list-none space-y-2 pl-0 mb-0">
-                      {d.recommendations?.map((rec: string, i: number) => (
-                        <li key={i} className="text-[13px] text-slate-600 flex items-start gap-2.5">
-                          <span className="text-emerald-500 font-bold mt-[-1px] text-lg leading-none">•</span>
-                          <span className="font-medium">{rec}</span>
-                        </li>
-                      ))}
-                    </ul>
+                  <div className="text-sm text-slate-700 leading-relaxed font-medium whitespace-pre-wrap text-justify break-words">
+                    {d.analisa}
+                  </div>
+                </div>
+                
+                <div className="bg-white p-5 md:p-6 rounded-2xl border border-emerald-100 shadow-sm mb-6 w-full overflow-hidden">
+                  <h4 className="text-xs font-black text-slate-800 uppercase tracking-widest mb-4 flex items-center gap-2">
+                    <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
+                    Rekomendasi
+                  </h4>
+                  <ul className="space-y-3">
+                    {d.rekomendasiList?.map((rec: string, i: number) => (
+                      <li key={i} className="flex items-start gap-3">
+                        <div className="bg-emerald-100 text-emerald-600 rounded-full p-0.5 mt-0.5 shrink-0">
+                           <Check size={14} strokeWidth={3} />
+                        </div>
+                        <span className="text-sm font-semibold text-slate-700 leading-relaxed break-words">{rec}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+
+                <div className="bg-white p-5 md:p-6 rounded-2xl border border-slate-200 shadow-sm w-full overflow-hidden">
+                  <h4 className="text-xs font-black text-slate-800 uppercase tracking-widest mb-4 flex items-center gap-2">
+                    <span className="w-2 h-2 rounded-full bg-indigo-500"></span>
+                    PDSA
+                  </h4>
+                  <div className="grid grid-cols-1 gap-4 w-full">
+                     <div className="flex flex-col sm:flex-row bg-slate-50 rounded-xl overflow-hidden border border-slate-100">
+                       <div className="bg-indigo-600 text-white sm:w-24 w-full py-2 sm:py-0 flex items-center justify-center font-black text-xs tracking-widest shrink-0">PLAN</div>
+                       <div className="p-4 text-sm font-semibold text-slate-700 w-full break-words">{d.pdsa?.plan}</div>
+                     </div>
+                     <div className="flex flex-col sm:flex-row bg-slate-50 rounded-xl overflow-hidden border border-slate-100">
+                       <div className="bg-blue-600 text-white sm:w-24 w-full py-2 sm:py-0 flex items-center justify-center font-black text-xs tracking-widest shrink-0">DO</div>
+                       <div className="p-4 text-sm font-semibold text-slate-700 w-full break-words">{d.pdsa?.do}</div>
+                     </div>
+                     <div className="flex flex-col sm:flex-row bg-slate-50 rounded-xl overflow-hidden border border-slate-100">
+                       <div className="bg-amber-500 text-white sm:w-24 w-full py-2 sm:py-0 flex items-center justify-center font-black text-xs tracking-widest shrink-0">STUDY</div>
+                       <div className="p-4 text-sm font-semibold text-slate-700 w-full break-words">{d.pdsa?.study}</div>
+                     </div>
+                     <div className="flex flex-col sm:flex-row bg-slate-50 rounded-xl overflow-hidden border border-slate-100">
+                       <div className="bg-emerald-600 text-white sm:w-24 w-full py-2 sm:py-0 flex items-center justify-center font-black text-xs tracking-widest shrink-0">ACTION</div>
+                       <div className="p-4 text-sm font-semibold text-slate-700 w-full break-words">{d.pdsa?.action}</div>
+                     </div>
                   </div>
                 </div>
               </div>
