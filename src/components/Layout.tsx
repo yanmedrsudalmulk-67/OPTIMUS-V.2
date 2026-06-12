@@ -61,13 +61,13 @@ export default function Layout({ children, router }: LayoutProps) {
       <Sidebar />
 
       {/* Content flex alignment container */}
-      <div className="flex-1 flex flex-col min-h-screen md:pl-64 w-full min-w-0 overflow-x-hidden">
+      <div className="flex-1 flex flex-col min-h-screen md:pl-64 w-full min-w-0">
         {/* PREMIUM UNIFIED GLASSMORPHISM TOP HEADER */}
-        <header className="sticky top-0 z-30 flex items-center justify-between min-h-20 md:h-[88px] py-4 md:py-2 px-4 md:px-8 bg-white/75 backdrop-blur-lg border-b border-gray-100/80 shadow-xs pt-6 md:pt-8 w-full">
+        <header className="fixed top-0 left-0 right-0 md:left-64 z-30 flex items-center justify-between min-h-20 md:h-[88px] py-4 md:py-2 px-4 md:px-8 bg-white/75 backdrop-blur-lg border-b border-gray-100/80 shadow-xs w-full md:w-auto">
           <div className="absolute bottom-0 left-0 right-0 h-[2px] bg-gradient-to-r from-emerald-400 via-emerald-500 to-emerald-400 shadow-[0_2px_15px_rgba(16,163,127,0.8)] z-40" />
           {/* Left Side: Brand Identity */}
           <div className="flex items-center gap-3">
-            <div className="flex flex-col">
+            <div className="flex flex-col pt-6 md:pt-0">
               <span 
                 className="font-black tracking-[0.1em] drop-shadow-sm select-none antialiased leading-none"
                 style={{ 
@@ -127,7 +127,7 @@ export default function Layout({ children, router }: LayoutProps) {
         </header>
 
         {/* Primary Page views main insertion wrapper */}
-        <main className="flex-1 w-full p-4 md:p-8">
+        <main className="flex-1 w-full p-4 md:p-8 pt-28 md:pt-[112px]">
           <div className="max-w-7xl mx-auto">{children}</div>
         </main>
       </div>

@@ -761,7 +761,7 @@ export default function ProfilIndikator() {
         <div>
           <h1 className="text-2xl md:text-3xl font-extrabold text-[#10a37f] tracking-tight leading-tight">Profil Indikator Mutu</h1>
           <p className="text-gray-900 text-xs mt-1.5 max-w-xl leading-relaxed">
-            Kelola master indikator mutu rumah sakit yang terintegrasi dengan seluruh modul OPTIMUS.
+            Kelola profil indikator mutu rumah sakit yang terintegrasi dengan seluruh menu OPTIMUS
           </p>
         </div>
 

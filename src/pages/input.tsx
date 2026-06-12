@@ -22,34 +22,51 @@ import {
   ArrowRight,
   ChevronDown,
   Save,
+  Target,
+  Sparkles,
 } from "lucide-react";
-import { useStore, DataMutuPayload, VisiteData, JatuhData, Unit, IndicatorProfile, WaktuTungguData } from "@/store/useStore";
+import {
+  useStore,
+  DataMutuPayload,
+  VisiteData,
+  JatuhData,
+  Unit,
+  IndicatorProfile,
+  WaktuTungguData,
+  IdentifikasiData,
+} from "@/store/useStore";
 import { supabase } from "@/lib/supabase";
 import { motion } from "motion/react";
 
 // Validation schema for general inputs
-const schema = z.object({
-  unit: z.string().min(1, "Unit harus dipilih"),
-  sub_unit: z.string().optional(),
-  tanggal: z.string().min(1, "Tanggal harus diisi"),
-  kategori: z.string().min(1, "Kategori harus dipilih"),
-  indikator_id: z.string().optional(),
-  numerator_val: z.number().min(0, "Nilai minimal 0").optional(),
-  denominator_val: z.number().min(1, "Nilai minimal 1").optional(),
-  kpc: z.number().min(0).optional(),
-  knc: z.number().min(0).optional(),
-  ktc: z.number().min(0).optional(),
-  ktd: z.number().min(0).optional(),
-  sentinel: z.number().min(0).optional(),
-  keterangan: z.string().optional(),
-  bukti_file_name: z.string().optional(),
-}).superRefine((data, ctx) => {
-  if (data.kategori !== "IKP") {
-    if (!data.indikator_id) {
-      ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Pilih Indikator terlebih dahulu", path: ["indikator_id"] });
+const schema = z
+  .object({
+    unit: z.string().min(1, "Unit harus dipilih"),
+    sub_unit: z.string().optional(),
+    tanggal: z.string().min(1, "Tanggal harus diisi"),
+    kategori: z.string().min(1, "Kategori harus dipilih"),
+    indikator_id: z.string().optional(),
+    numerator_val: z.number().min(0, "Nilai minimal 0").optional(),
+    denominator_val: z.number().min(1, "Nilai minimal 1").optional(),
+    kpc: z.number().min(0).optional(),
+    knc: z.number().min(0).optional(),
+    ktc: z.number().min(0).optional(),
+    ktd: z.number().min(0).optional(),
+    sentinel: z.number().min(0).optional(),
+    keterangan: z.string().optional(),
+    bukti_file_name: z.string().optional(),
+  })
+  .superRefine((data, ctx) => {
+    if (data.kategori !== "IKP") {
+      if (!data.indikator_id) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: "Pilih Indikator terlebih dahulu",
+          path: ["indikator_id"],
+        });
+      }
     }
-  }
-});
+  });
 
 type FormValues = z.infer<typeof schema>;
 
@@ -79,7 +96,9 @@ export default function InputData() {
   const [modalUnitId, setModalUnitId] = useState<string | null>(null);
   const [roomNameInput, setRoomNameInput] = useState("");
   const [roomCategoryInput, setRoomCategoryInput] = useState("Rawat Inap");
-  const [roomStatusInput, setRoomStatusInput] = useState<"Aktif" | "Nonaktif">("Aktif");
+  const [roomStatusInput, setRoomStatusInput] = useState<"Aktif" | "Nonaktif">(
+    "Aktif",
+  );
 
   const unitDropdownRef = useRef<HTMLDivElement>(null);
 
@@ -91,7 +110,9 @@ export default function InputData() {
         if (data && data.length > 0) {
           // If Supabase contains values, load them into the application
           data.forEach((dbUnit: any) => {
-            const exists = units.some((u) => u.id === dbUnit.id || u.name === dbUnit.name);
+            const exists = units.some(
+              (u) => u.id === dbUnit.id || u.name === dbUnit.name,
+            );
             if (!exists) {
               addUnit({
                 id: dbUnit.id || String(Math.random()),
@@ -103,7 +124,10 @@ export default function InputData() {
           });
         }
       } catch (err) {
-        console.warn("Supabase units select skipped, falling back to local Zustand schema", err);
+        console.warn(
+          "Supabase units select skipped, falling back to local Zustand schema",
+          err,
+        );
       }
     };
     fetchSupabaseUnits();
@@ -112,7 +136,10 @@ export default function InputData() {
   // Keyboard navigation click outside handler
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
-      if (unitDropdownRef.current && !unitDropdownRef.current.contains(event.target as Node)) {
+      if (
+        unitDropdownRef.current &&
+        !unitDropdownRef.current.contains(event.target as Node)
+      ) {
         setShowUnitDropdown(false);
       }
     }
@@ -157,10 +184,16 @@ export default function InputData() {
 
   // Filter indicator profiles dynamically from state/database
   const filteredIndikators = useMemo(() => {
-    let filtered = indicatorProfiles.filter((i) => i.category === watchKategori);
+    let filtered = indicatorProfiles.filter(
+      (i) => i.category === watchKategori,
+    );
     filtered.sort((a, b) => {
-      const aIsKKT = (a.indicator_title || "").toLowerCase().includes("kebersihan tangan");
-      const bIsKKT = (b.indicator_title || "").toLowerCase().includes("kebersihan tangan");
+      const aIsKKT = (a.indicator_title || "")
+        .toLowerCase()
+        .includes("kebersihan tangan");
+      const bIsKKT = (b.indicator_title || "")
+        .toLowerCase()
+        .includes("kebersihan tangan");
       if (aIsKKT && !bIsKKT) return -1;
       if (!aIsKKT && bIsKKT) return 1;
       return 0;
@@ -172,18 +205,45 @@ export default function InputData() {
     return indicatorProfiles.find((i) => i.id === watchIndikatorId);
   }, [indicatorProfiles, watchIndikatorId]);
 
-  const isVisiteDokter = watchIndikatorId === "7" || !!selectedIndikatorProfile?.indicator_title?.toLowerCase().includes("visite");
-  const isRisikoJatuh = watchIndikatorId === "11" || !!selectedIndikatorProfile?.indicator_title?.toLowerCase().includes("jatuh");
-  const isIdentifikasiPasien = watchIndikatorId === "3" || !!selectedIndikatorProfile?.indicator_title?.toLowerCase().includes("identifikasi pasien");
-  const isWaktuTunggu = watchIndikatorId === "5" || !!selectedIndikatorProfile?.indicator_title?.toLowerCase().includes("waktu tunggu");
+  const isVisiteDokter =
+    watchIndikatorId === "7" ||
+    !!selectedIndikatorProfile?.indicator_title
+      ?.toLowerCase()
+      .includes("visite");
+  const isRisikoJatuh =
+    watchIndikatorId === "11" ||
+    !!selectedIndikatorProfile?.indicator_title
+      ?.toLowerCase()
+      .includes("jatuh");
+  const isIdentifikasiPasien =
+    watchIndikatorId === "3" ||
+    !!selectedIndikatorProfile?.indicator_title
+      ?.toLowerCase()
+      .includes("identifikasi pasien");
+  const isWaktuTunggu =
+    watchIndikatorId === "5" ||
+    !!selectedIndikatorProfile?.indicator_title
+      ?.toLowerCase()
+      .includes("waktu tunggu");
 
   // States for dynamic custom subgrids/checklists inside section 7
   const [visiteGrid, setVisiteGrid] = useState<VisiteData[]>([]);
   const [jatuhGrid, setJatuhGrid] = useState<JatuhData[]>([]);
+  const [jatuhSearchTerm, setJatuhSearchTerm] = useState("");
+  const [jatuhFilterDate, setJatuhFilterDate] = useState("");
   const [waktuTungguGrid, setWaktuTungguGrid] = useState<WaktuTungguData[]>([]);
-  const [averageWaktuTunggu, setAverageWaktuTunggu] = useState<number | undefined>(undefined);
-  const [customNumerator, setCustomNumerator] = useState<number | undefined>(undefined);
-  const [customDenominator, setCustomDenominator] = useState<number | undefined>(undefined);
+  const [identifikasiGrid, setIdentifikasiGrid] = useState<IdentifikasiData[]>(
+    [],
+  );
+  const [averageWaktuTunggu, setAverageWaktuTunggu] = useState<
+    number | undefined
+  >(undefined);
+  const [customNumerator, setCustomNumerator] = useState<number | undefined>(
+    undefined,
+  );
+  const [customDenominator, setCustomDenominator] = useState<
+    number | undefined
+  >(undefined);
   const [uploadedProofName, setUploadedProofName] = useState<string>("");
 
   // Sub units list when Rawat Jalan is clicked
@@ -200,33 +260,62 @@ export default function InputData() {
   // Dynamically compute real-time score
   const computedCapaian = useMemo(() => {
     let num = watchNumerator !== undefined ? watchNumerator : 0;
-    let den = watchDenominator !== undefined && watchDenominator > 0 ? watchDenominator : 1;
+    let den =
+      watchDenominator !== undefined && watchDenominator > 0
+        ? watchDenominator
+        : 1;
 
     // Special calculations
     if (isVisiteDokter) {
-      num = visiteGrid.filter((d) => d.jam_visite_kurang_14 && d.keterangan === "Sesuai Jadwal").length;
+      num = visiteGrid.filter(
+        (d) => d.jam_visite_kurang_14 && d.keterangan === "Sesuai Jadwal",
+      ).length;
       den = visiteGrid.length || 1;
     } else if (isRisikoJatuh) {
       num = jatuhGrid.reduce(
-        (acc, curr) => acc + (curr.asesmen_awal ? 1 : 0) + (curr.asesmen_ulang ? 1 : 0) + (curr.intervensi ? 1 : 0),
-        0
+        (acc, curr) =>
+          acc +
+          (curr.asesmen_awal && curr.asesmen_ulang && curr.intervensi ? 1 : 0),
+        0,
       );
-      den = jatuhGrid.length * 3 || 1;
+      den = jatuhGrid.length || 1;
+    } else if (isIdentifikasiPasien) {
+      num = identifikasiGrid.filter((d) => d.patuh).length;
+      den = identifikasiGrid.length || 1;
     } else if (isWaktuTunggu) {
       num = waktuTungguGrid.filter((d) => d.selisih_menit <= 60).length;
       den = waktuTungguGrid.length || 1;
-    } else if (customNumerator !== undefined && customDenominator !== undefined) {
+    } else if (
+      customNumerator !== undefined &&
+      customDenominator !== undefined
+    ) {
       num = customNumerator;
       den = customDenominator > 0 ? customDenominator : 1;
     }
 
     const val = parseFloat(((num / (den || 1)) * 100).toFixed(2));
     return isNaN(val) ? 0 : val;
-  }, [watchNumerator, watchDenominator, isVisiteDokter, isRisikoJatuh, isWaktuTunggu, visiteGrid, jatuhGrid, waktuTungguGrid, customNumerator, customDenominator]);
+  }, [
+    watchNumerator,
+    watchDenominator,
+    isVisiteDokter,
+    isRisikoJatuh,
+    isWaktuTunggu,
+    isIdentifikasiPasien,
+    visiteGrid,
+    jatuhGrid,
+    identifikasiGrid,
+    waktuTungguGrid,
+    customNumerator,
+    customDenominator,
+  ]);
 
   const achievementStatus = useMemo(() => {
     if (!selectedIndikatorProfile) return "N/A";
-    const target = parseFloat(String(selectedIndikatorProfile.target).replace(/[^0-9.]/g, '')) || 80;
+    const target =
+      parseFloat(
+        String(selectedIndikatorProfile.target).replace(/[^0-9.]/g, ""),
+      ) || 80;
     const isReverse = selectedIndikatorProfile.reverse;
 
     let success = false;
@@ -247,7 +336,7 @@ export default function InputData() {
     return units.filter(
       (u) =>
         u.name.toLowerCase().includes(unitSearch.toLowerCase()) &&
-        u.status === "Aktif"
+        u.status === "Aktif",
     );
   }, [units, unitSearch]);
 
@@ -280,7 +369,7 @@ export default function InputData() {
         category: roomCategoryInput,
         status: roomStatusInput,
       };
-      
+
       // Zustand Save
       addUnit(newUnit);
 
@@ -349,9 +438,14 @@ export default function InputData() {
     ]);
   };
 
-  const handleRemoveVisiteRow = (id: string) => setVisiteGrid(visiteGrid.filter((r) => r.id !== id));
+  const handleRemoveVisiteRow = (id: string) =>
+    setVisiteGrid(visiteGrid.filter((r) => r.id !== id));
 
-  const handleUpdateVisite = (id: string, field: keyof VisiteData, value: any) => {
+  const handleUpdateVisite = (
+    id: string,
+    field: keyof VisiteData,
+    value: any,
+  ) => {
     setVisiteGrid(
       visiteGrid.map((r) => {
         if (r.id !== id) return r;
@@ -365,7 +459,7 @@ export default function InputData() {
           updated.keterangan = "Tidak Sesuai Jadwal";
         }
         return updated;
-      })
+      }),
     );
   };
 
@@ -377,17 +471,88 @@ export default function InputData() {
         tanggal: new Date().toISOString().split("T")[0],
         nama_pasien: "",
         no_rm: "",
-        asesmen_awal: false,
-        asesmen_ulang: false,
-        intervensi: false,
+        asesmen_awal: null,
+        asesmen_ulang: null,
+        intervensi: null,
       },
     ]);
   };
 
-  const handleRemoveJatuhRow = (id: string) => setJatuhGrid(jatuhGrid.filter((r) => r.id !== id));
+  const handleRemoveJatuhRow = (id: string) =>
+    setJatuhGrid(jatuhGrid.filter((r) => r.id !== id));
 
-  const handleUpdateJatuh = (id: string, field: keyof JatuhData, value: any) => {
-    setJatuhGrid(jatuhGrid.map((r) => (r.id === id ? { ...r, [field]: value } : r)));
+  const handleUpdateJatuh = (
+    id: string,
+    field: keyof JatuhData,
+    value: any,
+  ) => {
+    setJatuhGrid(
+      jatuhGrid.map((r) => (r.id === id ? { ...r, [field]: value } : r)),
+    );
+  };
+
+  const handleAddIdentifikasiRow = () => {
+    setIdentifikasiGrid([
+      ...identifikasiGrid,
+      {
+        id: Math.random().toString(36).substring(7),
+        tanggal_observasi: new Date().toISOString().split("T")[0],
+        jam_observasi: "",
+        nama_observer: "",
+        nama_pasien: "",
+        no_rm: "",
+        tanggal_lahir: "",
+        jenis_kelamin: "",
+        moment: "",
+        petugas: "",
+        tanya_nama: null,
+        tanya_tgllahir: null,
+        cara_verbal: null,
+        cara_visual: null,
+        lokasi: "",
+        patuh: null,
+      },
+    ]);
+  };
+
+  const handleRemoveIdentifikasiRow = (id: string) => {
+    if (window.confirm("Apakah Anda yakin ingin menghapus observasi ini?")) {
+      setIdentifikasiGrid(identifikasiGrid.filter((r) => r.id !== id));
+    }
+  };
+
+  const handleUpdateIdentifikasi = (
+    id: string,
+    field: keyof IdentifikasiData,
+    value: any,
+  ) => {
+    setIdentifikasiGrid(
+      identifikasiGrid.map((r) => {
+        if (r.id !== id) return r;
+        const updated = { ...r, [field]: value } as IdentifikasiData;
+
+        // Auto-calculate Patuh
+        if (
+          updated.tanya_nama !== null ||
+          updated.tanya_tgllahir !== null ||
+          updated.cara_verbal !== null ||
+          updated.cara_visual !== null
+        ) {
+          if (
+            updated.tanya_nama === true &&
+            updated.tanya_tgllahir === true &&
+            (updated.cara_verbal === true || updated.cara_visual === true)
+          ) {
+            updated.patuh = true;
+          } else {
+            updated.patuh = false;
+          }
+        } else {
+          updated.patuh = null;
+        }
+        return updated;
+      }),
+    );
   };
 
   const handleAddWaktuTungguRow = () => {
@@ -415,22 +580,31 @@ export default function InputData() {
     if (!start || !end) return 0;
     const [sH, sM] = start.split(":").map(Number);
     const [eH, eM] = end.split(":").map(Number);
-    
-    let diff = (eH * 60 + eM) - (sH * 60 + sM);
+
+    let diff = eH * 60 + eM - (sH * 60 + sM);
     if (diff < 0) diff += 24 * 60; // handle overnight if occurs though rare in outpatient
     return diff;
   };
 
-  const handleUpdateWaktuTunggu = (id: string, field: keyof WaktuTungguData, value: any) => {
-    setWaktuTungguGrid(waktuTungguGrid.map((r) => {
-      if (r.id !== id) return r;
-      const updated = { ...r, [field]: value };
-      
-      if (field === "jam_datang" || field === "jam_dilayani") {
-        updated.selisih_menit = calculateMinutesDiff(updated.jam_datang, updated.jam_dilayani);
-      }
-      return updated;
-    }));
+  const handleUpdateWaktuTunggu = (
+    id: string,
+    field: keyof WaktuTungguData,
+    value: any,
+  ) => {
+    setWaktuTungguGrid(
+      waktuTungguGrid.map((r) => {
+        if (r.id !== id) return r;
+        const updated = { ...r, [field]: value };
+
+        if (field === "jam_datang" || field === "jam_dilayani") {
+          updated.selisih_menit = calculateMinutesDiff(
+            updated.jam_datang,
+            updated.jam_dilayani,
+          );
+        }
+        return updated;
+      }),
+    );
   };
 
   // Mock upload handler helper
@@ -451,18 +625,58 @@ export default function InputData() {
 
     if (data.kategori !== "IKP") {
       if (isVisiteDokter) {
-        finalNum = visiteGrid.filter((d) => d.jam_visite_kurang_14 && d.keterangan === "Sesuai Jadwal").length;
+        finalNum = visiteGrid.filter(
+          (d) => d.jam_visite_kurang_14 && d.keterangan === "Sesuai Jadwal",
+        ).length;
         finalDen = visiteGrid.length || 1;
       } else if (isRisikoJatuh) {
-        finalNum = jatuhGrid.reduce(
-          (acc, curr) => acc + (curr.asesmen_awal ? 1 : 0) + (curr.asesmen_ulang ? 1 : 0) + (curr.intervensi ? 1 : 0),
-          0
+        const isValid = jatuhGrid.every(
+          (r) =>
+            r.nama_pasien.trim() !== "" &&
+            r.no_rm.trim() !== "" &&
+            r.asesmen_awal !== null &&
+            r.asesmen_ulang !== null &&
+            r.intervensi !== null,
         );
-        finalDen = jatuhGrid.length * 3 || 1;
+        if (!isValid && jatuhGrid.length > 0) {
+          alert(
+            "Data observasi belum lengkap. Mohon lengkapi seluruh kolom wajib terlebih dahulu.",
+          );
+          setIsSubmitting(false);
+          return;
+        }
+        finalNum = jatuhGrid.reduce(
+          (acc, curr) =>
+            acc +
+            (curr.asesmen_awal && curr.asesmen_ulang && curr.intervensi
+              ? 1
+              : 0),
+          0,
+        );
+        finalDen = jatuhGrid.length || 1;
+      } else if (isIdentifikasiPasien) {
+        const isValid = identifikasiGrid.every(
+          (r) =>
+            r.nama_pasien.trim() !== "" &&
+            r.no_rm.trim() !== "" &&
+            r.moment !== "" &&
+            r.petugas !== "" &&
+            r.lokasi !== "",
+        );
+        if (!isValid && identifikasiGrid.length > 0) {
+          alert("Data observasi identifikasi pasien belum lengkap.");
+          setIsSubmitting(false);
+          return;
+        }
+        finalNum = identifikasiGrid.filter((d) => d.patuh).length;
+        finalDen = identifikasiGrid.length || 1;
       } else if (isWaktuTunggu) {
         finalNum = waktuTungguGrid.filter((d) => d.selisih_menit <= 60).length;
         finalDen = waktuTungguGrid.length || 1;
-      } else if (customNumerator !== undefined && customDenominator !== undefined) {
+      } else if (
+        customNumerator !== undefined &&
+        customDenominator !== undefined
+      ) {
         finalNum = customNumerator;
         finalDen = customDenominator;
       }
@@ -471,14 +685,19 @@ export default function InputData() {
     let computedCapaian = 0;
     if (selectedIndikatorProfile) {
       const unit = selectedIndikatorProfile.measurement_unit;
-      if (unit === "Indeks" || unit === "Rasio") { // Handle old "Rasio" values just in case
-        computedCapaian = Number(((finalNum / (finalDen || 1)) * 25).toFixed(2));
+      if (unit === "Indeks" || unit === "Rasio") {
+        // Handle old "Rasio" values just in case
+        computedCapaian = Number(
+          ((finalNum / (finalDen || 1)) * 25).toFixed(2),
+        );
       } else if (unit === "Jumlah Kasus") {
         computedCapaian = finalNum;
       } else if (["Menit", "Jam", "Hari"].includes(unit)) {
         computedCapaian = Number((finalNum / (finalDen || 1)).toFixed(2));
       } else {
-        computedCapaian = Number(((finalNum / (finalDen || 1)) * 100).toFixed(2));
+        computedCapaian = Number(
+          ((finalNum / (finalDen || 1)) * 100).toFixed(2),
+        );
       }
     } else {
       computedCapaian = Number(((finalNum / (finalDen || 1)) * 100).toFixed(2));
@@ -505,6 +724,9 @@ export default function InputData() {
       sentinel: data.kategori === "IKP" ? data.sentinel || 0 : undefined,
       visite_details: isVisiteDokter ? [...visiteGrid] : undefined,
       jatuh_details: isRisikoJatuh ? [...jatuhGrid] : undefined,
+      identifikasi_details: isIdentifikasiPasien
+        ? [...identifikasiGrid]
+        : undefined,
       waktu_tunggu_details: isWaktuTunggu ? [...waktuTungguGrid] : undefined,
     };
 
@@ -523,31 +745,35 @@ export default function InputData() {
         numerator_value: finalNum,
         denominator_value: finalDen,
         target: selectedIndikatorProfile?.target || null,
-        achievement_percentage: data.kategori === "IKP" ? null : computedCapaian,
-        notes: data.kategori === "IKP" ? JSON.stringify({
+        achievement_percentage:
+          data.kategori === "IKP" ? null : computedCapaian,
+        notes: JSON.stringify({
           kpc: payload.kpc,
           knc: payload.knc,
           ktc: payload.ktc,
           ktd: payload.ktd,
           sentinel: payload.sentinel,
-          keterangan: payload.keterangan
-        }) : isWaktuTunggu ? JSON.stringify({ // Store WaktuTunggu serialize here for simple retrieval just in case table fails
-          details: payload.waktu_tunggu_details,
-          keterangan: payload.keterangan
-        }) : (data.keterangan || ""),
+          keterangan: payload.keterangan || data.keterangan,
+          visite_details: payload.visite_details,
+          jatuh_details: payload.jatuh_details,
+          identifikasi_details: payload.identifikasi_details,
+          waktu_tunggu_details: payload.waktu_tunggu_details,
+        }),
         attachment_url: uploadedProofName || null,
         created_at: new Date().toISOString(),
       });
 
       // Simpan rincian data visite ke tabel visite_dpjp jika applicable
       if (isVisiteDokter && visiteGrid.length > 0) {
-        const visitePayload = visiteGrid.map(v => ({
+        const visitePayload = visiteGrid.map((v) => ({
           tanggal_visite: v.tanggal,
           nama_pasien: v.nama_pasien,
           visite_sebelum_14: v.jam_visite_kurang_14,
           visite_setelah_14: v.jam_visite_lebih_14,
           nama_dokter: v.dokter_visite,
-          keterangan: v.keterangan || (v.jam_visite_kurang_14 ? "Sesuai Jadwal" : "Tidak Sesuai Jadwal"),
+          keterangan:
+            v.keterangan ||
+            (v.jam_visite_kurang_14 ? "Sesuai Jadwal" : "Tidak Sesuai Jadwal"),
           indikator_id: data.indikator_id || null,
         }));
         try {
@@ -557,9 +783,9 @@ export default function InputData() {
         }
       }
 
-      // Simpan rincian data waktu tunggu ke tabel waktu_tunggu_rajal 
+      // Simpan rincian data waktu tunggu ke tabel waktu_tunggu_rajal
       if (isWaktuTunggu && waktuTungguGrid.length > 0) {
-        const wtPayload = waktuTungguGrid.map(v => ({
+        const wtPayload = waktuTungguGrid.map((v) => ({
           tanggal: v.tanggal,
           nama_pasien: v.nama_pasien,
           no_rm: v.no_rm,
@@ -576,7 +802,10 @@ export default function InputData() {
         }
       }
     } catch (supabaseError) {
-      console.warn("Supabase sync skipped - data recorded in local Zustand and memory channels", supabaseError);
+      console.warn(
+        "Supabase sync skipped - data recorded in local Zustand and memory channels",
+        supabaseError,
+      );
     }
 
     // Success notifications and state cleanup
@@ -584,6 +813,7 @@ export default function InputData() {
     setSuccessMsg(true);
     setVisiteGrid([]);
     setJatuhGrid([]);
+    setIdentifikasiGrid([]);
     setWaktuTungguGrid([]);
     setCustomNumerator(undefined);
     setCustomDenominator(undefined);
@@ -640,9 +870,12 @@ export default function InputData() {
               <CheckCircle2 size={18} />
             </div>
             <div>
-              <span className="font-extrabold block text-sm">Data Berhasil Disimpan!</span>
+              <span className="font-extrabold block text-sm">
+                Data Berhasil Disimpan!
+              </span>
               <span className="text-xs text-emerald-700/90 font-medium mt-0.5 block">
-                Sistem berhasil mengamankan record baru Anda di database dan menyinkronkan seluruh visual grafik dashboard secara instan.
+                Sistem berhasil mengamankan record baru Anda di database dan
+                menyinkronkan seluruh visual grafik dashboard secara instan.
               </span>
             </div>
           </div>
@@ -652,10 +885,13 @@ export default function InputData() {
           {/* STEP 1 & 2: UNIT & TANGGAL */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {/* 1. Pilih Unit Selector */}
-            <div className="space-y-3 relative animate-in fade-in duration-300" ref={unitDropdownRef}>
+            <div
+              className="space-y-3 relative animate-in fade-in duration-300"
+              ref={unitDropdownRef}
+            >
               <label className="flex items-center justify-between text-sm font-extrabold text-slate-800 tracking-wide h-8">
                 <span>1. Pilih Unit</span>
-                
+
                 {/* Admin-only Add Room trigger */}
                 <button
                   type="button"
@@ -673,10 +909,18 @@ export default function InputData() {
                   onClick={() => setShowUnitDropdown(!showUnitDropdown)}
                   className="w-full h-[56px] px-5 rounded-2xl border border-gray-200 outline-none transition-all text-slate-800 bg-white hover:border-[#10a37f]/50 cursor-pointer flex items-center justify-between shadow-xs select-none focus-within:border-[#10a37f] focus-within:ring-2 focus-within:ring-[#10a37f]/20"
                 >
-                  <span className={selectedUnit ? "text-slate-900 text-sm font-semibold" : "text-gray-400 text-sm font-medium"}>
+                  <span
+                    className={
+                      selectedUnit
+                        ? "text-slate-900 text-sm font-semibold"
+                        : "text-gray-400 text-sm font-medium"
+                    }
+                  >
                     {selectedUnit ? selectedUnit.name : "Silahkan pilih unit"}
                   </span>
-                  <ChevronDown className={`text-gray-400 h-4 w-4 transition-transform duration-200 ${showUnitDropdown ? 'rotate-180' : ''}`} />
+                  <ChevronDown
+                    className={`text-gray-400 h-4 w-4 transition-transform duration-200 ${showUnitDropdown ? "rotate-180" : ""}`}
+                  />
                 </div>
 
                 {showUnitDropdown && (
@@ -692,7 +936,7 @@ export default function InputData() {
                         onClick={(e) => e.stopPropagation()} // protect input click
                       />
                     </div>
-                    
+
                     <div className="overflow-y-auto scroll-smooth flex-1 py-1">
                       {filteredUnits.length === 0 ? (
                         <div className="p-4 text-center text-xs text-gray-400 italic font-medium">
@@ -700,7 +944,7 @@ export default function InputData() {
                         </div>
                       ) : (
                         filteredUnits.map((u) => (
-                           <div
+                          <div
                             key={u.id}
                             onClick={() => {
                               setSelectedUnit(u);
@@ -745,7 +989,11 @@ export default function InputData() {
                 )}
               </div>
               <input type="hidden" {...register("unit")} />
-              {errors.unit && <p className="text-red-500 text-xs font-semibold mt-1">{errors.unit.message}</p>}
+              {errors.unit && (
+                <p className="text-red-500 text-xs font-semibold mt-1">
+                  {errors.unit.message}
+                </p>
+              )}
             </div>
 
             {/* 2. Pilih Tanggal Realtime */}
@@ -760,7 +1008,11 @@ export default function InputData() {
                   className="w-full h-full bg-transparent outline-none text-slate-900 font-semibold text-sm cursor-pointer border-none p-0 focus:ring-0 leading-normal flex items-center [&::-webkit-calendar-picker-indicator]:cursor-pointer [&::-webkit-calendar-picker-indicator]:opacity-70 hover:[&::-webkit-calendar-picker-indicator]:opacity-100 pr-2"
                 />
               </div>
-              {errors.tanggal && <p className="text-red-500 text-xs font-semibold mt-1">{errors.tanggal.message}</p>}
+              {errors.tanggal && (
+                <p className="text-red-500 text-xs font-semibold mt-1">
+                  {errors.tanggal.message}
+                </p>
+              )}
             </div>
           </div>
 
@@ -829,7 +1081,9 @@ export default function InputData() {
                     watchIndikatorId ? "text-slate-900" : "text-gray-400/80"
                   }`}
                 >
-                  <option value="" className="text-gray-400">Pilih indikator</option>
+                  <option value="" className="text-gray-400">
+                    Pilih indikator
+                  </option>
                   {filteredIndikators.map((i) => (
                     <option key={i.id} value={i.id} className="text-slate-900">
                       {i.indicator_title}
@@ -862,7 +1116,11 @@ export default function InputData() {
                   { id: "knc", label: "KNC", sub: "Nyaris Cedera" },
                   { id: "ktc", label: "KTC", sub: "Tidak Cedera" },
                   { id: "ktd", label: "KTD", sub: "Tidak Diharapkan" },
-                  { id: "sentinel", label: "Sentinel", sub: "Kejadian Sentinel" },
+                  {
+                    id: "sentinel",
+                    label: "Sentinel",
+                    sub: "Kejadian Sentinel",
+                  },
                 ].map((ikpItem) => (
                   <div
                     key={ikpItem.id}
@@ -925,32 +1183,64 @@ export default function InputData() {
                     <table className="w-full text-left border-collapse min-w-[800px]">
                       <thead>
                         <tr className="bg-emerald-50/55 border-b border-emerald-100 text-emerald-950">
-                          <th className="py-3 px-4 font-extrabold text-xs uppercase w-12 text-center rounded-tl-xl border-r border-emerald-100/30">No</th>
-                          <th className="py-3 px-4 font-extrabold text-xs uppercase w-32 border-r border-emerald-100/30">Tanggal</th>
-                          <th className="py-3 px-4 font-extrabold text-xs uppercase border-r border-emerald-100/30">Nama Pasien</th>
-                          <th className="py-3 px-4 font-extrabold text-xs uppercase text-center w-28 border-r border-emerald-100/30">Visite {'<'} 14.00</th>
-                          <th className="py-3 px-4 font-extrabold text-xs uppercase text-center w-28 border-r border-emerald-100/30">Visite {'>'} 14.00</th>
-                          <th className="py-3 px-4 font-extrabold text-xs uppercase border-r border-emerald-100/30 min-w-[200px]">Dokter Penanggung Jawab</th>
-                          <th className="py-3 px-4 font-extrabold text-xs uppercase w-48 border-r border-emerald-100/30">Keterangan</th>
-                          <th className="py-3 px-4 font-extrabold text-xs uppercase w-16 text-center rounded-tr-xl">Aksi</th>
+                          <th className="py-3 px-4 font-extrabold text-xs uppercase w-12 text-center rounded-tl-xl border-r border-emerald-100/30">
+                            No
+                          </th>
+                          <th className="py-3 px-4 font-extrabold text-xs uppercase w-32 border-r border-emerald-100/30">
+                            Tanggal
+                          </th>
+                          <th className="py-3 px-4 font-extrabold text-xs uppercase border-r border-emerald-100/30">
+                            Nama Pasien
+                          </th>
+                          <th className="py-3 px-4 font-extrabold text-xs uppercase text-center w-28 border-r border-emerald-100/30">
+                            Visite {"<"} 14.00
+                          </th>
+                          <th className="py-3 px-4 font-extrabold text-xs uppercase text-center w-28 border-r border-emerald-100/30">
+                            Visite {">"} 14.00
+                          </th>
+                          <th className="py-3 px-4 font-extrabold text-xs uppercase border-r border-emerald-100/30 min-w-[200px]">
+                            Dokter Penanggung Jawab
+                          </th>
+                          <th className="py-3 px-4 font-extrabold text-xs uppercase w-48 border-r border-emerald-100/30">
+                            Keterangan
+                          </th>
+                          <th className="py-3 px-4 font-extrabold text-xs uppercase w-16 text-center rounded-tr-xl">
+                            Aksi
+                          </th>
                         </tr>
                       </thead>
                       <tbody>
                         {visiteGrid.length === 0 ? (
                           <tr>
-                            <td colSpan={8} className="py-12 text-center text-gray-400 text-xs italic font-semibold border-b border-emerald-50 bg-[#fafdfc]">
-                              Belum ada baris data audit. Silakan tambahkan pasien untuk memulai verifikasi indikator visite dokter.
+                            <td
+                              colSpan={8}
+                              className="py-12 text-center text-gray-400 text-xs italic font-semibold border-b border-emerald-50 bg-[#fafdfc]"
+                            >
+                              Belum ada baris data audit. Silakan tambahkan
+                              pasien untuk memulai verifikasi indikator visite
+                              dokter.
                             </td>
                           </tr>
                         ) : (
                           visiteGrid.map((row, idx) => (
-                            <tr key={row.id} className="border-b border-gray-50 hover:bg-emerald-50/10 transition-colors">
-                              <td className="py-3 px-4 text-center text-sm font-semibold text-gray-400 border-r border-emerald-50">{idx + 1}</td>
+                            <tr
+                              key={row.id}
+                              className="border-b border-gray-50 hover:bg-emerald-50/10 transition-colors"
+                            >
+                              <td className="py-3 px-4 text-center text-sm font-semibold text-gray-400 border-r border-emerald-50">
+                                {idx + 1}
+                              </td>
                               <td className="py-3 px-4 border-r border-emerald-50">
                                 <input
                                   type="date"
                                   value={row.tanggal}
-                                  onChange={(e) => handleUpdateVisite(row.id, "tanggal", e.target.value)}
+                                  onChange={(e) =>
+                                    handleUpdateVisite(
+                                      row.id,
+                                      "tanggal",
+                                      e.target.value,
+                                    )
+                                  }
                                   className="w-full bg-transparent outline-none text-xs font-bold text-slate-850"
                                 />
                               </td>
@@ -959,7 +1249,13 @@ export default function InputData() {
                                   type="text"
                                   placeholder="Nama Lengkap Pasien"
                                   value={row.nama_pasien}
-                                  onChange={(e) => handleUpdateVisite(row.id, "nama_pasien", e.target.value)}
+                                  onChange={(e) =>
+                                    handleUpdateVisite(
+                                      row.id,
+                                      "nama_pasien",
+                                      e.target.value,
+                                    )
+                                  }
                                   className="w-full bg-transparent outline-none text-xs font-bold text-slate-800"
                                   required
                                 />
@@ -968,7 +1264,13 @@ export default function InputData() {
                                 <input
                                   type="checkbox"
                                   checked={row.jam_visite_kurang_14}
-                                  onChange={(e) => handleUpdateVisite(row.id, "jam_visite_kurang_14", e.target.checked)}
+                                  onChange={(e) =>
+                                    handleUpdateVisite(
+                                      row.id,
+                                      "jam_visite_kurang_14",
+                                      e.target.checked,
+                                    )
+                                  }
                                   className="w-5 h-5 accent-emerald-600 cursor-pointer rounded border-gray-300"
                                 />
                               </td>
@@ -976,44 +1278,86 @@ export default function InputData() {
                                 <input
                                   type="checkbox"
                                   checked={row.jam_visite_lebih_14}
-                                  onChange={(e) => handleUpdateVisite(row.id, "jam_visite_lebih_14", e.target.checked)}
+                                  onChange={(e) =>
+                                    handleUpdateVisite(
+                                      row.id,
+                                      "jam_visite_lebih_14",
+                                      e.target.checked,
+                                    )
+                                  }
                                   className="w-5 h-5 accent-emerald-600 cursor-pointer rounded border-gray-300"
                                 />
                               </td>
                               <td className="py-3 px-4 border-r border-emerald-50">
                                 <select
                                   value={row.dokter_visite}
-                                  onChange={(e) => handleUpdateVisite(row.id, "dokter_visite", e.target.value)}
+                                  onChange={(e) =>
+                                    handleUpdateVisite(
+                                      row.id,
+                                      "dokter_visite",
+                                      e.target.value,
+                                    )
+                                  }
                                   className="w-full bg-transparent outline-none text-xs font-bold text-slate-800"
                                   required
                                 >
-                                  <option value="">-- Pilih Dokter Spesialis --</option>
-                                  <option value="dr. Hijrah Saputra WR, Sp.PD">dr. Hijrah Saputra WR, Sp.PD</option>
-                                  <option value="dr. Niko Adhi Husni, Sp.PD., M.Kes., FINASIM">dr. Niko Adhi Husni, Sp.PD., M.Kes., FINASIM</option>
-                                  <option value="dr. Dhyniek Nurul F.L.A., Sp.A">dr. Dhyniek Nurul F.L.A., Sp.A</option>
-                                  <option value="dr. Ferry Sudarsono, Sp.B">dr. Ferry Sudarsono, Sp.B</option>
-                                  <option value="dr. Haris Nur, Sp.N">dr. Haris Nur, Sp.N</option>
-                                  <option value="dr. Billy Nusa Anggara T., Sp.OG">dr. Billy Nusa Anggara T., Sp.OG</option>
-                                  <option value="dr. Muthiah Nurul Izzah, Sp.OG">dr. Muthiah Nurul Izzah, Sp.OG</option>
-                                  <option value="dr. Asep Tajul Mutaqin, Sp.B">dr. Asep Tajul Mutaqin, Sp.B</option>
+                                  <option value="">
+                                    -- Pilih Dokter Spesialis --
+                                  </option>
+                                  <option value="dr. Hijrah Saputra WR, Sp.PD">
+                                    dr. Hijrah Saputra WR, Sp.PD
+                                  </option>
+                                  <option value="dr. Niko Adhi Husni, Sp.PD., M.Kes., FINASIM">
+                                    dr. Niko Adhi Husni, Sp.PD., M.Kes., FINASIM
+                                  </option>
+                                  <option value="dr. Dhyniek Nurul F.L.A., Sp.A">
+                                    dr. Dhyniek Nurul F.L.A., Sp.A
+                                  </option>
+                                  <option value="dr. Ferry Sudarsono, Sp.B">
+                                    dr. Ferry Sudarsono, Sp.B
+                                  </option>
+                                  <option value="dr. Haris Nur, Sp.N">
+                                    dr. Haris Nur, Sp.N
+                                  </option>
+                                  <option value="dr. Billy Nusa Anggara T., Sp.OG">
+                                    dr. Billy Nusa Anggara T., Sp.OG
+                                  </option>
+                                  <option value="dr. Muthiah Nurul Izzah, Sp.OG">
+                                    dr. Muthiah Nurul Izzah, Sp.OG
+                                  </option>
+                                  <option value="dr. Asep Tajul Mutaqin, Sp.B">
+                                    dr. Asep Tajul Mutaqin, Sp.B
+                                  </option>
                                 </select>
                               </td>
                               <td className="py-3 px-4 border-r border-emerald-50">
                                 <select
                                   value={row.keterangan}
-                                  onChange={(e) => handleUpdateVisite(row.id, "keterangan", e.target.value)}
+                                  onChange={(e) =>
+                                    handleUpdateVisite(
+                                      row.id,
+                                      "keterangan",
+                                      e.target.value,
+                                    )
+                                  }
                                   className="w-full bg-transparent outline-none text-xs font-bold text-slate-800"
                                   required
                                 >
-                                  <option value="Sesuai Jadwal">Sesuai Jadwal</option>
-                                  <option value="Tidak Sesuai Jadwal">Tidak Sesuai Jadwal</option>
+                                  <option value="Sesuai Jadwal">
+                                    Sesuai Jadwal
+                                  </option>
+                                  <option value="Tidak Sesuai Jadwal">
+                                    Tidak Sesuai Jadwal
+                                  </option>
                                 </select>
                               </td>
                               <td className="py-3 px-4 text-center">
                                 <button
                                   type="button"
                                   onClick={() => {
-                                    if (window.confirm("Hapus data pasien ini?")) {
+                                    if (
+                                      window.confirm("Hapus data pasien ini?")
+                                    ) {
                                       handleRemoveVisiteRow(row.id);
                                     }
                                   }}
@@ -1033,181 +1377,826 @@ export default function InputData() {
 
               {/* Specialized Form For Upaya Risiko Jatuh (ID "11") */}
               {isRisikoJatuh && (
-                <div className="bg-white border border-emerald-100 rounded-[28px] overflow-hidden shadow-xs animate-in fade-in">
-                  <div className="bg-emerald-600 p-5 flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <Activity size={20} className="text-white" />
-                      <h3 className="font-extrabold text-white tracking-wide text-sm md:text-base">
-                        Data Registrasi Kepatuhan Upaya Risiko Jatuh
-                      </h3>
+                <div className="space-y-6 animate-in fade-in">
+                  <div className="bg-white border border-emerald-100 rounded-[28px] overflow-hidden shadow-xs">
+                    <div className="bg-emerald-600 p-5 flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <Activity size={20} className="text-white" />
+                        <h3 className="font-extrabold text-white tracking-wide text-sm md:text-base">
+                          Data Registrasi Kepatuhan Upaya Risiko Jatuh
+                        </h3>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={handleAddJatuhRow}
+                        className="flex items-center gap-1.5 bg-white text-emerald-800 hover:bg-emerald-50 px-3.5 py-1.5 rounded-xl text-xs font-black transition-colors"
+                      >
+                        <Plus size={14} /> Tambah Pasien
+                      </button>
                     </div>
-                    <button
-                      type="button"
-                      onClick={handleAddJatuhRow}
-                      className="flex items-center gap-1.5 bg-white text-emerald-800 hover:bg-emerald-50 px-3.5 py-1.5 rounded-xl text-xs font-black transition-colors"
-                    >
-                      <Plus size={14} /> Tambah Pasien
-                    </button>
-                  </div>
 
-                  <div className="p-6 overflow-x-auto">
-                    <table className="w-full text-left border-collapse min-w-[800px]">
-                      <thead>
-                        <tr className="bg-emerald-50/55 border-b border-emerald-100 text-emerald-950">
-                          <th className="py-3 px-4 font-extrabold text-xs uppercase w-12 text-center border-r border-emerald-100/30">No</th>
-                          <th className="py-3 px-4 font-extrabold text-xs uppercase w-32 border-r border-emerald-100/30">Tanggal</th>
-                          <th className="py-3 px-4 font-extrabold text-xs uppercase border-r border-emerald-100/30">Nama Pasien</th>
-                          <th className="py-3 px-4 font-extrabold text-xs uppercase w-36 border-r border-emerald-100/30">No. RM</th>
-                          <th className="py-3 px-4 font-extrabold text-xs uppercase text-center w-28 border-r border-emerald-100/30">Asesmen Awal</th>
-                          <th className="py-3 px-4 font-extrabold text-xs uppercase text-center w-28 border-r border-emerald-100/30">Asesmen Ulang</th>
-                          <th className="py-3 px-4 font-extrabold text-xs uppercase text-center w-28 border-r border-emerald-100/30">Intervensi</th>
-                          <th className="py-3 px-4 font-extrabold text-xs uppercase w-16 text-center">Aksi</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {jatuhGrid.length === 0 ? (
-                          <tr>
-                            <td colSpan={8} className="py-12 text-center text-gray-400 text-xs italic font-semibold bg-[#fafdfc]">
-                              Belum ada baris data audit. Silakan tambahkan pasien untuk memulai verifikasi risiko jatuh.
-                            </td>
+                    <div className="p-0 overflow-x-auto">
+                      <table className="w-full text-left border-collapse min-w-[800px]">
+                        <thead>
+                          <tr className="bg-emerald-50/55 border-b border-emerald-100 text-emerald-950">
+                            <th className="py-3 px-4 font-extrabold text-xs uppercase w-12 text-center border-r border-emerald-100/30">
+                              No
+                            </th>
+                            <th className="py-3 px-4 font-extrabold text-xs uppercase border-r border-emerald-100/30">
+                              Nama Pasien
+                            </th>
+                            <th className="py-3 px-4 font-extrabold text-xs uppercase w-36 border-r border-emerald-100/30">
+                              No. RM
+                            </th>
+                            <th className="py-3 px-4 font-extrabold text-xs uppercase text-center w-36 border-r border-emerald-100/30">
+                              Asesmen Awal
+                            </th>
+                            <th className="py-3 px-4 font-extrabold text-xs uppercase text-center w-36 border-r border-emerald-100/30">
+                              Asesmen Ulang
+                            </th>
+                            <th className="py-3 px-4 font-extrabold text-xs uppercase text-center w-36 border-r border-emerald-100/30">
+                              Intervensi
+                            </th>
+                            <th className="py-3 px-4 font-extrabold text-xs uppercase w-16 text-center">
+                              Aksi
+                            </th>
                           </tr>
-                        ) : (
-                          jatuhGrid.map((row, idx) => (
-                            <tr key={row.id} className="border-b border-gray-50 hover:bg-emerald-50/10 transition-colors">
-                              <td className="py-3 px-4 text-center text-sm font-semibold text-gray-400 border-r border-emerald-50">{idx + 1}</td>
-                              <td className="py-3 px-4 border-r border-emerald-50">
-                                <input
-                                  type="date"
-                                  value={row.tanggal}
-                                  onChange={(e) => handleUpdateJatuh(row.id, "tanggal", e.target.value)}
-                                  className="w-full bg-transparent outline-none text-xs font-bold text-slate-800"
-                                />
-                              </td>
-                              <td className="py-3 px-4 border-r border-emerald-50">
-                                <input
-                                  type="text"
-                                  placeholder="Nama Lengkap Pasien"
-                                  value={row.nama_pasien}
-                                  onChange={(e) => handleUpdateJatuh(row.id, "nama_pasien", e.target.value)}
-                                  className="w-full bg-transparent outline-none text-xs font-bold text-slate-800"
-                                  required
-                                />
-                              </td>
-                              <td className="py-3 px-4 border-r border-emerald-50">
-                                <input
-                                  type="text"
-                                  placeholder="No. Rekam Medis"
-                                  value={row.no_rm}
-                                  onChange={(e) => handleUpdateJatuh(row.id, "no_rm", e.target.value)}
-                                  className="w-full bg-transparent outline-none text-xs font-bold text-slate-850"
-                                  required
-                                />
-                              </td>
-                              <td className="py-3 px-4 text-center border-r border-emerald-50">
-                                <input
-                                  type="checkbox"
-                                  checked={row.asesmen_awal}
-                                  onChange={(e) => handleUpdateJatuh(row.id, "asesmen_awal", e.target.checked)}
-                                  className="w-5 h-5 accent-emerald-600 cursor-pointer rounded border-gray-300"
-                                />
-                              </td>
-                              <td className="py-3 px-4 text-center border-r border-emerald-50">
-                                <input
-                                  type="checkbox"
-                                  checked={row.asesmen_ulang}
-                                  onChange={(e) => handleUpdateJatuh(row.id, "asesmen_ulang", e.target.checked)}
-                                  className="w-5 h-5 accent-emerald-600 cursor-pointer rounded border-gray-300"
-                                />
-                              </td>
-                              <td className="py-3 px-4 text-center border-r border-emerald-50">
-                                <input
-                                  type="checkbox"
-                                  checked={row.intervensi}
-                                  onChange={(e) => handleUpdateJatuh(row.id, "intervensi", e.target.checked)}
-                                  className="w-5 h-5 accent-emerald-600 cursor-pointer rounded border-gray-300"
-                                />
-                              </td>
-                              <td className="py-3 px-4 text-center">
-                                <button
-                                  type="button"
-                                  onClick={() => handleRemoveJatuhRow(row.id)}
-                                  className="text-red-500 hover:text-red-700 hover:bg-red-50 p-1.5 rounded-lg transition-colors"
-                                >
-                                  <Trash2 size={15} />
-                                </button>
+                        </thead>
+                        <tbody>
+                          {jatuhGrid.length === 0 ? (
+                            <tr>
+                              <td
+                                colSpan={7}
+                                className="py-12 text-center text-gray-400 text-xs italic font-semibold bg-[#fafdfc]"
+                              >
+                                Belum ada baris data audit. Silakan tambahkan
+                                pasien.
                               </td>
                             </tr>
-                          ))
-                        )}
-                      </tbody>
-                    </table>
+                          ) : (
+                            jatuhGrid.map((row, idx) => (
+                              <tr
+                                key={row.id}
+                                className="border-b border-gray-50 hover:bg-emerald-50/10 transition-colors"
+                              >
+                                <td className="py-3 px-4 text-center text-sm font-semibold text-gray-400 border-r border-emerald-50">
+                                  {idx + 1}
+                                </td>
+                                <td className="py-3 px-4 border-r border-emerald-50">
+                                  <input
+                                    type="text"
+                                    placeholder="Nama Lengkap Pasien"
+                                    value={row.nama_pasien}
+                                    onChange={(e) =>
+                                      handleUpdateJatuh(
+                                        row.id,
+                                        "nama_pasien",
+                                        e.target.value,
+                                      )
+                                    }
+                                    className="w-full bg-transparent outline-none text-xs font-bold text-slate-800"
+                                    required
+                                  />
+                                </td>
+                                <td className="py-3 px-4 border-r border-emerald-50">
+                                  <input
+                                    type="text"
+                                    placeholder="No. Rekam Medis"
+                                    value={row.no_rm}
+                                    onChange={(e) =>
+                                      handleUpdateJatuh(
+                                        row.id,
+                                        "no_rm",
+                                        e.target.value,
+                                      )
+                                    }
+                                    className="w-full bg-transparent outline-none text-xs font-bold text-slate-850"
+                                    required
+                                  />
+                                </td>
+                                <td className="py-3 px-4 text-center border-r border-emerald-50">
+                                  <select
+                                    value={
+                                      row.asesmen_awal === null
+                                        ? ""
+                                        : row.asesmen_awal
+                                          ? "1"
+                                          : "0"
+                                    }
+                                    onChange={(e) =>
+                                      handleUpdateJatuh(
+                                        row.id,
+                                        "asesmen_awal",
+                                        e.target.value === ""
+                                          ? null
+                                          : e.target.value === "1",
+                                      )
+                                    }
+                                    className={`w-full h-8 rounded-lg outline-none text-xs font-bold text-center appearance-none ${row.asesmen_awal === null ? "bg-slate-100 text-slate-500" : row.asesmen_awal ? "bg-emerald-100 text-emerald-700" : "bg-rose-100 text-rose-700"}`}
+                                  >
+                                    <option value="">-- Pilih --</option>
+                                    <option value="1">Ya</option>
+                                    <option value="0">Tidak</option>
+                                  </select>
+                                </td>
+                                <td className="py-3 px-4 text-center border-r border-emerald-50">
+                                  <select
+                                    value={
+                                      row.asesmen_ulang === null
+                                        ? ""
+                                        : row.asesmen_ulang
+                                          ? "1"
+                                          : "0"
+                                    }
+                                    onChange={(e) =>
+                                      handleUpdateJatuh(
+                                        row.id,
+                                        "asesmen_ulang",
+                                        e.target.value === ""
+                                          ? null
+                                          : e.target.value === "1",
+                                      )
+                                    }
+                                    className={`w-full h-8 rounded-lg outline-none text-xs font-bold text-center appearance-none ${row.asesmen_ulang === null ? "bg-slate-100 text-slate-500" : row.asesmen_ulang ? "bg-emerald-100 text-emerald-700" : "bg-rose-100 text-rose-700"}`}
+                                  >
+                                    <option value="">-- Pilih --</option>
+                                    <option value="1">Ya</option>
+                                    <option value="0">Tidak</option>
+                                  </select>
+                                </td>
+                                <td className="py-3 px-4 text-center border-r border-emerald-50">
+                                  <select
+                                    value={
+                                      row.intervensi === null
+                                        ? ""
+                                        : row.intervensi
+                                          ? "1"
+                                          : "0"
+                                    }
+                                    onChange={(e) =>
+                                      handleUpdateJatuh(
+                                        row.id,
+                                        "intervensi",
+                                        e.target.value === ""
+                                          ? null
+                                          : e.target.value === "1",
+                                      )
+                                    }
+                                    className={`w-full h-8 rounded-lg outline-none text-xs font-bold text-center appearance-none ${row.intervensi === null ? "bg-slate-100 text-slate-500" : row.intervensi ? "bg-emerald-100 text-emerald-700" : "bg-rose-100 text-rose-700"}`}
+                                  >
+                                    <option value="">-- Pilih --</option>
+                                    <option value="1">Ya</option>
+                                    <option value="0">Tidak</option>
+                                  </select>
+                                </td>
+                                <td className="py-3 px-4 text-center">
+                                  <button
+                                    type="button"
+                                    onClick={() => handleRemoveJatuhRow(row.id)}
+                                    className="text-red-500 hover:text-red-700 hover:bg-red-50 p-1.5 rounded-lg transition-colors"
+                                  >
+                                    <Trash2 size={15} />
+                                  </button>
+                                </td>
+                              </tr>
+                            ))
+                          )}
+                        </tbody>
+                      </table>
+                    </div>
                   </div>
                 </div>
               )}
 
-              {/* Advanced Custom Form: Kepatuhan Identifikasi Pasien (ID "3") */}
+              {/* Advanced Custom Form: Kepatuhan Identifikasi Pasien */}
               {isIdentifikasiPasien && (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-8 border-t border-emerald-100/10 pt-4">
-                  <div className="bg-[#fbFdfC] border border-emerald-50 rounded-3xl p-6 space-y-4">
-                    <span className="text-[10px] bg-emerald-100 text-emerald-800 px-3 py-1 rounded-md font-black">
-                      INPUT DATA CAPAIAN
-                    </span>
-
-                    <div className="space-y-4 pt-2">
-                      <div className="space-y-1.5">
-                        <label className="block text-xs font-extrabold text-slate-800">
-                          Jumlah Pasien Teridentifikasi Benar (Patuh)
-                        </label>
-                        <input
-                          type="number"
-                          placeholder="Masukkan jumlah patuh"
-                          onChange={(e) => setCustomNumerator(Number(e.target.value))}
-                          className="w-full px-4 py-3 bg-white border border-gray-200 focus:ring-2 focus:ring-emerald-500 outline-none rounded-xl text-sm font-bold text-slate-800"
-                          min="0"
-                          required
-                        />
-                      </div>
-
-                      <div className="space-y-1.5">
-                        <label className="block text-xs font-extrabold text-slate-800">
-                          Jumlah Peluang Observasi Identifikasi (Total)
-                        </label>
-                        <input
-                          type="number"
-                          placeholder="Masukkan total observasi"
-                          onChange={(e) => setCustomDenominator(Number(e.target.value))}
-                          className="w-full px-4 py-3 bg-white border border-gray-200 focus:ring-2 focus:ring-emerald-500 outline-none rounded-xl text-sm font-bold text-slate-800"
-                          min="1"
-                          required
-                        />
-                      </div>
-                    </div>
+                <div className="space-y-4 border-t border-emerald-100/10 pt-4 animate-in fade-in duration-300">
+                  <div>
+                    <h4 className="font-extrabold text-sm text-[#0c2415] uppercase tracking-wide">
+                      Form Observasi Kepatuhan Identifikasi Pasien
+                    </h4>
+                    <p className="text-xs text-slate-500 font-semibold mt-1">
+                      Pilih dan observasi minimal satu peluang tindakan.
+                      Kepatuhan dinilai berdasarkan kelengkapan identifikasi
+                      pasien.
+                    </p>
                   </div>
 
-                  <div className="bg-[#fbFdfC] border border-emerald-50 rounded-3xl p-6 space-y-4 flex flex-col justify-between">
-                    <div>
-                      <span className="text-[10px] bg-blue-100 text-blue-800 px-3 py-1 rounded-md font-black">
-                        BUKTI DOKUMENTASI
-                      </span>
-                      <p className="text-[11px] text-gray-400 mt-2 font-semibold">
-                        Guna mendukung orisinalitas audit, disarankan mengunggah lembar observasi yang sudah disetujui Kepala Ruangan.
+                  {identifikasiGrid.length === 0 ? (
+                    <div className="text-center py-8 bg-slate-50 border border-slate-200 rounded-2xl flex flex-col items-center justify-center">
+                      <p className="text-sm font-bold text-slate-400 mb-2">
+                        Belum ada data observasi
                       </p>
+                      <p className="text-xs text-slate-400 mb-4 px-4 font-medium max-w-sm">
+                        Klik tombol dibawah untuk menambahkan baris data
+                        observasi identifikasi pasien secara digital.
+                      </p>
+                      <button
+                        type="button"
+                        onClick={handleAddIdentifikasiRow}
+                        className="flex items-center gap-2 bg-[#059669] hover:bg-[#047857] text-white px-5 py-2.5 rounded-xl text-xs font-bold transition-all shadow-sm"
+                      >
+                        <Plus size={16} strokeWidth={3} />
+                        Mulai Observasi Baru
+                      </button>
                     </div>
+                  ) : (
+                    <div className="space-y-4">
+                      {identifikasiGrid.map((row, idx) => (
+                        <div
+                          key={row.id}
+                          className="bg-white border text-left border-gray-200 rounded-2xl shadow-sm p-4 sm:p-5 flex flex-col gap-4 group hover:border-[#10a37f] transition-all relative overflow-hidden"
+                        >
+                          <div className="absolute top-0 left-0 w-1 h-full bg-[#10a37f] opacity-0 group-hover:opacity-100 transition-opacity"></div>
 
-                    <div className="space-y-2">
-                      <label className="border-2 border-dashed border-gray-200 rounded-2xl p-6 hover:bg-slate-50 cursor-pointer flex flex-col items-center justify-center transition-all">
-                        <FileUp className="text-gray-400 mb-2" size={24} />
-                        <span className="text-xs font-bold text-slate-700">Pilih berkas audit</span>
-                        <span className="text-[10px] text-gray-400 mt-0.5">JPG, PNG atau PDF maks 2MB</span>
-                        <input type="file" onChange={handleFileUploadMock} className="hidden" accept=".jpg,.png,.pdf" />
-                      </label>
-                      {uploadedProofName && (
-                        <p className="text-xs font-black text-emerald-600 flex items-center gap-1 bg-emerald-50 px-2 py-1 rounded-lg">
-                          📎 {uploadedProofName}
-                        </p>
-                      )}
+                          {/* Row Header & Delete */}
+                          <div className="flex justify-between items-center border-b border-slate-100 pb-3">
+                            <h5 className="text-[11px] font-black tracking-widest text-[#10a37f] uppercase bg-emerald-50 px-3 py-1 rounded-full">
+                              Observasi #{idx + 1}
+                            </h5>
+                            <div className="flex items-center gap-2">
+                              {row.patuh === true && (
+                                <span className="text-[10px] bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-md font-bold">
+                                  ✓ PATUH
+                                </span>
+                              )}
+                              {row.patuh === false && (
+                                <span className="text-[10px] bg-red-100 text-red-800 px-2 py-0.5 rounded-md font-bold">
+                                  ✗ TIDAK PATUH
+                                </span>
+                              )}
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  handleRemoveIdentifikasiRow(row.id)
+                                }
+                                className="text-rose-400 hover:text-rose-600 hover:bg-rose-50 p-1.5 rounded-lg transition-colors ml-2"
+                                title="Hapus Observasi"
+                              >
+                                <Trash2 size={16} />
+                              </button>
+                            </div>
+                          </div>
+
+                          {/* Top: Observasi Details */}
+                          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                            <div className="space-y-1">
+                              <label className="text-[10px] font-extrabold text-slate-500 uppercase">
+                                Tgl Observasi
+                              </label>
+                              <input
+                                type="date"
+                                value={row.tanggal_observasi}
+                                onChange={(e) =>
+                                  handleUpdateIdentifikasi(
+                                    row.id,
+                                    "tanggal_observasi",
+                                    e.target.value,
+                                  )
+                                }
+                                className="w-full text-xs font-bold border border-slate-200 px-3 py-2 rounded-xl outline-none focus:border-emerald-500 bg-slate-50/50"
+                              />
+                            </div>
+                            <div className="space-y-1">
+                              <label className="text-[10px] font-extrabold text-slate-500 uppercase">
+                                Jam
+                              </label>
+                              <input
+                                type="time"
+                                value={row.jam_observasi}
+                                onChange={(e) =>
+                                  handleUpdateIdentifikasi(
+                                    row.id,
+                                    "jam_observasi",
+                                    e.target.value,
+                                  )
+                                }
+                                className="w-full text-xs font-bold border border-slate-200 px-3 py-2 rounded-xl outline-none focus:border-emerald-500 bg-slate-50/50"
+                              />
+                            </div>
+                            <div className="space-y-1 md:col-span-2">
+                              <label className="text-[10px] font-extrabold text-slate-500 uppercase">
+                                Nama Observer
+                              </label>
+                              <input
+                                type="text"
+                                value={row.nama_observer}
+                                onChange={(e) =>
+                                  handleUpdateIdentifikasi(
+                                    row.id,
+                                    "nama_observer",
+                                    e.target.value,
+                                  )
+                                }
+                                className="w-full text-xs font-bold border border-slate-200 px-3 py-2 rounded-xl outline-none focus:border-emerald-500 bg-slate-50/50"
+                                placeholder="Observer..."
+                              />
+                            </div>
+                          </div>
+
+                          {/* Info Pasien */}
+                          <div className="bg-slate-50 rounded-xl p-3 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 border border-slate-100">
+                            <div>
+                              <label className="text-[9px] font-extrabold text-slate-400 uppercase">
+                                Nama Pasien
+                              </label>
+                              <input
+                                type="text"
+                                value={row.nama_pasien}
+                                onChange={(e) =>
+                                  handleUpdateIdentifikasi(
+                                    row.id,
+                                    "nama_pasien",
+                                    e.target.value,
+                                  )
+                                }
+                                className="w-full text-xs font-bold border-b border-slate-200 px-1 py-1 outline-none focus:border-emerald-500 bg-transparent"
+                                placeholder="Nama Pasien"
+                              />
+                            </div>
+                            <div>
+                              <label className="text-[9px] font-extrabold text-slate-400 uppercase">
+                                No RM
+                              </label>
+                              <input
+                                type="text"
+                                value={row.no_rm}
+                                onChange={(e) =>
+                                  handleUpdateIdentifikasi(
+                                    row.id,
+                                    "no_rm",
+                                    e.target.value,
+                                  )
+                                }
+                                className="w-full text-xs font-bold border-b border-slate-200 px-1 py-1 outline-none focus:border-emerald-500 bg-transparent"
+                                placeholder="00-00-00"
+                              />
+                            </div>
+                            <div>
+                              <label className="text-[9px] font-extrabold text-slate-400 uppercase">
+                                Tanggal Lahir
+                              </label>
+                              <input
+                                type="date"
+                                value={row.tanggal_lahir}
+                                onChange={(e) =>
+                                  handleUpdateIdentifikasi(
+                                    row.id,
+                                    "tanggal_lahir",
+                                    e.target.value,
+                                  )
+                                }
+                                className="w-full text-xs font-bold border-b border-slate-200 px-1 py-1 outline-none focus:border-emerald-500 bg-transparent"
+                              />
+                            </div>
+                            <div>
+                              <label className="text-[9px] font-extrabold text-slate-400 uppercase">
+                                Jenis Kelamin
+                              </label>
+                              <select
+                                value={row.jenis_kelamin}
+                                onChange={(e) =>
+                                  handleUpdateIdentifikasi(
+                                    row.id,
+                                    "jenis_kelamin",
+                                    e.target.value,
+                                  )
+                                }
+                                className="w-full text-xs font-bold border-b border-slate-200 px-1 py-1 outline-none focus:border-emerald-500 bg-transparent appearance-none"
+                              >
+                                <option value="">- Pilih JK -</option>
+                                <option value="Laki-Laki">Laki-Laki</option>
+                                <option value="Perempuan">Perempuan</option>
+                              </select>
+                            </div>
+                          </div>
+
+                          {/* Data Observasi Utama */}
+                          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pt-2">
+                            <div className="space-y-3">
+                              <div className="space-y-1">
+                                <label className="text-[10px] font-extrabold text-[#059669] uppercase">
+                                  Momen Identifikasi
+                                </label>
+                                <select
+                                  value={row.moment}
+                                  onChange={(e) =>
+                                    handleUpdateIdentifikasi(
+                                      row.id,
+                                      "moment",
+                                      e.target.value,
+                                    )
+                                  }
+                                  className="w-full text-xs font-bold border border-emerald-100 px-3 py-2 rounded-lg outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500"
+                                >
+                                  <option value="">-- Pilih Momen --</option>
+                                  <option value="Sebelum pemasangan gelang identitas pasien">
+                                    Sebelum pemasangan gelang identitas pasien
+                                  </option>
+                                  <option value="Sebelum pemberian obat">
+                                    Sebelum pemberian obat
+                                  </option>
+                                  <option value="Sebelum pemberian darah / produk darah">
+                                    Sebelum pemberian darah / produk darah
+                                  </option>
+                                  <option value="Sebelum tindakan">
+                                    Sebelum tindakan
+                                  </option>
+                                  <option value="Sebelum pemberian cairan intravena">
+                                    Sebelum pemberian cairan intravena
+                                  </option>
+                                  <option value="Sebelum pengambilan darah / spesimen">
+                                    Sebelum pengambilan darah / spesimen
+                                  </option>
+                                  <option value="Sebelum pemberian diet">
+                                    Sebelum pemberian diet
+                                  </option>
+                                  <option value="Sebelum prosedur diagnostik dan terapi">
+                                    Sebelum prosedur diagnostik dan terapi
+                                  </option>
+                                  <option value="Sebelum pemeriksaan pasien">
+                                    Sebelum pemeriksaan pasien
+                                  </option>
+                                </select>
+                              </div>
+                              <div className="space-y-1">
+                                <label className="text-[10px] font-extrabold text-[#059669] uppercase">
+                                  Petugas yang Terlibat
+                                </label>
+                                <select
+                                  value={row.petugas}
+                                  onChange={(e) =>
+                                    handleUpdateIdentifikasi(
+                                      row.id,
+                                      "petugas",
+                                      e.target.value,
+                                    )
+                                  }
+                                  className="w-full text-xs font-bold border border-emerald-100 px-3 py-2 rounded-lg outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500"
+                                >
+                                  <option value="">-- Pilih Petugas --</option>
+                                  <option value="Dokter">Dokter</option>
+                                  <option value="Perawat">Perawat</option>
+                                  <option value="Bidan">Bidan</option>
+                                  <option value="Apoteker">Apoteker</option>
+                                  <option value="Analis Laboratorium">
+                                    Analis Laboratorium
+                                  </option>
+                                  <option value="Petugas Radiologi">
+                                    Petugas Radiologi
+                                  </option>
+                                  <option value="Ahli Gizi">Ahli Gizi</option>
+                                  <option value="Petugas Pendaftaran">
+                                    Petugas Pendaftaran
+                                  </option>
+                                  <option value="Petugas Lainnya">
+                                    Petugas Lainnya
+                                  </option>
+                                </select>
+                              </div>
+                              <div className="space-y-1">
+                                <label className="text-[10px] font-extrabold text-[#059669] uppercase">
+                                  Lokasi Observasi
+                                </label>
+                                <select
+                                  value={row.lokasi}
+                                  onChange={(e) =>
+                                    handleUpdateIdentifikasi(
+                                      row.id,
+                                      "lokasi",
+                                      e.target.value,
+                                    )
+                                  }
+                                  className="w-full text-xs font-bold border border-emerald-100 px-3 py-2 rounded-lg outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500"
+                                >
+                                  <option value="">-- Lokasi --</option>
+                                  <option value="Ranap Aisyah">
+                                    Ranap Aisyah
+                                  </option>
+                                  <option value="Ranap Khadijah">
+                                    Ranap Khadijah
+                                  </option>
+                                  <option value="Ranap Usman">
+                                    Ranap Usman
+                                  </option>
+                                  <option value="Ranap Fatimah">
+                                    Ranap Fatimah
+                                  </option>
+                                  <option value="IGD">IGD</option>
+                                  <option value="IBS">IBS</option>
+                                  <option value="ICU">ICU</option>
+                                </select>
+                              </div>
+                            </div>
+
+                            {/* Pertanyaan What */}
+                            <div className="border border-slate-100 rounded-xl p-4 bg-white/50">
+                              <label className="block text-[11px] font-black text-slate-700 uppercase mb-3 pb-2 border-b border-slate-100">
+                                Apa yang ditanyakan?
+                              </label>
+                              <div className="space-y-4">
+                                <div className="flex justify-between items-center">
+                                  <span className="text-xs font-bold text-slate-600">
+                                    Nama Lengkap
+                                  </span>
+                                  <div className="flex gap-2">
+                                    <button
+                                      type="button"
+                                      onClick={() =>
+                                        handleUpdateIdentifikasi(
+                                          row.id,
+                                          "tanya_nama",
+                                          true,
+                                        )
+                                      }
+                                      className={`px-3 py-1.5 rounded-md text-[10px] font-bold border transition-colors ${row.tanya_nama === true ? "bg-emerald-500 text-white border-emerald-500" : "bg-white text-slate-500 border-slate-200 hover:bg-slate-50"}`}
+                                    >
+                                      Ya
+                                    </button>
+                                    <button
+                                      type="button"
+                                      onClick={() =>
+                                        handleUpdateIdentifikasi(
+                                          row.id,
+                                          "tanya_nama",
+                                          false,
+                                        )
+                                      }
+                                      className={`px-3 py-1.5 rounded-md text-[10px] font-bold border transition-colors ${row.tanya_nama === false ? "bg-rose-500 text-white border-rose-500" : "bg-white text-slate-500 border-slate-200 hover:bg-slate-50"}`}
+                                    >
+                                      Tidak
+                                    </button>
+                                  </div>
+                                </div>
+                                <div className="flex justify-between items-center">
+                                  <span className="text-xs font-bold text-slate-600">
+                                    Tanggal Lahir
+                                  </span>
+                                  <div className="flex gap-2">
+                                    <button
+                                      type="button"
+                                      onClick={() =>
+                                        handleUpdateIdentifikasi(
+                                          row.id,
+                                          "tanya_tgllahir",
+                                          true,
+                                        )
+                                      }
+                                      className={`px-3 py-1.5 rounded-md text-[10px] font-bold border transition-colors ${row.tanya_tgllahir === true ? "bg-emerald-500 text-white border-emerald-500" : "bg-white text-slate-500 border-slate-200 hover:bg-slate-50"}`}
+                                    >
+                                      Ya
+                                    </button>
+                                    <button
+                                      type="button"
+                                      onClick={() =>
+                                        handleUpdateIdentifikasi(
+                                          row.id,
+                                          "tanya_tgllahir",
+                                          false,
+                                        )
+                                      }
+                                      className={`px-3 py-1.5 rounded-md text-[10px] font-bold border transition-colors ${row.tanya_tgllahir === false ? "bg-rose-500 text-white border-rose-500" : "bg-white text-slate-500 border-slate-200 hover:bg-slate-50"}`}
+                                    >
+                                      Tidak
+                                    </button>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+
+                            {/* Pertanyaan How */}
+                            <div className="border border-slate-100 rounded-xl p-4 bg-white/50">
+                              <label className="block text-[11px] font-black text-slate-700 uppercase mb-3 pb-2 border-b border-slate-100">
+                                Bagaimana menanyakan?
+                              </label>
+                              <div className="space-y-4">
+                                <div className="flex justify-between items-center">
+                                  <span className="text-xs font-bold text-slate-600">
+                                    Verbal
+                                  </span>
+                                  <div className="flex gap-2">
+                                    <button
+                                      type="button"
+                                      onClick={() =>
+                                        handleUpdateIdentifikasi(
+                                          row.id,
+                                          "cara_verbal",
+                                          true,
+                                        )
+                                      }
+                                      className={`px-3 py-1.5 rounded-md text-[10px] font-bold border transition-colors ${row.cara_verbal === true ? "bg-emerald-500 text-white border-emerald-500" : "bg-white text-slate-500 border-slate-200 hover:bg-slate-50"}`}
+                                    >
+                                      Ya
+                                    </button>
+                                    <button
+                                      type="button"
+                                      onClick={() =>
+                                        handleUpdateIdentifikasi(
+                                          row.id,
+                                          "cara_verbal",
+                                          false,
+                                        )
+                                      }
+                                      className={`px-3 py-1.5 rounded-md text-[10px] font-bold border transition-colors ${row.cara_verbal === false ? "bg-rose-500 text-white border-rose-500" : "bg-white text-slate-500 border-slate-200 hover:bg-slate-50"}`}
+                                    >
+                                      Tidak
+                                    </button>
+                                  </div>
+                                </div>
+                                <div className="flex justify-between items-center">
+                                  <span className="text-xs font-bold text-slate-600">
+                                    Visual (Melihat Gelang)
+                                  </span>
+                                  <div className="flex gap-2">
+                                    <button
+                                      type="button"
+                                      onClick={() =>
+                                        handleUpdateIdentifikasi(
+                                          row.id,
+                                          "cara_visual",
+                                          true,
+                                        )
+                                      }
+                                      className={`px-3 py-1.5 rounded-md text-[10px] font-bold border transition-colors ${row.cara_visual === true ? "bg-emerald-500 text-white border-emerald-500" : "bg-white text-slate-500 border-slate-200 hover:bg-slate-50"}`}
+                                    >
+                                      Ya
+                                    </button>
+                                    <button
+                                      type="button"
+                                      onClick={() =>
+                                        handleUpdateIdentifikasi(
+                                          row.id,
+                                          "cara_visual",
+                                          false,
+                                        )
+                                      }
+                                      className={`px-3 py-1.5 rounded-md text-[10px] font-bold border transition-colors ${row.cara_visual === false ? "bg-rose-500 text-white border-rose-500" : "bg-white text-slate-500 border-slate-200 hover:bg-slate-50"}`}
+                                    >
+                                      Tidak
+                                    </button>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+
+                      <div className="flex items-center gap-4 pt-2">
+                        <button
+                          type="button"
+                          onClick={handleAddIdentifikasiRow}
+                          className="flex items-center gap-2 bg-white hover:bg-slate-50 border border-slate-200 text-[#059669] px-4 py-2 text-xs font-bold rounded-xl transition-all shadow-sm"
+                        >
+                          <Plus size={16} strokeWidth={3} />
+                          Tambah Baris Observasi
+                        </button>
+                      </div>
+
+                      {identifikasiGrid.length > 0 &&
+                        (() => {
+                          const num = identifikasiGrid.filter(
+                            (d) => d.patuh,
+                          ).length;
+                          const den = identifikasiGrid.length;
+                          const pct =
+                            den > 0 ? ((num / den) * 100).toFixed(2) : "0.00";
+                          const target = 100;
+                          const isMet = parseFloat(pct) >= target;
+                          const tglLahirIssue = identifikasiGrid.filter(
+                            (d) => d.tanya_tgllahir === false,
+                          ).length;
+
+                          return (
+                            <div className="mt-8 space-y-6">
+                              {/* Hasil Perhitungan */}
+                              <div className="bg-emerald-50/50 border border-emerald-100 rounded-3xl p-6">
+                                <h4 className="font-extrabold text-xs text-emerald-800 uppercase tracking-widest mb-4">
+                                  Hasil Perhitungan
+                                </h4>
+                                <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+                                  <div className="bg-white border border-emerald-100 rounded-2xl p-4 flex flex-col justify-center items-center">
+                                    <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">
+                                      Numerator
+                                    </span>
+                                    <span className="text-2xl font-black text-emerald-600">
+                                      {num}
+                                    </span>
+                                  </div>
+                                  <div className="bg-white border border-emerald-100 rounded-2xl p-4 flex flex-col justify-center items-center">
+                                    <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">
+                                      Denominator
+                                    </span>
+                                    <span className="text-2xl font-black text-emerald-600">
+                                      {den}
+                                    </span>
+                                  </div>
+                                  <div className="bg-white border border-emerald-100 rounded-2xl p-4 flex flex-col justify-center items-center">
+                                    <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">
+                                      Persentase
+                                    </span>
+                                    <span className="text-2xl font-black text-emerald-600">
+                                      {pct}%
+                                    </span>
+                                  </div>
+                                  <div className="bg-white border border-emerald-100 rounded-2xl p-4 flex flex-col justify-center items-center">
+                                    <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">
+                                      Target
+                                    </span>
+                                    <span className="text-2xl font-black text-emerald-600">
+                                      100%
+                                    </span>
+                                  </div>
+                                  <div className="bg-white border border-emerald-100 rounded-2xl p-4 flex flex-col justify-center items-center">
+                                    <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">
+                                      Status
+                                    </span>
+                                    {isMet ? (
+                                      <span className="text-sm font-black text-emerald-600 bg-emerald-100 px-3 py-1 rounded-lg mt-1">
+                                        MENCAPAI
+                                      </span>
+                                    ) : (
+                                      <span className="text-sm font-black text-rose-600 bg-rose-100 px-3 py-1 rounded-lg mt-1">
+                                        BELUM
+                                      </span>
+                                    )}
+                                  </div>
+                                </div>
+                              </div>
+
+                              {/* Analisis & Rekomendasi */}
+                              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div className="bg-white border border-slate-200 rounded-3xl p-6 shadow-sm">
+                                  <h4 className="font-extrabold text-sm text-slate-800 mb-3 flex items-center gap-2">
+                                    <Sparkles
+                                      size={18}
+                                      className="text-amber-500"
+                                    />{" "}
+                                    Analisis Capaian AI
+                                  </h4>
+                                  <p className="text-xs text-slate-600 leading-relaxed font-medium">
+                                    Berdasarkan hasil observasi, terdapat{" "}
+                                    <strong>{den}</strong> observasi
+                                    identifikasi pasien. Sebanyak{" "}
+                                    <strong>{num}</strong> observasi dilakukan
+                                    sesuai standar dan{" "}
+                                    <strong>{den - num}</strong> observasi belum
+                                    sesuai standar. Persentase kepatuhan sebesar{" "}
+                                    <strong>{pct}%</strong> sehingga{" "}
+                                    {isMet
+                                      ? "telah mencapai"
+                                      : "belum mencapai"}{" "}
+                                    target indikator 100%.
+                                    {tglLahirIssue > 0 &&
+                                      ` Ketidaksesuaian banyak ditemukan pada proses verifikasi tanggal lahir pasien.`}
+                                  </p>
+                                </div>
+                                <div className="bg-white border border-slate-200 rounded-3xl p-6 shadow-sm">
+                                  <h4 className="font-extrabold text-sm text-slate-800 mb-3 flex items-center gap-2">
+                                    <Target
+                                      size={18}
+                                      className="text-emerald-500"
+                                    />{" "}
+                                    Rekomendasi Otomatis
+                                  </h4>
+                                  <ul className="text-xs text-slate-600 leading-relaxed font-medium space-y-2">
+                                    <li className="flex gap-2 items-start">
+                                      <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 mt-1.5 shrink-0"></div>{" "}
+                                      <span className="flex-1">
+                                        Meningkatkan kepatuhan petugas dalam
+                                        melakukan verifikasi dua identitas
+                                        pasien.
+                                      </span>
+                                    </li>
+                                    <li className="flex gap-2 items-start">
+                                      <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 mt-1.5 shrink-0"></div>{" "}
+                                      <span className="flex-1">
+                                        Melakukan refresh training identifikasi
+                                        pasien.
+                                      </span>
+                                    </li>
+                                    <li className="flex gap-2 items-start">
+                                      <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 mt-1.5 shrink-0"></div>{" "}
+                                      <span className="flex-1">
+                                        Melakukan supervisi berkala oleh kepala
+                                        unit.
+                                      </span>
+                                    </li>
+                                    <li className="flex gap-2 items-start">
+                                      <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 mt-1.5 shrink-0"></div>{" "}
+                                      <span className="flex-1">
+                                        Melakukan audit observasi identifikasi
+                                        pasien setiap bulan.
+                                      </span>
+                                    </li>
+                                  </ul>
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        })()}
                     </div>
-                  </div>
+                  )}
                 </div>
               )}
 
@@ -1220,7 +2209,9 @@ export default function InputData() {
                         TABEL PENGUMPULAN DATA - WAKTU TUNGGU RAWAT JALAN
                       </h4>
                       <p className="text-xs text-slate-500 font-semibold mt-1">
-                        Catat data waktu pelayanan pasien untuk kalkulasi indikator secara otomatis. Waktu tunggu terhitung standar jika selisih ≤ 60 Menit.
+                        Catat data waktu pelayanan pasien untuk kalkulasi
+                        indikator secara otomatis. Waktu tunggu terhitung
+                        standar jika selisih ≤ 60 Menit.
                       </p>
                     </div>
                   </div>
@@ -1229,37 +2220,74 @@ export default function InputData() {
                     <table className="w-full text-left text-xs border-collapse min-w-[750px]">
                       <thead className="bg-[#059669] text-white select-none">
                         <tr>
-                          <th className="px-4 py-3 font-bold uppercase tracking-wider text-center w-12 rounded-tl-xl">No</th>
-                          <th className="px-4 py-3 font-bold uppercase tracking-wider w-40">Tanggal</th>
-                          <th className="px-4 py-3 font-bold uppercase tracking-wider w-64">Nama Pasien</th>
-                          <th className="px-4 py-3 font-bold uppercase tracking-wider w-36">No. RM</th>
-                          <th className="px-4 py-3 font-bold uppercase tracking-wider text-center w-36">Jam Datang</th>
-                          <th className="px-4 py-3 font-bold uppercase tracking-wider text-center w-36">Jam Pemeriksaan<br />Dokter</th>
-                          <th className="px-4 py-3 font-bold uppercase tracking-wider text-center w-40">Selisih Waktu</th>
-                          <th className="px-4 py-3 font-bold uppercase tracking-wider text-center w-16 rounded-tr-xl">Aksi</th>
+                          <th className="px-4 py-3 font-bold uppercase tracking-wider text-center w-12 rounded-tl-xl">
+                            No
+                          </th>
+                          <th className="px-4 py-3 font-bold uppercase tracking-wider w-40">
+                            Tanggal
+                          </th>
+                          <th className="px-4 py-3 font-bold uppercase tracking-wider w-64">
+                            Nama Pasien
+                          </th>
+                          <th className="px-4 py-3 font-bold uppercase tracking-wider w-36">
+                            No. RM
+                          </th>
+                          <th className="px-4 py-3 font-bold uppercase tracking-wider text-center w-36">
+                            Jam Datang
+                          </th>
+                          <th className="px-4 py-3 font-bold uppercase tracking-wider text-center w-36">
+                            Jam Pemeriksaan
+                            <br />
+                            Dokter
+                          </th>
+                          <th className="px-4 py-3 font-bold uppercase tracking-wider text-center w-40">
+                            Selisih Waktu
+                          </th>
+                          <th className="px-4 py-3 font-bold uppercase tracking-wider text-center w-16 rounded-tr-xl">
+                            Aksi
+                          </th>
                         </tr>
                       </thead>
                       <tbody>
                         {waktuTungguGrid.length === 0 ? (
                           <tr>
-                            <td colSpan={8} className="text-center py-10 font-bold text-gray-500 bg-slate-50/50">
-                              Belum ada data pasien diinput. Klik tombol &quot;Tambah Pasien&quot; di bawah judul tabel untuk memulai.
+                            <td
+                              colSpan={8}
+                              className="text-center py-10 font-bold text-gray-500 bg-slate-50/50"
+                            >
+                              Belum ada data pasien diinput. Klik tombol
+                              &quot;Tambah Pasien&quot; di bawah judul tabel
+                              untuk memulai.
                             </td>
                           </tr>
                         ) : (
                           waktuTungguGrid.map((row, idx) => {
                             const hours = Math.floor(row.selisih_menit / 60);
                             const minutes = row.selisih_menit % 60;
-                            const isStandar = row.selisih_menit <= 60 && row.jam_datang !== "" && row.jam_dilayani !== "";
+                            const isStandar =
+                              row.selisih_menit <= 60 &&
+                              row.jam_datang !== "" &&
+                              row.jam_dilayani !== "";
 
                             return (
-                              <tr key={row.id} className={`border-b border-gray-50 transition-colors ${idx % 2 === 0 ? "bg-white" : "bg-[#F9FAFB]"} hover:bg-emerald-50/20`}>
-                                <td className="py-3 px-4 text-center text-sm font-semibold text-gray-800 border-r border-gray-100">{idx + 1}</td>
+                              <tr
+                                key={row.id}
+                                className={`border-b border-gray-50 transition-colors ${idx % 2 === 0 ? "bg-white" : "bg-[#F9FAFB]"} hover:bg-emerald-50/20`}
+                              >
+                                <td className="py-3 px-4 text-center text-sm font-semibold text-gray-800 border-r border-gray-100">
+                                  {idx + 1}
+                                </td>
                                 <td className="py-3 px-4 border-r border-gray-100">
                                   <input
                                     type="date"
                                     value={row.tanggal}
-                                    onChange={(e) => handleUpdateWaktuTunggu(row.id, "tanggal", e.target.value)}
+                                    onChange={(e) =>
+                                      handleUpdateWaktuTunggu(
+                                        row.id,
+                                        "tanggal",
+                                        e.target.value,
+                                      )
+                                    }
                                     className="w-full bg-transparent outline-none text-xs font-bold text-[#374151]"
                                     required
                                   />
@@ -1269,7 +2297,13 @@ export default function InputData() {
                                     type="text"
                                     placeholder="Masukkan nama pasien"
                                     value={row.nama_pasien}
-                                    onChange={(e) => handleUpdateWaktuTunggu(row.id, "nama_pasien", e.target.value)}
+                                    onChange={(e) =>
+                                      handleUpdateWaktuTunggu(
+                                        row.id,
+                                        "nama_pasien",
+                                        e.target.value,
+                                      )
+                                    }
                                     className="w-full bg-transparent outline-none text-xs font-bold text-[#374151]"
                                     required
                                   />
@@ -1280,8 +2314,15 @@ export default function InputData() {
                                     placeholder="No RM"
                                     value={row.no_rm}
                                     onChange={(e) => {
-                                      const val = e.target.value.replace(/[^0-9]/g, "");
-                                      handleUpdateWaktuTunggu(row.id, "no_rm", val);
+                                      const val = e.target.value.replace(
+                                        /[^0-9]/g,
+                                        "",
+                                      );
+                                      handleUpdateWaktuTunggu(
+                                        row.id,
+                                        "no_rm",
+                                        val,
+                                      );
                                     }}
                                     className="w-full bg-transparent outline-none text-xs font-bold text-[#374151]"
                                     required
@@ -1291,7 +2332,13 @@ export default function InputData() {
                                   <input
                                     type="time"
                                     value={row.jam_datang}
-                                    onChange={(e) => handleUpdateWaktuTunggu(row.id, "jam_datang", e.target.value)}
+                                    onChange={(e) =>
+                                      handleUpdateWaktuTunggu(
+                                        row.id,
+                                        "jam_datang",
+                                        e.target.value,
+                                      )
+                                    }
                                     className="w-full bg-transparent outline-none text-xs font-bold text-[#374151] text-center"
                                     required
                                   />
@@ -1300,24 +2347,37 @@ export default function InputData() {
                                   <input
                                     type="time"
                                     value={row.jam_dilayani}
-                                    onChange={(e) => handleUpdateWaktuTunggu(row.id, "jam_dilayani", e.target.value)}
+                                    onChange={(e) =>
+                                      handleUpdateWaktuTunggu(
+                                        row.id,
+                                        "jam_dilayani",
+                                        e.target.value,
+                                      )
+                                    }
                                     className="w-full bg-transparent outline-none text-xs font-bold text-[#374151] text-center"
                                     required
                                   />
                                 </td>
                                 <td className="py-3 px-4 text-center border-r border-gray-100 font-bold">
-                                  {(row.jam_datang && row.jam_dilayani) ? (
-                                     <span className={`${isStandar ? 'text-[#059669]' : 'text-red-600'} text-[11px]`}>
-                                        {hours > 0 ? `${hours} Jam ` : ""}{minutes} Menit
-                                     </span>
+                                  {row.jam_datang && row.jam_dilayani ? (
+                                    <span
+                                      className={`${isStandar ? "text-[#059669]" : "text-red-600"} text-[11px]`}
+                                    >
+                                      {hours > 0 ? `${hours} Jam ` : ""}
+                                      {minutes} Menit
+                                    </span>
                                   ) : (
-                                     <span className="text-gray-400 font-normal">-</span>
+                                    <span className="text-gray-400 font-normal">
+                                      -
+                                    </span>
                                   )}
                                 </td>
                                 <td className="py-3 px-4 text-center">
                                   <button
                                     type="button"
-                                    onClick={() => handleRemoveWaktuTungguRow(row.id)}
+                                    onClick={() =>
+                                      handleRemoveWaktuTungguRow(row.id)
+                                    }
                                     className="text-gray-400 hover:text-red-600 hover:bg-red-50 p-1.5 rounded-lg transition-colors inline-block"
                                     title="Hapus Baris"
                                   >
@@ -1346,57 +2406,74 @@ export default function InputData() {
               )}
 
               {/* C. Fallback Fields For Dynamic Standard Indicators */}
-              {!isVisiteDokter && !isRisikoJatuh && !isIdentifikasiPasien && !isWaktuTunggu && (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-8 border-t border-emerald-100/10 pt-4">
-                  <div className="bg-[#fbFdfC] border border-emerald-50 rounded-3xl p-6 md:p-8 flex flex-col justify-between hover:shadow-xs hover:border-emerald-100 transition-all duration-300">
-                    <div>
-                      <div className="flex items-center gap-2.5 mb-4">
-                        <Activity size={20} className="text-emerald-600" strokeWidth={2.5} />
-                        <h4 className="font-extrabold text-[11px] tracking-widest text-[#0c2415] uppercase">
-                          NUMERATOR
-                        </h4>
+              {!isVisiteDokter &&
+                !isRisikoJatuh &&
+                !isIdentifikasiPasien &&
+                !isWaktuTunggu && (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-8 border-t border-emerald-100/10 pt-4">
+                    <div className="bg-[#fbFdfC] border border-emerald-50 rounded-3xl p-6 md:p-8 flex flex-col justify-between hover:shadow-xs hover:border-emerald-100 transition-all duration-300">
+                      <div>
+                        <div className="flex items-center gap-2.5 mb-4">
+                          <Activity
+                            size={20}
+                            className="text-emerald-600"
+                            strokeWidth={2.5}
+                          />
+                          <h4 className="font-extrabold text-[11px] tracking-widest text-[#0c2415] uppercase">
+                            NUMERATOR
+                          </h4>
+                        </div>
+                        <p className="text-xs text-slate-500 leading-relaxed font-semibold">
+                          {selectedIndikatorProfile.numerator ||
+                            "Isi nilai pembilang indikator."}
+                        </p>
                       </div>
-                      <p className="text-xs text-slate-500 leading-relaxed font-semibold">
-                        {selectedIndikatorProfile.numerator || "Isi nilai pembilang indikator."}
-                      </p>
+                      <div className="mt-6">
+                        <input
+                          type="number"
+                          placeholder="Nilai Pembilang (Numerator)"
+                          {...register("numerator_val", {
+                            valueAsNumber: true,
+                          })}
+                          className="w-full px-5 py-3.5 bg-white rounded-xl border border-gray-200 focus:ring-2 focus:ring-emerald-500 outline-none text-slate-800 font-extrabold text-base"
+                          min="0"
+                          required
+                        />
+                      </div>
                     </div>
-                    <div className="mt-6">
-                      <input
-                        type="number"
-                        placeholder="Nilai Pembilang (Numerator)"
-                        {...register("numerator_val", { valueAsNumber: true })}
-                        className="w-full px-5 py-3.5 bg-white rounded-xl border border-gray-200 focus:ring-2 focus:ring-emerald-500 outline-none text-slate-800 font-extrabold text-base"
-                        min="0"
-                        required
-                      />
-                    </div>
-                  </div>
 
-                  <div className="bg-[#fbFdfC] border border-emerald-50 rounded-3xl p-6 md:p-8 flex flex-col justify-between hover:shadow-xs hover:border-emerald-100 transition-all duration-300">
-                    <div>
-                      <div className="flex items-center gap-2.5 mb-4">
-                        <Layers size={20} className="text-emerald-700" strokeWidth={2.5} />
-                        <h4 className="font-extrabold text-[11px] tracking-widest text-[#0c2415] uppercase">
-                          DENOMINATOR
-                        </h4>
+                    <div className="bg-[#fbFdfC] border border-emerald-50 rounded-3xl p-6 md:p-8 flex flex-col justify-between hover:shadow-xs hover:border-emerald-100 transition-all duration-300">
+                      <div>
+                        <div className="flex items-center gap-2.5 mb-4">
+                          <Layers
+                            size={20}
+                            className="text-emerald-700"
+                            strokeWidth={2.5}
+                          />
+                          <h4 className="font-extrabold text-[11px] tracking-widest text-[#0c2415] uppercase">
+                            DENOMINATOR
+                          </h4>
+                        </div>
+                        <p className="text-xs text-slate-500 leading-relaxed font-semibold">
+                          {selectedIndikatorProfile.denominator ||
+                            "Isi nilai penyebut indikator."}
+                        </p>
                       </div>
-                      <p className="text-xs text-slate-500 leading-relaxed font-semibold">
-                        {selectedIndikatorProfile.denominator || "Isi nilai penyebut indikator."}
-                      </p>
-                    </div>
-                    <div className="mt-6">
-                      <input
-                        type="number"
-                        placeholder="Nilai Penyebut (Denominator)"
-                        {...register("denominator_val", { valueAsNumber: true })}
-                        className="w-full px-5 py-3.5 bg-white rounded-xl border border-gray-200 focus:ring-2 focus:ring-emerald-500 outline-none text-slate-800 font-extrabold text-base"
-                        min="1"
-                        required
-                      />
+                      <div className="mt-6">
+                        <input
+                          type="number"
+                          placeholder="Nilai Penyebut (Denominator)"
+                          {...register("denominator_val", {
+                            valueAsNumber: true,
+                          })}
+                          className="w-full px-5 py-3.5 bg-white rounded-xl border border-gray-200 focus:ring-2 focus:ring-emerald-500 outline-none text-slate-800 font-extrabold text-base"
+                          min="1"
+                          required
+                        />
+                      </div>
                     </div>
                   </div>
-                </div>
-              )}
+                )}
             </div>
           )}
 
@@ -1406,24 +2483,32 @@ export default function InputData() {
               <span className="text-sm md:text-base font-semibold text-gray-500 tracking-wide md:mb-1">
                 Persentase Capaian
               </span>
-              
+
               <div className="flex flex-col items-center gap-5 mt-1">
-                <span className={`text-[60px] md:text-[72px] font-bold leading-none tracking-tight transition-all duration-500 drop-shadow-[0_4px_8px_rgba(0,0,0,0.15)] ${
-                  achievementStatus === "Tercapai" ? "text-[#10a37f]" :
-                  achievementStatus === "Mendekati" ? "text-amber-500" :
-                  "text-red-500"
-                }`}>
+                <span
+                  className={`text-[60px] md:text-[72px] font-bold leading-none tracking-tight transition-all duration-500 drop-shadow-[0_4px_8px_rgba(0,0,0,0.15)] ${
+                    achievementStatus === "Tercapai"
+                      ? "text-[#10a37f]"
+                      : achievementStatus === "Mendekati"
+                        ? "text-amber-500"
+                        : "text-red-500"
+                  }`}
+                >
                   {computedCapaian}%
                 </span>
-                
-                <span className={`px-6 py-2.5 rounded-full text-sm md:text-base font-bold shadow-sm transition-colors duration-500 ${
-                  achievementStatus === "Tercapai" 
-                    ? "bg-emerald-50 text-[#10a37f] border border-emerald-100/50" 
-                    : achievementStatus === "Mendekati" 
-                    ? "bg-amber-50 text-amber-600 border border-amber-100/50"
-                    : "bg-red-50 text-red-600 border border-red-100/50"
-                }`}>
-                  {achievementStatus === "Mendekati" ? "Mendekati Target" : achievementStatus}
+
+                <span
+                  className={`px-6 py-2.5 rounded-full text-sm md:text-base font-bold shadow-sm transition-colors duration-500 ${
+                    achievementStatus === "Tercapai"
+                      ? "bg-emerald-50 text-[#10a37f] border border-emerald-100/50"
+                      : achievementStatus === "Mendekati"
+                        ? "bg-amber-50 text-amber-600 border border-amber-100/50"
+                        : "bg-red-50 text-red-600 border border-red-100/50"
+                  }`}
+                >
+                  {achievementStatus === "Mendekati"
+                    ? "Mendekati Target"
+                    : achievementStatus}
                 </span>
               </div>
             </div>
@@ -1442,7 +2527,8 @@ export default function InputData() {
             >
               {isSubmitting ? (
                 <>
-                  <Zap className="animate-spin text-white" size={18} /> Menyimpan...
+                  <Zap className="animate-spin text-white" size={18} />{" "}
+                  Menyimpan...
                 </>
               ) : (
                 <>
@@ -1473,7 +2559,9 @@ export default function InputData() {
 
             <div className="p-6 md:p-8 space-y-5">
               <div className="space-y-1.5">
-                <label className="block text-xs font-black text-slate-800 tracking-wide uppercase">Nama Ruangan / Unit *</label>
+                <label className="block text-xs font-black text-slate-800 tracking-wide uppercase">
+                  Nama Ruangan / Unit *
+                </label>
                 <input
                   type="text"
                   placeholder="Misal: ICU, Poli Bedah"
@@ -1485,7 +2573,9 @@ export default function InputData() {
               </div>
 
               <div className="space-y-1.5">
-                <label className="block text-xs font-black text-slate-800 tracking-wide uppercase">Kategori Ruangan</label>
+                <label className="block text-xs font-black text-slate-800 tracking-wide uppercase">
+                  Kategori Ruangan
+                </label>
                 <select
                   value={roomCategoryInput}
                   onChange={(e) => setRoomCategoryInput(e.target.value)}
@@ -1501,7 +2591,9 @@ export default function InputData() {
               </div>
 
               <div className="space-y-1.5">
-                <label className="block text-xs font-black text-slate-800 tracking-wide uppercase">Status Pelayanan</label>
+                <label className="block text-xs font-black text-slate-800 tracking-wide uppercase">
+                  Status Pelayanan
+                </label>
                 <div className="flex gap-4">
                   {["Aktif", "Nonaktif"].map((st) => (
                     <button

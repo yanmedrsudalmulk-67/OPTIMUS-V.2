@@ -44,9 +44,28 @@ export interface JatuhData {
   tanggal: string;
   nama_pasien: string;
   no_rm: string;
-  asesmen_awal: boolean;
-  asesmen_ulang: boolean;
-  intervensi: boolean;
+  asesmen_awal: boolean | null;
+  asesmen_ulang: boolean | null;
+  intervensi: boolean | null;
+}
+
+export interface IdentifikasiData {
+  id: string;
+  tanggal_observasi: string;
+  jam_observasi: string;
+  nama_observer: string;
+  nama_pasien: string;
+  no_rm: string;
+  tanggal_lahir: string;
+  jenis_kelamin: string;
+  moment: string;
+  petugas: string;
+  tanya_nama: boolean | null;
+  tanya_tgllahir: boolean | null;
+  cara_verbal: boolean | null;
+  cara_visual: boolean | null;
+  lokasi: string;
+  patuh: boolean | null;
 }
 
 export interface WaktuTungguData {
@@ -57,6 +76,7 @@ export interface WaktuTungguData {
   jam_datang: string;
   jam_dilayani: string;
   selisih_menit: number;
+  memenuhi_standar?: boolean;
 }
 
 export interface DataMutuPayload {
@@ -80,6 +100,7 @@ export interface DataMutuPayload {
   visite_details?: VisiteData[];
   jatuh_details?: JatuhData[];
   waktu_tunggu_details?: WaktuTungguData[];
+  identifikasi_details?: IdentifikasiData[];
 }
 
 const initialDataMutu: DataMutuPayload[] = [];
@@ -133,23 +154,31 @@ export const useStore = create<RootState>((set) => ({
   hospitalLogo: "",
   setHospitalLogo: (logo) => set({ hospitalLogo: logo }),
   dataMutuList: [],
-  addDataMutu: (data) => set((state) => ({ dataMutuList: [...state.dataMutuList, data] })),
+  addDataMutu: (data) =>
+    set((state) => ({ dataMutuList: [...state.dataMutuList, data] })),
   setDataMutuList: (data) => set({ dataMutuList: data }),
   indicatorProfiles: [],
   setIndicatorProfiles: (data) => set({ indicatorProfiles: data }),
-  addIndicatorProfile: (data) => set((state) => ({ indicatorProfiles: [...state.indicatorProfiles, data] })),
-  updateIndicatorProfile: (id, data) => set((state) => ({
-    indicatorProfiles: state.indicatorProfiles.map(p => p.id === id ? { ...p, ...data } : p)
-  })),
-  deleteIndicatorProfile: (id) => set((state) => ({
-    indicatorProfiles: state.indicatorProfiles.filter(p => p.id !== id)
-  })),
+  addIndicatorProfile: (data) =>
+    set((state) => ({ indicatorProfiles: [...state.indicatorProfiles, data] })),
+  updateIndicatorProfile: (id, data) =>
+    set((state) => ({
+      indicatorProfiles: state.indicatorProfiles.map((p) =>
+        p.id === id ? { ...p, ...data } : p,
+      ),
+    })),
+  deleteIndicatorProfile: (id) =>
+    set((state) => ({
+      indicatorProfiles: state.indicatorProfiles.filter((p) => p.id !== id),
+    })),
   units: initialUnits,
   addUnit: (unit) => set((state) => ({ units: [...state.units, unit] })),
-  updateUnit: (id, data) => set((state) => ({
-    units: state.units.map(u => u.id === id ? { ...u, ...data } : u)
-  })),
-  deleteUnit: (id) => set((state) => ({
-    units: state.units.filter(u => u.id !== id)
-  }))
+  updateUnit: (id, data) =>
+    set((state) => ({
+      units: state.units.map((u) => (u.id === id ? { ...u, ...data } : u)),
+    })),
+  deleteUnit: (id) =>
+    set((state) => ({
+      units: state.units.filter((u) => u.id !== id),
+    })),
 }));

@@ -302,7 +302,9 @@ export default function SurveiForm({ onBack }: { onBack: () => void }) {
           <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 blur-3xl rounded-full -translate-y-1/2 translate-x-1/3" />
           <h2 className="text-[20px] sm:text-[27px] text-center font-black mb-2 relative z-10 break-words">KUESIONER SURVEI BUDAYA KESELAMATAN PASIEN</h2>
           <p className="font-bold text-[18px] sm:text-[25px] leading-snug sm:leading-[37.5px] text-[#fbfbf7] text-center whitespace-normal break-words relative z-10 w-full">
-            UOBK RSUD AL-MULK KOTA SUKABUMI
+            <span className="block sm:inline">UOBK RSUD AL-MULK</span>
+            <span className="hidden sm:inline"> </span>
+            <span className="block sm:inline">KOTA SUKABUMI</span>
           </p>
 
           <div className="mt-8 relative z-10">
