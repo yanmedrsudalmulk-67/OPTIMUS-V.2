@@ -49,6 +49,17 @@ export interface JatuhData {
   intervensi: boolean | null;
 }
 
+export interface MomentIdentifikasi {
+  aktif: boolean;
+  petugas: string;
+  tanya_nama: string | null;
+  tanya_tgllahir: string | null;
+  cara_verbal: string | null;
+  cara_visual: string | null;
+  lokasi: string;
+  patuh: boolean | null;
+}
+
 export interface IdentifikasiData {
   id: string;
   tanggal_observasi: string;
@@ -58,14 +69,9 @@ export interface IdentifikasiData {
   no_rm: string;
   tanggal_lahir: string;
   jenis_kelamin: string;
-  moment: string;
   petugas: string;
-  tanya_nama: boolean | null;
-  tanya_tgllahir: boolean | null;
-  cara_verbal: boolean | null;
-  cara_visual: boolean | null;
   lokasi: string;
-  patuh: boolean | null;
+  moments: Record<string, MomentIdentifikasi>;
 }
 
 export interface WaktuTungguData {
@@ -77,6 +83,13 @@ export interface WaktuTungguData {
   jam_dilayani: string;
   selisih_menit: number;
   memenuhi_standar?: boolean;
+}
+
+export interface FornasData {
+  id: string;
+  tanggal: string;
+  jumlah_resep: number | "";
+  jumlah_sesuai: number | "";
 }
 
 export interface DataMutuPayload {
@@ -101,6 +114,7 @@ export interface DataMutuPayload {
   jatuh_details?: JatuhData[];
   waktu_tunggu_details?: WaktuTungguData[];
   identifikasi_details?: IdentifikasiData[];
+  fornas_details?: FornasData[];
 }
 
 const initialDataMutu: DataMutuPayload[] = [];

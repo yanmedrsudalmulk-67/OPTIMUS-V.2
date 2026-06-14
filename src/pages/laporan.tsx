@@ -996,7 +996,26 @@ export default function Laporan() {
 
                       // Fetch Identifikasi
                       let activeIdentifikasiFiltered = unitInputs.flatMap(
-                        (u) => u.identifikasi_details || [],
+                        (u) => {
+                          if (!u.identifikasi_details) return [];
+                          const flat: any[] = [];
+                          u.identifikasi_details.forEach(pasien => {
+                            if (pasien.moments) {
+                              Object.entries(pasien.moments).forEach(([momentName, momentData]) => {
+                                if (momentData.aktif) {
+                                  flat.push({
+                                    ...pasien,
+                                    moment: momentName,
+                                    petugas: momentData.petugas,
+                                    lokasi: momentData.lokasi,
+                                    patuh: momentData.patuh,
+                                  });
+                                }
+                              });
+                            }
+                          });
+                          return flat;
+                        }
                       );
 
                       return (

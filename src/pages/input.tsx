@@ -34,6 +34,8 @@ import {
   IndicatorProfile,
   WaktuTungguData,
   IdentifikasiData,
+  MomentIdentifikasi,
+  FornasData,
 } from "@/store/useStore";
 import { supabase } from "@/lib/supabase";
 import { motion } from "motion/react";
@@ -68,6 +70,67 @@ const schema = z
     }
   });
 
+const momentHeaders = [
+  { code: "M1", title: "Gelang Identitas", label: "Sebelum pemasangan gelang identitas pasien" },
+  { code: "M2", title: "Pemberian Obat", label: "Sebelum pemberian obat" },
+  { code: "M3", title: "Darah/Produk", label: "Sebelum pemberian darah / produk darah" },
+  { code: "M4", title: "Tindakan Medis", label: "Sebelum tindakan" },
+  { code: "M5", title: "Cairan Infus", label: "Sebelum pemberian cairan intravena" },
+  { code: "M6", title: "Darah/Spesimen", label: "Sebelum pengambilan darah / spesimen" },
+  { code: "M7", title: "Pemberian Diet", label: "Sebelum pemberian diet" },
+  { code: "M8", title: "Prosedur Dx/Tx", label: "Sebelum melakukan prosedur diagnostik dan terapi" },
+  { code: "M9", title: "Periksa Pasien", label: "Sebelum pemeriksaan pasien" },
+];
+
+const TriStateSelector = ({
+  value,
+  onChange,
+}: {
+  value: string | null;
+  onChange: (val: string | null) => void;
+}) => {
+  return (
+    <div className="flex rounded-md overflow-hidden border border-slate-200 bg-white shadow-2xs h-[20px] w-full">
+      <button
+        type="button"
+        onClick={() => onChange(value === "Ya" ? null : "Ya")}
+        className={`flex-1 flex items-center justify-center font-black text-[8px] tracking-tighter transition-all ${
+          value === "Ya"
+            ? "bg-emerald-600 text-white"
+            : "text-slate-600 hover:bg-slate-55 bg-white"
+        }`}
+        title="Ya"
+      >
+        YA
+      </button>
+      <button
+        type="button"
+        onClick={() => onChange(value === "Tidak" ? null : "Tidak")}
+        className={`flex-1 flex items-center justify-center font-black text-[8px] tracking-tighter border-x border-slate-150 transition-all ${
+          value === "Tidak"
+            ? "bg-rose-500 text-white"
+            : "text-slate-500 hover:bg-slate-55 bg-white"
+        }`}
+        title="Tidak"
+      >
+        TDK
+      </button>
+      <button
+        type="button"
+        onClick={() => onChange(value === "N/A" ? null : "N/A")}
+        className={`flex-1 flex items-center justify-center font-black text-[8px] tracking-tighter transition-all ${
+          value === "N/A"
+            ? "bg-slate-400 text-white"
+            : "text-slate-500 hover:bg-slate-55 bg-white"
+        }`}
+        title="Not Applicable"
+      >
+        N/A
+      </button>
+    </div>
+  );
+};
+
 type FormValues = z.infer<typeof schema>;
 
 export default function InputData() {
@@ -99,6 +162,8 @@ export default function InputData() {
   const [roomStatusInput, setRoomStatusInput] = useState<"Aktif" | "Nonaktif">(
     "Aktif",
   );
+  // Delete confirmation modal state for Kepatuhan Identifikasi Pasien
+  const [deleteIdentifikasiId, setDeleteIdentifikasiId] = useState<string | null>(null);
 
   const unitDropdownRef = useRef<HTMLDivElement>(null);
 
@@ -225,6 +290,10 @@ export default function InputData() {
     !!selectedIndikatorProfile?.indicator_title
       ?.toLowerCase()
       .includes("waktu tunggu");
+  const isFornas =
+    !!selectedIndikatorProfile?.indicator_title
+      ?.toLowerCase()
+      .includes("formularium nasional");
 
   // States for dynamic custom subgrids/checklists inside section 7
   const [visiteGrid, setVisiteGrid] = useState<VisiteData[]>([]);
@@ -232,9 +301,22 @@ export default function InputData() {
   const [jatuhSearchTerm, setJatuhSearchTerm] = useState("");
   const [jatuhFilterDate, setJatuhFilterDate] = useState("");
   const [waktuTungguGrid, setWaktuTungguGrid] = useState<WaktuTungguData[]>([]);
-  const [identifikasiGrid, setIdentifikasiGrid] = useState<IdentifikasiData[]>(
-    [],
-  );
+  const [fornasGrid, setFornasGrid] = useState<FornasData[]>([]);
+  const [identifikasiGrid, setIdentifikasiGrid] = useState<IdentifikasiData[]>([
+    {
+      id: Math.random().toString(36).substring(7),
+      tanggal_observasi: new Date().toISOString().split("T")[0],
+      jam_observasi: "",
+      nama_observer: "",
+      nama_pasien: "",
+      no_rm: "",
+      tanggal_lahir: "",
+      jenis_kelamin: "",
+      petugas: "",
+      lokasi: "",
+      moments: {},
+    },
+  ]);
   const [averageWaktuTunggu, setAverageWaktuTunggu] = useState<
     number | undefined
   >(undefined);
@@ -280,11 +362,24 @@ export default function InputData() {
       );
       den = jatuhGrid.length || 1;
     } else if (isIdentifikasiPasien) {
-      num = identifikasiGrid.filter((d) => d.patuh).length;
-      den = identifikasiGrid.length || 1;
+      let calcNum = 0;
+      let calcDen = 0;
+      identifikasiGrid.forEach(row => {
+         Object.values(row.moments || {}).forEach(m => {
+            if (m.aktif) {
+               calcDen++;
+               if (m.patuh) calcNum++;
+            }
+         });
+      });
+      num = calcNum;
+      den = calcDen || 1;
     } else if (isWaktuTunggu) {
       num = waktuTungguGrid.filter((d) => d.selisih_menit <= 60).length;
       den = waktuTungguGrid.length || 1;
+    } else if (isFornas) {
+      num = fornasGrid.reduce((acc, curr) => acc + (Number(curr.jumlah_sesuai) || 0), 0);
+      den = fornasGrid.reduce((acc, curr) => acc + (Number(curr.jumlah_resep) || 0), 0) || 1;
     } else if (
       customNumerator !== undefined &&
       customDenominator !== undefined
@@ -302,10 +397,12 @@ export default function InputData() {
     isRisikoJatuh,
     isWaktuTunggu,
     isIdentifikasiPasien,
+    isFornas,
     visiteGrid,
     jatuhGrid,
     identifikasiGrid,
     waktuTungguGrid,
+    fornasGrid,
     customNumerator,
     customDenominator,
   ]);
@@ -463,6 +560,31 @@ export default function InputData() {
     );
   };
 
+  const handleAddFornasRow = () => {
+    setFornasGrid([
+      ...fornasGrid,
+      {
+        id: Math.random().toString(36).substring(7),
+        tanggal: new Date().toISOString().split("T")[0],
+        jumlah_resep: "",
+        jumlah_sesuai: "",
+      },
+    ]);
+  };
+
+  const handleRemoveFornasRow = (id: string) =>
+    setFornasGrid(fornasGrid.filter((r) => r.id !== id));
+
+  const handleUpdateFornas = (
+    id: string,
+    field: keyof FornasData,
+    value: any,
+  ) => {
+    setFornasGrid((prev) =>
+      prev.map((r) => (r.id === id ? { ...r, [field]: value } : r)),
+    );
+  };
+
   const handleAddJatuhRow = () => {
     setJatuhGrid([
       ...jatuhGrid,
@@ -503,21 +625,21 @@ export default function InputData() {
         no_rm: "",
         tanggal_lahir: "",
         jenis_kelamin: "",
-        moment: "",
         petugas: "",
-        tanya_nama: null,
-        tanya_tgllahir: null,
-        cara_verbal: null,
-        cara_visual: null,
         lokasi: "",
-        patuh: null,
+        moments: {},
       },
     ]);
   };
 
   const handleRemoveIdentifikasiRow = (id: string) => {
-    if (window.confirm("Apakah Anda yakin ingin menghapus observasi ini?")) {
-      setIdentifikasiGrid(identifikasiGrid.filter((r) => r.id !== id));
+    setDeleteIdentifikasiId(id);
+  };
+
+  const handleConfirmRemoveIdentifikasi = () => {
+    if (deleteIdentifikasiId) {
+      setIdentifikasiGrid(identifikasiGrid.filter((r) => r.id !== deleteIdentifikasiId));
+      setDeleteIdentifikasiId(null);
     }
   };
 
@@ -529,28 +651,73 @@ export default function InputData() {
     setIdentifikasiGrid(
       identifikasiGrid.map((r) => {
         if (r.id !== id) return r;
-        const updated = { ...r, [field]: value } as IdentifikasiData;
+        return { ...r, [field]: value };
+      }),
+    );
+  };
+
+  const handleUpdateIdentifikasiMoment = (
+    id: string,
+    momentIndex: string,
+    field: keyof MomentIdentifikasi,
+    value: any,
+  ) => {
+    setIdentifikasiGrid(
+      identifikasiGrid.map((r) => {
+        if (r.id !== id) return r;
+        const currentMoment = r.moments[momentIndex] || {
+          aktif: false,
+          petugas: "",
+          tanya_nama: null,
+          tanya_tgllahir: null,
+          cara_verbal: null,
+          cara_visual: null,
+          lokasi: "",
+          patuh: null,
+        };
+        const updatedMoment = { ...currentMoment, [field]: value };
+
+        // Mark as active if it has some data
+        if (
+          updatedMoment.petugas !== "" ||
+          updatedMoment.tanya_nama !== null ||
+          updatedMoment.tanya_tgllahir !== null ||
+          updatedMoment.cara_verbal !== null ||
+          updatedMoment.cara_visual !== null ||
+          updatedMoment.lokasi !== ""
+        ) {
+          updatedMoment.aktif = true;
+        } else {
+          updatedMoment.aktif = false;
+        }
 
         // Auto-calculate Patuh
         if (
-          updated.tanya_nama !== null ||
-          updated.tanya_tgllahir !== null ||
-          updated.cara_verbal !== null ||
-          updated.cara_visual !== null
+          updatedMoment.tanya_nama !== null ||
+          updatedMoment.tanya_tgllahir !== null ||
+          updatedMoment.cara_verbal !== null ||
+          updatedMoment.cara_visual !== null
         ) {
           if (
-            updated.tanya_nama === true &&
-            updated.tanya_tgllahir === true &&
-            (updated.cara_verbal === true || updated.cara_visual === true)
+            updatedMoment.tanya_nama === "Ya" &&
+            updatedMoment.tanya_tgllahir === "Ya" &&
+            (updatedMoment.cara_verbal === "Ya" || updatedMoment.cara_visual === "Ya")
           ) {
-            updated.patuh = true;
+            updatedMoment.patuh = true;
           } else {
-            updated.patuh = false;
+            updatedMoment.patuh = false;
           }
         } else {
-          updated.patuh = null;
+          updatedMoment.patuh = null;
         }
-        return updated;
+
+        return {
+          ...r,
+          moments: {
+            ...r.moments,
+            [momentIndex]: updatedMoment,
+          },
+        };
       }),
     );
   };
@@ -655,24 +822,61 @@ export default function InputData() {
         );
         finalDen = jatuhGrid.length || 1;
       } else if (isIdentifikasiPasien) {
-        const isValid = identifikasiGrid.every(
-          (r) =>
-            r.nama_pasien.trim() !== "" &&
-            r.no_rm.trim() !== "" &&
-            r.moment !== "" &&
-            r.petugas !== "" &&
-            r.lokasi !== "",
-        );
+        const isValid = identifikasiGrid.every((r) => {
+          if (r.nama_pasien.trim() === "" || r.no_rm.trim() === "") return false;
+          if (!r.petugas || r.petugas.trim() === "") return false;
+          if (!r.lokasi || r.lokasi.trim() === "") return false;
+          
+          const moments = Object.values(r.moments || {});
+          const activeMoments = moments.filter(m => m.aktif);
+          if (activeMoments.length === 0) return false;
+          
+          return true;
+        });
+
         if (!isValid && identifikasiGrid.length > 0) {
-          alert("Data observasi identifikasi pasien belum lengkap.");
+          alert("Data observasi identifikasi pasien belum lengkap (nama pasien, no rm, nama petugas, lokasi identifikasi, dan minimal satu checklist observasi harus terisi).");
           setIsSubmitting(false);
           return;
         }
-        finalNum = identifikasiGrid.filter((d) => d.patuh).length;
-        finalDen = identifikasiGrid.length || 1;
+
+        let totalNum = 0;
+        let totalDen = 0;
+        identifikasiGrid.forEach(row => {
+           Object.values(row.moments || {}).forEach(m => {
+              if (m.aktif) {
+                 m.petugas = row.petugas;
+                 m.lokasi = row.lokasi;
+                 totalDen++;
+                 if (m.patuh) totalNum++;
+              }
+           });
+        });
+        finalNum = totalNum;
+        finalDen = totalDen || 1;
       } else if (isWaktuTunggu) {
         finalNum = waktuTungguGrid.filter((d) => d.selisih_menit <= 60).length;
         finalDen = waktuTungguGrid.length || 1;
+      } else if (isFornas) {
+        const isFornasValid = fornasGrid.every(r => r.tanggal && r.jumlah_resep !== "" && Number(r.jumlah_resep) >= 0 && r.jumlah_sesuai !== "" && Number(r.jumlah_sesuai) >= 0 && Number(r.jumlah_sesuai) <= Number(r.jumlah_resep));
+        if (!isFornasValid && fornasGrid.length > 0) {
+           alert("Data Fornas tidak lengkap atau salah. Pastikan tanggal, jumlah resep, dan jumlah sesuai resep terisi, dan jumlah sesuai tidak melebihi jumlah resep.");
+           setIsSubmitting(false);
+           return;
+        }
+        
+        // Validation for uniqueness over date is somewhat complex without backend, 
+        // but we can check if there's duplicate date within the same grid:
+        const dates = fornasGrid.map(r => r.tanggal);
+        const hasDuplicateDates = new Set(dates).size !== dates.length;
+        if (hasDuplicateDates) {
+           alert("Data Fornas memiliki tanggal yang duplikat dalam form ini.");
+           setIsSubmitting(false);
+           return;
+        }
+
+        finalNum = fornasGrid.reduce((acc, curr) => acc + (Number(curr.jumlah_sesuai) || 0), 0);
+        finalDen = fornasGrid.reduce((acc, curr) => acc + (Number(curr.jumlah_resep) || 0), 0) || 1;
       } else if (
         customNumerator !== undefined &&
         customDenominator !== undefined
@@ -728,6 +932,7 @@ export default function InputData() {
         ? [...identifikasiGrid]
         : undefined,
       waktu_tunggu_details: isWaktuTunggu ? [...waktuTungguGrid] : undefined,
+      fornas_details: isFornas ? [...fornasGrid] : undefined,
     };
 
     // 1. Save locally in Zustand instantly (Optimistic update)
@@ -1582,26 +1787,7 @@ export default function InputData() {
                     </p>
                   </div>
 
-                  {identifikasiGrid.length === 0 ? (
-                    <div className="text-center py-8 bg-slate-50 border border-slate-200 rounded-2xl flex flex-col items-center justify-center">
-                      <p className="text-sm font-bold text-slate-400 mb-2">
-                        Belum ada data observasi
-                      </p>
-                      <p className="text-xs text-slate-400 mb-4 px-4 font-medium max-w-sm">
-                        Klik tombol dibawah untuk menambahkan baris data
-                        observasi identifikasi pasien secara digital.
-                      </p>
-                      <button
-                        type="button"
-                        onClick={handleAddIdentifikasiRow}
-                        className="flex items-center gap-2 bg-[#059669] hover:bg-[#047857] text-white px-5 py-2.5 rounded-xl text-xs font-bold transition-all shadow-sm"
-                      >
-                        <Plus size={16} strokeWidth={3} />
-                        Mulai Observasi Baru
-                      </button>
-                    </div>
-                  ) : (
-                    <div className="space-y-4">
+                  <div className="space-y-4">
                       {identifikasiGrid.map((row, idx) => (
                         <div
                           key={row.id}
@@ -1610,32 +1796,15 @@ export default function InputData() {
                           <div className="absolute top-0 left-0 w-1 h-full bg-[#10a37f] opacity-0 group-hover:opacity-100 transition-opacity"></div>
 
                           {/* Row Header & Delete */}
-                          <div className="flex justify-between items-center border-b border-slate-100 pb-3">
-                            <h5 className="text-[11px] font-black tracking-widest text-[#10a37f] uppercase bg-emerald-50 px-3 py-1 rounded-full">
-                              Observasi #{idx + 1}
-                            </h5>
-                            <div className="flex items-center gap-2">
-                              {row.patuh === true && (
-                                <span className="text-[10px] bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-md font-bold">
-                                  ✓ PATUH
-                                </span>
-                              )}
-                              {row.patuh === false && (
-                                <span className="text-[10px] bg-red-100 text-red-800 px-2 py-0.5 rounded-md font-bold">
-                                  ✗ TIDAK PATUH
-                                </span>
-                              )}
-                              <button
-                                type="button"
-                                onClick={() =>
-                                  handleRemoveIdentifikasiRow(row.id)
-                                }
-                                className="text-rose-400 hover:text-rose-600 hover:bg-rose-50 p-1.5 rounded-lg transition-colors ml-2"
-                                title="Hapus Observasi"
-                              >
-                                <Trash2 size={16} />
-                              </button>
-                            </div>
+                          <div className="flex justify-end items-center border-b border-slate-100 pb-3">
+                            <button
+                              type="button"
+                              onClick={() => handleRemoveIdentifikasiRow(row.id)}
+                              className="text-rose-400 hover:text-rose-600 hover:bg-rose-50 p-1.5 rounded-lg transition-colors ml-2"
+                              title="Hapus Form Observasi"
+                            >
+                              <Trash2 size={16} />
+                            </button>
                           </div>
 
                           {/* Top: Observasi Details */}
@@ -1648,11 +1817,7 @@ export default function InputData() {
                                 type="date"
                                 value={row.tanggal_observasi}
                                 onChange={(e) =>
-                                  handleUpdateIdentifikasi(
-                                    row.id,
-                                    "tanggal_observasi",
-                                    e.target.value,
-                                  )
+                                  handleUpdateIdentifikasi(row.id, "tanggal_observasi", e.target.value)
                                 }
                                 className="w-full text-xs font-bold border border-slate-200 px-3 py-2 rounded-xl outline-none focus:border-emerald-500 bg-slate-50/50"
                               />
@@ -1665,11 +1830,7 @@ export default function InputData() {
                                 type="time"
                                 value={row.jam_observasi}
                                 onChange={(e) =>
-                                  handleUpdateIdentifikasi(
-                                    row.id,
-                                    "jam_observasi",
-                                    e.target.value,
-                                  )
+                                  handleUpdateIdentifikasi(row.id, "jam_observasi", e.target.value)
                                 }
                                 className="w-full text-xs font-bold border border-slate-200 px-3 py-2 rounded-xl outline-none focus:border-emerald-500 bg-slate-50/50"
                               />
@@ -1682,11 +1843,7 @@ export default function InputData() {
                                 type="text"
                                 value={row.nama_observer}
                                 onChange={(e) =>
-                                  handleUpdateIdentifikasi(
-                                    row.id,
-                                    "nama_observer",
-                                    e.target.value,
-                                  )
+                                  handleUpdateIdentifikasi(row.id, "nama_observer", e.target.value)
                                 }
                                 className="w-full text-xs font-bold border border-slate-200 px-3 py-2 rounded-xl outline-none focus:border-emerald-500 bg-slate-50/50"
                                 placeholder="Observer..."
@@ -1697,71 +1854,39 @@ export default function InputData() {
                           {/* Info Pasien */}
                           <div className="bg-slate-50 rounded-xl p-3 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 border border-slate-100">
                             <div>
-                              <label className="text-[9px] font-extrabold text-slate-400 uppercase">
-                                Nama Pasien
-                              </label>
+                              <label className="text-[9px] font-extrabold text-slate-400 uppercase">Nama Pasien</label>
                               <input
                                 type="text"
                                 value={row.nama_pasien}
-                                onChange={(e) =>
-                                  handleUpdateIdentifikasi(
-                                    row.id,
-                                    "nama_pasien",
-                                    e.target.value,
-                                  )
-                                }
+                                onChange={(e) => handleUpdateIdentifikasi(row.id, "nama_pasien", e.target.value)}
                                 className="w-full text-xs font-bold border-b border-slate-200 px-1 py-1 outline-none focus:border-emerald-500 bg-transparent"
                                 placeholder="Nama Pasien"
                               />
                             </div>
                             <div>
-                              <label className="text-[9px] font-extrabold text-slate-400 uppercase">
-                                No RM
-                              </label>
+                              <label className="text-[9px] font-extrabold text-slate-400 uppercase">No RM</label>
                               <input
                                 type="text"
                                 value={row.no_rm}
-                                onChange={(e) =>
-                                  handleUpdateIdentifikasi(
-                                    row.id,
-                                    "no_rm",
-                                    e.target.value,
-                                  )
-                                }
+                                onChange={(e) => handleUpdateIdentifikasi(row.id, "no_rm", e.target.value)}
                                 className="w-full text-xs font-bold border-b border-slate-200 px-1 py-1 outline-none focus:border-emerald-500 bg-transparent"
                                 placeholder="00-00-00"
                               />
                             </div>
                             <div>
-                              <label className="text-[9px] font-extrabold text-slate-400 uppercase">
-                                Tanggal Lahir
-                              </label>
+                              <label className="text-[9px] font-extrabold text-slate-400 uppercase">Tanggal Lahir</label>
                               <input
                                 type="date"
                                 value={row.tanggal_lahir}
-                                onChange={(e) =>
-                                  handleUpdateIdentifikasi(
-                                    row.id,
-                                    "tanggal_lahir",
-                                    e.target.value,
-                                  )
-                                }
+                                onChange={(e) => handleUpdateIdentifikasi(row.id, "tanggal_lahir", e.target.value)}
                                 className="w-full text-xs font-bold border-b border-slate-200 px-1 py-1 outline-none focus:border-emerald-500 bg-transparent"
                               />
                             </div>
                             <div>
-                              <label className="text-[9px] font-extrabold text-slate-400 uppercase">
-                                Jenis Kelamin
-                              </label>
+                              <label className="text-[9px] font-extrabold text-slate-400 uppercase">Jenis Kelamin</label>
                               <select
                                 value={row.jenis_kelamin}
-                                onChange={(e) =>
-                                  handleUpdateIdentifikasi(
-                                    row.id,
-                                    "jenis_kelamin",
-                                    e.target.value,
-                                  )
-                                }
+                                onChange={(e) => handleUpdateIdentifikasi(row.id, "jenis_kelamin", e.target.value)}
                                 className="w-full text-xs font-bold border-b border-slate-200 px-1 py-1 outline-none focus:border-emerald-500 bg-transparent appearance-none"
                               >
                                 <option value="">- Pilih JK -</option>
@@ -1771,273 +1896,169 @@ export default function InputData() {
                             </div>
                           </div>
 
-                          {/* Data Observasi Utama */}
-                          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pt-2">
-                            <div className="space-y-3">
-                              <div className="space-y-1">
-                                <label className="text-[10px] font-extrabold text-[#059669] uppercase">
-                                  Momen Identifikasi
-                                </label>
-                                <select
-                                  value={row.moment}
-                                  onChange={(e) =>
-                                    handleUpdateIdentifikasi(
-                                      row.id,
-                                      "moment",
-                                      e.target.value,
-                                    )
-                                  }
-                                  className="w-full text-xs font-bold border border-emerald-100 px-3 py-2 rounded-lg outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500"
-                                >
-                                  <option value="">-- Pilih Momen --</option>
-                                  <option value="Sebelum pemasangan gelang identitas pasien">
-                                    Sebelum pemasangan gelang identitas pasien
-                                  </option>
-                                  <option value="Sebelum pemberian obat">
-                                    Sebelum pemberian obat
-                                  </option>
-                                  <option value="Sebelum pemberian darah / produk darah">
-                                    Sebelum pemberian darah / produk darah
-                                  </option>
-                                  <option value="Sebelum tindakan">
-                                    Sebelum tindakan
-                                  </option>
-                                  <option value="Sebelum pemberian cairan intravena">
-                                    Sebelum pemberian cairan intravena
-                                  </option>
-                                  <option value="Sebelum pengambilan darah / spesimen">
-                                    Sebelum pengambilan darah / spesimen
-                                  </option>
-                                  <option value="Sebelum pemberian diet">
-                                    Sebelum pemberian diet
-                                  </option>
-                                  <option value="Sebelum prosedur diagnostik dan terapi">
-                                    Sebelum prosedur diagnostik dan terapi
-                                  </option>
-                                  <option value="Sebelum pemeriksaan pasien">
-                                    Sebelum pemeriksaan pasien
-                                  </option>
-                                </select>
-                              </div>
-                              <div className="space-y-1">
-                                <label className="text-[10px] font-extrabold text-[#059669] uppercase">
-                                  Petugas yang Terlibat
-                                </label>
-                                <select
-                                  value={row.petugas}
-                                  onChange={(e) =>
-                                    handleUpdateIdentifikasi(
-                                      row.id,
-                                      "petugas",
-                                      e.target.value,
-                                    )
-                                  }
-                                  className="w-full text-xs font-bold border border-emerald-100 px-3 py-2 rounded-lg outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500"
-                                >
-                                  <option value="">-- Pilih Petugas --</option>
-                                  <option value="Dokter">Dokter</option>
-                                  <option value="Perawat">Perawat</option>
-                                  <option value="Bidan">Bidan</option>
-                                  <option value="Apoteker">Apoteker</option>
-                                  <option value="Analis Laboratorium">
-                                    Analis Laboratorium
-                                  </option>
-                                  <option value="Petugas Radiologi">
-                                    Petugas Radiologi
-                                  </option>
-                                  <option value="Ahli Gizi">Ahli Gizi</option>
-                                  <option value="Petugas Pendaftaran">
-                                    Petugas Pendaftaran
-                                  </option>
-                                  <option value="Petugas Lainnya">
-                                    Petugas Lainnya
-                                  </option>
-                                </select>
-                              </div>
-                              <div className="space-y-1">
-                                <label className="text-[10px] font-extrabold text-[#059669] uppercase">
-                                  Lokasi Observasi
-                                </label>
-                                <select
-                                  value={row.lokasi}
-                                  onChange={(e) =>
-                                    handleUpdateIdentifikasi(
-                                      row.id,
-                                      "lokasi",
-                                      e.target.value,
-                                    )
-                                  }
-                                  className="w-full text-xs font-bold border border-emerald-100 px-3 py-2 rounded-lg outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500"
-                                >
-                                  <option value="">-- Lokasi --</option>
-                                  <option value="Ranap Aisyah">
-                                    Ranap Aisyah
-                                  </option>
-                                  <option value="Ranap Khadijah">
-                                    Ranap Khadijah
-                                  </option>
-                                  <option value="Ranap Usman">
-                                    Ranap Usman
-                                  </option>
-                                  <option value="Ranap Fatimah">
-                                    Ranap Fatimah
-                                  </option>
-                                  <option value="IGD">IGD</option>
-                                  <option value="IBS">IBS</option>
-                                  <option value="ICU">ICU</option>
-                                </select>
-                              </div>
-                            </div>
+                          {/* Data Observasi Utama (Horizontal Table) */}
+                          <div className="w-full border border-emerald-100 rounded-xl bg-white shadow-xs overflow-hidden">
+                             <table className="w-full text-left border-collapse table-fixed">
+                               <thead className="bg-[#059669] text-white">
+                                 <tr>
+                                   <th className="px-2 py-1 font-extrabold uppercase border-r border-[#047857] text-[9px] text-center w-[14%] align-middle bg-[#047857] sticky left-0 z-10">Komponen</th>
+                                   {momentHeaders.map((hdr, index) => {
+                                      const momentKey = `moment_${index}`;
 
-                            {/* Pertanyaan What */}
-                            <div className="border border-slate-100 rounded-xl p-4 bg-white/50">
-                              <label className="block text-[11px] font-black text-slate-700 uppercase mb-3 pb-2 border-b border-slate-100">
-                                Apa yang ditanyakan?
-                              </label>
-                              <div className="space-y-4">
-                                <div className="flex justify-between items-center">
-                                  <span className="text-xs font-bold text-slate-600">
-                                    Nama Lengkap
-                                  </span>
-                                  <div className="flex gap-2">
-                                    <button
-                                      type="button"
-                                      onClick={() =>
-                                        handleUpdateIdentifikasi(
-                                          row.id,
-                                          "tanya_nama",
-                                          true,
-                                        )
-                                      }
-                                      className={`px-3 py-1.5 rounded-md text-[10px] font-bold border transition-colors ${row.tanya_nama === true ? "bg-emerald-500 text-white border-emerald-500" : "bg-white text-slate-500 border-slate-200 hover:bg-slate-50"}`}
-                                    >
-                                      Ya
-                                    </button>
-                                    <button
-                                      type="button"
-                                      onClick={() =>
-                                        handleUpdateIdentifikasi(
-                                          row.id,
-                                          "tanya_nama",
-                                          false,
-                                        )
-                                      }
-                                      className={`px-3 py-1.5 rounded-md text-[10px] font-bold border transition-colors ${row.tanya_nama === false ? "bg-rose-500 text-white border-rose-500" : "bg-white text-slate-500 border-slate-200 hover:bg-slate-50"}`}
-                                    >
-                                      Tidak
-                                    </button>
-                                  </div>
-                                </div>
-                                <div className="flex justify-between items-center">
-                                  <span className="text-xs font-bold text-slate-600">
-                                    Tanggal Lahir
-                                  </span>
-                                  <div className="flex gap-2">
-                                    <button
-                                      type="button"
-                                      onClick={() =>
-                                        handleUpdateIdentifikasi(
-                                          row.id,
-                                          "tanya_tgllahir",
-                                          true,
-                                        )
-                                      }
-                                      className={`px-3 py-1.5 rounded-md text-[10px] font-bold border transition-colors ${row.tanya_tgllahir === true ? "bg-emerald-500 text-white border-emerald-500" : "bg-white text-slate-500 border-slate-200 hover:bg-slate-50"}`}
-                                    >
-                                      Ya
-                                    </button>
-                                    <button
-                                      type="button"
-                                      onClick={() =>
-                                        handleUpdateIdentifikasi(
-                                          row.id,
-                                          "tanya_tgllahir",
-                                          false,
-                                        )
-                                      }
-                                      className={`px-3 py-1.5 rounded-md text-[10px] font-bold border transition-colors ${row.tanya_tgllahir === false ? "bg-rose-500 text-white border-rose-500" : "bg-white text-slate-500 border-slate-200 hover:bg-slate-50"}`}
-                                    >
-                                      Tidak
-                                    </button>
-                                  </div>
-                                </div>
-                              </div>
-                            </div>
+                                      const isPatuhReal = row.moments[momentKey]?.patuh;
+                                      const isAktif = row.moments[momentKey]?.aktif;
+                                      return (
+                                        <th key={index} className="px-1 py-1 font-bold uppercase text-center border-r border-[#047857] align-middle w-[9.5%] relative group">
+                                          <div className="text-[7.5px] font-bold leading-tight truncate px-0.5 py-1 mb-0.5">{hdr.title}</div>
+                                          
+                                          {/* Status compliance under the header */}
+                                          <div className="mt-1 flex justify-center h-4 items-center">
+                                             {isAktif ? (
+                                               isPatuhReal === true ? (
+                                                  <span className="bg-emerald-600 text-white border border-emerald-400 px-1 py-0.2 rounded-[3px] text-[7px] font-extrabold tracking-tight">PATUH</span>
+                                               ) : (
+                                                  <span className="bg-rose-500 text-white border border-rose-400 px-1 py-0.2 rounded-[3px] text-[7px] font-extrabold tracking-tight">TDK PATUH</span>
+                                               )
+                                             ) : (
+                                                <span className="text-emerald-200/50 text-[7px] font-bold tracking-tight uppercase">OFF</span>
+                                             )}
+                                          </div>
 
-                            {/* Pertanyaan How */}
-                            <div className="border border-slate-100 rounded-xl p-4 bg-white/50">
-                              <label className="block text-[11px] font-black text-slate-700 uppercase mb-3 pb-2 border-b border-slate-100">
-                                Bagaimana menanyakan?
-                              </label>
-                              <div className="space-y-4">
-                                <div className="flex justify-between items-center">
-                                  <span className="text-xs font-bold text-slate-600">
-                                    Verbal
-                                  </span>
-                                  <div className="flex gap-2">
-                                    <button
-                                      type="button"
-                                      onClick={() =>
-                                        handleUpdateIdentifikasi(
-                                          row.id,
-                                          "cara_verbal",
-                                          true,
-                                        )
-                                      }
-                                      className={`px-3 py-1.5 rounded-md text-[10px] font-bold border transition-colors ${row.cara_verbal === true ? "bg-emerald-500 text-white border-emerald-500" : "bg-white text-slate-500 border-slate-200 hover:bg-slate-50"}`}
-                                    >
-                                      Ya
-                                    </button>
-                                    <button
-                                      type="button"
-                                      onClick={() =>
-                                        handleUpdateIdentifikasi(
-                                          row.id,
-                                          "cara_verbal",
-                                          false,
-                                        )
-                                      }
-                                      className={`px-3 py-1.5 rounded-md text-[10px] font-bold border transition-colors ${row.cara_verbal === false ? "bg-rose-500 text-white border-rose-500" : "bg-white text-slate-500 border-slate-200 hover:bg-slate-50"}`}
-                                    >
-                                      Tidak
-                                    </button>
-                                  </div>
-                                </div>
-                                <div className="flex justify-between items-center">
-                                  <span className="text-xs font-bold text-slate-600">
-                                    Visual (Melihat Gelang)
-                                  </span>
-                                  <div className="flex gap-2">
-                                    <button
-                                      type="button"
-                                      onClick={() =>
-                                        handleUpdateIdentifikasi(
-                                          row.id,
-                                          "cara_visual",
-                                          true,
-                                        )
-                                      }
-                                      className={`px-3 py-1.5 rounded-md text-[10px] font-bold border transition-colors ${row.cara_visual === true ? "bg-emerald-500 text-white border-emerald-500" : "bg-white text-slate-500 border-slate-200 hover:bg-slate-50"}`}
-                                    >
-                                      Ya
-                                    </button>
-                                    <button
-                                      type="button"
-                                      onClick={() =>
-                                        handleUpdateIdentifikasi(
-                                          row.id,
-                                          "cara_visual",
-                                          false,
-                                        )
-                                      }
-                                      className={`px-3 py-1.5 rounded-md text-[10px] font-bold border transition-colors ${row.cara_visual === false ? "bg-rose-500 text-white border-rose-500" : "bg-white text-slate-500 border-slate-200 hover:bg-slate-50"}`}
-                                    >
-                                      Tidak
-                                    </button>
-                                  </div>
-                                </div>
-                              </div>
-                            </div>
+                                          {/* Enhanced hover tooltip */}
+                                          <div className="absolute hidden group-hover:block bottom-full left-1/2 transform -translate-x-1/2 mb-2 w-48 p-2 bg-slate-900/95 text-white text-[9px] rounded shadow-lg z-50 text-center font-normal uppercase leading-normal">
+                                            {hdr.label}
+                                          </div>
+                                        </th>
+                                      );
+                                   })}
+                                 </tr>
+                               </thead>
+                               <tbody className="bg-white">
+                                 {/* Baris 1: Siapa yang melakukan (Single inline text input) */}
+                                 <tr className="border-b border-slate-100 bg-slate-50/20">
+                                   <td className="px-2 py-1.5 font-extrabold text-slate-700 align-middle bg-slate-50 border-r border-slate-100 sticky left-0 z-10 text-[9px]">
+                                      1. Siapa melakukan
+                                   </td>
+                                   <td colSpan={9} className="px-2 py-1 align-middle border-r border-slate-100">
+                                      <input 
+                                         type="text"
+                                         value={row.petugas || ""} 
+                                         onChange={(e) => handleUpdateIdentifikasi(row.id, "petugas", e.target.value)}
+                                         placeholder="Tulis nama / peran petugas (contoh: Perawat A, Dokter Budi)..."
+                                         className="w-full text-[9px] font-bold border border-slate-200 px-2.5 py-1 rounded-sm outline-none focus:border-emerald-500 bg-white placeholder:text-slate-400 placeholder:font-normal"
+                                      />
+                                   </td>
+                                 </tr>
+
+                                 {/* Baris 2: Apa yang ditanyakan? */}
+                                 <tr className="border-b border-slate-100 bg-white">
+                                   <td colSpan={10} className="px-2 py-1.5 font-bold text-slate-700 bg-transparent align-middle sticky left-0 z-10 text-[9px] leading-tight">
+                                      2. Yang ditanyakan?
+                                   </td>
+                                 </tr>
+                                 <tr className="border-b border-slate-100">
+                                   <td className="px-2 py-2 pl-4 font-semibold text-slate-600 align-middle bg-slate-50 border-r border-slate-100 sticky left-0 z-10 text-[9px]">
+                                      a. Nama Lengkap
+                                   </td>
+                                   {[0,1,2,3,4,5,6,7,8].map((idx) => {
+                                      const momentKey = `moment_${idx}`;
+                                      const mData = row.moments[momentKey] || { tanya_nama: null, tanya_tgllahir: null };
+                                      return (
+                                        <td key={idx} className="px-1 py-1.5 align-middle border-r border-slate-100 text-center">
+                                           <TriStateSelector
+                                              value={mData.tanya_nama}
+                                              onChange={(val) => handleUpdateIdentifikasiMoment(row.id, momentKey, "tanya_nama", val)}
+                                           />
+                                        </td>
+                                      );
+                                   })}
+                                 </tr>
+                                 <tr className="border-b border-slate-100">
+                                   <td className="px-2 py-2 pl-4 font-semibold text-slate-600 align-middle bg-slate-50 border-r border-slate-100 sticky left-0 z-10 text-[9px]">
+                                      b. Tanggal Lahir
+                                   </td>
+                                   {[0,1,2,3,4,5,6,7,8].map((idx) => {
+                                      const momentKey = `moment_${idx}`;
+                                      const mData = row.moments[momentKey] || { tanya_nama: null, tanya_tgllahir: null };
+                                      return (
+                                        <td key={idx} className="px-1 py-1.5 align-middle border-r border-slate-100 text-center">
+                                           <TriStateSelector
+                                              value={mData.tanya_tgllahir}
+                                              onChange={(val) => handleUpdateIdentifikasiMoment(row.id, momentKey, "tanya_tgllahir", val)}
+                                           />
+                                        </td>
+                                      );
+                                   })}
+                                 </tr>
+
+                                 {/* Baris 3: Bagaimana menanyakannya? */}
+                                 <tr className="border-b border-slate-100 bg-white">
+                                   <td colSpan={10} className="px-2 py-1.5 font-bold text-slate-700 bg-transparent align-middle sticky left-0 z-10 text-[9px] leading-tight">
+                                      3. Cara menanyakan?
+                                   </td>
+                                 </tr>
+                                 <tr className="border-b border-slate-100">
+                                   <td className="px-2 py-2 pl-4 font-semibold text-slate-600 align-middle bg-slate-50 border-r border-slate-100 sticky left-0 z-10 text-[9px]">
+                                      a. Secara Verbal
+                                   </td>
+                                   {[0,1,2,3,4,5,6,7,8].map((idx) => {
+                                      const momentKey = `moment_${idx}`;
+                                      const mData = row.moments[momentKey] || { cara_verbal: null, cara_visual: null };
+                                      return (
+                                        <td key={idx} className="px-1 py-1.5 align-middle border-r border-slate-100 text-center">
+                                           <TriStateSelector
+                                              value={mData.cara_verbal}
+                                              onChange={(val) => handleUpdateIdentifikasiMoment(row.id, momentKey, "cara_verbal", val)}
+                                           />
+                                        </td>
+                                      );
+                                   })}
+                                 </tr>
+                                 <tr className="border-b border-slate-100">
+                                   <td className="px-2 py-2 pl-4 font-semibold text-slate-600 align-middle bg-slate-50 border-r border-slate-100 sticky left-0 z-10 text-[9px]">
+                                      b. Secara Visual
+                                   </td>
+                                   {[0,1,2,3,4,5,6,7,8].map((idx) => {
+                                      const momentKey = `moment_${idx}`;
+                                      const mData = row.moments[momentKey] || { cara_verbal: null, cara_visual: null };
+                                      return (
+                                        <td key={idx} className="px-1 py-1.5 align-middle border-r border-slate-100 text-center">
+                                           <TriStateSelector
+                                              value={mData.cara_visual}
+                                              onChange={(val) => handleUpdateIdentifikasiMoment(row.id, momentKey, "cara_visual", val)}
+                                           />
+                                        </td>
+                                      );
+                                   })}
+                                 </tr>
+
+                                 {/* Baris 4: Dimana dilakukan identifikasi? */}
+                                 <tr className="bg-slate-50/25">
+                                   <td className="px-2 py-1.5 font-extrabold text-slate-700 align-middle bg-slate-50 border-r border-slate-100 sticky left-0 z-10 text-[9px]">
+                                      4. Lokasi Identifikasi
+                                   </td>
+                                   <td colSpan={9} className="px-2 py-1 align-middle border-r border-slate-100">
+                                      <select 
+                                         value={row.lokasi || ""} 
+                                         onChange={(e) => handleUpdateIdentifikasi(row.id, "lokasi", e.target.value)}
+                                         className="w-full text-[9px] font-bold border border-slate-200 px-2 py-1 rounded-sm outline-none focus:border-emerald-500 bg-white"
+                                      >
+                                         <option value="">-- Pilih Lokasi Identifikasi --</option>
+                                         <option value="Rawat Inap">Rawat Inap</option>
+                                         <option value="Rawat Jalan">Rawat Jalan</option>
+                                         <option value="IGD">IGD</option>
+                                         <option value="Bersalin">Bersalin</option>
+                                         <option value="Haemodialisis">Haemodialisis</option>
+                                         <option value="Instalasi Kamar Bedah">Instalasi Kamar Bedah</option>
+                                         <option value="ICU">ICU</option>
+                                         <option value="Laboratorium">Laboratorium</option>
+                                         <option value="Radiologi">Radiologi</option>
+                                         <option value="Ruangan Lainnya">Ruangan Lainnya</option>
+                                      </select>
+                                   </td>
+                                 </tr>
+                               </tbody>
+                             </table>
                           </div>
                         </div>
                       ))}
@@ -2055,17 +2076,25 @@ export default function InputData() {
 
                       {identifikasiGrid.length > 0 &&
                         (() => {
-                          const num = identifikasiGrid.filter(
-                            (d) => d.patuh,
-                          ).length;
-                          const den = identifikasiGrid.length;
+                          let calcNum = 0;
+                          let calcDen = 0;
+                          let tglLahirIssue = 0;
+                          identifikasiGrid.forEach((d) => {
+                             Object.values(d.moments || {}).forEach((m) => {
+                                if (m.aktif) {
+                                   calcDen++;
+                                   if (m.patuh) calcNum++;
+                                   if (m.tanya_tgllahir === "Tidak") tglLahirIssue++;
+                                }
+                             });
+                          });
+                          
+                          const num = calcNum;
+                          const den = calcDen;
                           const pct =
                             den > 0 ? ((num / den) * 100).toFixed(2) : "0.00";
                           const target = 100;
                           const isMet = parseFloat(pct) >= target;
-                          const tglLahirIssue = identifikasiGrid.filter(
-                            (d) => d.tanya_tgllahir === false,
-                          ).length;
 
                           return (
                             <div className="mt-8 space-y-6">
@@ -2132,7 +2161,7 @@ export default function InputData() {
                                       size={18}
                                       className="text-amber-500"
                                     />{" "}
-                                    Analisis Capaian AI
+                                    Analisa Capaian
                                   </h4>
                                   <p className="text-xs text-slate-600 leading-relaxed font-medium">
                                     Berdasarkan hasil observasi, terdapat{" "}
@@ -2196,7 +2225,6 @@ export default function InputData() {
                           );
                         })()}
                     </div>
-                  )}
                 </div>
               )}
 
@@ -2405,11 +2433,211 @@ export default function InputData() {
                 </div>
               )}
 
+              {/* Form Kepatuhan Penggunaan Formularium Nasional */}
+              {isFornas && (
+                <div className="space-y-4 border-t border-emerald-100/10 pt-4 animate-in fade-in duration-300">
+                  <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                    <div>
+                      <h4 className="font-extrabold text-sm text-[#0c2415] uppercase tracking-wide">
+                        TABEL PENGUMPULAN DATA - KEPATUHAN PENGGUNAAN FORMULARIUM NASIONAL
+                      </h4>
+                      <p className="text-xs text-slate-500 font-semibold mt-1">
+                        Isi form harian. Persentase kepatuhan dihitung secara otomatis.
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="w-full border border-emerald-100 rounded-2xl bg-white shadow-xs overflow-x-auto relative">
+                    <table className="w-full text-left border-collapse whitespace-nowrap min-w-[800px]">
+                      <thead className="bg-[#059669] text-white">
+                        <tr>
+                          <th className="py-3 px-4 font-extrabold uppercase text-[10px] w-12 text-center sticky left-0 z-10 bg-[#047857]">
+                            NO
+                          </th>
+                          <th className="py-3 px-4 font-extrabold uppercase text-[10px] w-40 sticky left-12 z-10 bg-[#047857] shadow-[2px_0_5px_rgba(0,0,0,0.05)]">
+                            TANGGAL
+                          </th>
+                          <th className="py-3 px-4 font-extrabold uppercase text-[10px]">
+                            JUMLAH RESEP
+                          </th>
+                          <th className="py-3 px-4 font-extrabold uppercase text-[10px]">
+                            JUMLAH RESEP <br/>SESUAI FORNAS
+                          </th>
+                          <th className="py-3 px-4 font-extrabold text-center uppercase text-[10px]">
+                            JUMLAH RESEP TIDAK<br/>SESUAI FORMULARIUM
+                          </th>
+                          <th className="py-3 px-4 font-extrabold text-center uppercase text-[10px]">
+                            PERSENTASE (%) KEPATUHAN <br/>RESEP SESUAI FORMULARIUM
+                          </th>
+                          <th className="py-3 px-4 font-extrabold text-center uppercase text-[10px]">
+                            TARGET (%)
+                          </th>
+                          <th className="py-3 px-4 font-extrabold uppercase text-[10px] w-16 text-center">
+                            AKSI
+                          </th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {fornasGrid.length === 0 ? (
+                          <tr>
+                            <td colSpan={8} className="py-8 text-center bg-slate-50 border-b border-slate-100">
+                              <p className="text-xs font-bold text-slate-400">Belum ada data</p>
+                            </td>
+                          </tr>
+                        ) : (
+                          fornasGrid.map((row, idx) => {
+                            const numStr = String(row.jumlah_resep).replace(/\D/g, "");
+                            const num = numStr === "" ? 0 : parseInt(numStr, 10);
+                            
+                            const sesStr = String(row.jumlah_sesuai).replace(/\D/g, "");
+                            const ses = sesStr === "" ? 0 : parseInt(sesStr, 10);
+                            
+                            const tdk_sesuai = num > 0 ? Math.max(0, num - ses) : 0;
+                            const persentase = num > 0 ? parseFloat(((ses / num) * 100).toFixed(2)) : 0;
+                            const isTercapai = persentase >= 80;
+
+                            return (
+                              <tr
+                                key={row.id}
+                                className="border-b border-slate-100 hover:bg-[#f0fdf4] transition-colors"
+                              >
+                                <td className="py-2.5 px-4 text-xs font-bold text-slate-500 text-center sticky left-0 z-10 bg-white group-hover:bg-[#f0fdf4]">
+                                  {idx + 1}
+                                </td>
+                                <td className="py-2.5 px-4 sticky left-12 z-10 bg-white group-hover:bg-[#f0fdf4] shadow-[2px_0_5px_rgba(0,0,0,0.02)]">
+                                  <input
+                                    type="date"
+                                    value={row.tanggal}
+                                    onChange={(e) =>
+                                      handleUpdateFornas(row.id, "tanggal", e.target.value)
+                                    }
+                                    className="w-full text-xs font-bold text-slate-700 bg-transparent border-none outline-none focus:ring-1 focus:ring-emerald-500 rounded px-1"
+                                  />
+                                </td>
+                                <td className="py-2.5 px-4">
+                                  <input
+                                    type="number"
+                                    min="0"
+                                    value={row.jumlah_resep}
+                                    onChange={(e) =>
+                                      handleUpdateFornas(row.id, "jumlah_resep", e.target.value)
+                                    }
+                                    placeholder="0"
+                                    className="w-full text-xs font-bold text-slate-700 bg-white border border-slate-200 outline-none focus:border-emerald-500 rounded px-3 py-1.5"
+                                  />
+                                </td>
+                                <td className="py-2.5 px-4">
+                                  <input
+                                    type="number"
+                                    min="0"
+                                    max={num || undefined}
+                                    value={row.jumlah_sesuai}
+                                    onChange={(e) => {
+                                      const val = parseInt(e.target.value, 10);
+                                      if (!isNaN(val) && val > num) {
+                                        return;
+                                      }
+                                      handleUpdateFornas(row.id, "jumlah_sesuai", e.target.value);
+                                    }}
+                                    placeholder="0"
+                                    className="w-full text-xs font-bold text-slate-700 bg-white border border-slate-200 outline-none focus:border-emerald-500 rounded px-3 py-1.5"
+                                  />
+                                </td>
+                                <td className="py-2.5 px-4 text-center">
+                                  <div className="bg-slate-50 text-slate-600 px-3 py-1.5 rounded-lg text-[11px] font-bold inline-block min-w-[3rem]">
+                                    {tdk_sesuai}
+                                  </div>
+                                </td>
+                                <td className="py-2.5 px-4 text-center">
+                                   <div className={`px-3 py-1.5 rounded-lg text-[11px] font-bold inline-block min-w-[3rem] ${persentase > 0 ? (isTercapai ? "bg-emerald-50 text-emerald-700" : "bg-red-50 text-red-600") : "bg-slate-50 text-slate-400"}`}>
+                                      {num > 0 ? `${persentase}%` : "-"}
+                                   </div>
+                                </td>
+                                <td className="py-2.5 px-4 text-center">
+                                   <div className="bg-amber-50 text-amber-700 px-3 py-1.5 rounded-lg text-[11px] font-bold inline-block min-w-[3rem] border border-amber-100">
+                                      80%
+                                   </div>
+                                </td>
+                                <td className="py-2.5 px-4 text-center">
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      if(window.confirm("Apakah Anda yakin ingin menghapus data ini?")) {
+                                        handleRemoveFornasRow(row.id);
+                                      }
+                                    }}
+                                    className="text-gray-400 hover:text-red-600 hover:bg-red-50 p-1.5 rounded-lg transition-colors inline-block"
+                                    title="Hapus Baris"
+                                  >
+                                    <Trash2 size={16} />
+                                  </button>
+                                </td>
+                              </tr>
+                            );
+                          })
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+
+                  <div className="flex justify-start">
+                    <button
+                      type="button"
+                      onClick={handleAddFornasRow}
+                      className="flex items-center gap-2 bg-[#059669] hover:bg-[#047857] text-white px-4 py-2.5 rounded-xl text-xs font-bold transition-all shadow-sm"
+                    >
+                      <Plus size={16} strokeWidth={3} />
+                      Tambah Baris Data
+                    </button>
+                  </div>
+                  
+                  {/* Rekapitulasi Otomatis for Fornas */}
+                  {fornasGrid.length > 0 && (
+                     <div className="mt-8 grid grid-cols-1 md:grid-cols-4 gap-4 animate-in slide-in-from-bottom-4">
+                        <div className="bg-white border text-center border-slate-100 p-4 rounded-xl shadow-xs break-words border-b-[4px] border-b-sky-500 relative hover:shadow-md transition-all">
+                          <p className="text-[10px] text-sky-500 font-extrabold uppercase mb-1">Total Resep</p>
+                          <p className="text-xl font-black text-sky-600">
+                            {fornasGrid.reduce((acc, curr) => acc + (Number(curr.jumlah_resep) || 0), 0)}
+                          </p>
+                        </div>
+                        <div className="bg-white border text-center border-slate-100 p-4 rounded-xl shadow-xs break-words border-b-[4px] border-b-emerald-500 relative hover:shadow-md transition-all">
+                          <p className="text-[10px] text-emerald-500 font-extrabold uppercase mb-1">Total Sesuai Fornas</p>
+                          <p className="text-xl font-black text-emerald-600">
+                            {fornasGrid.reduce((acc, curr) => acc + (Number(curr.jumlah_sesuai) || 0), 0)}
+                          </p>
+                        </div>
+                        <div className="bg-white border text-center border-slate-100 p-4 rounded-xl shadow-xs break-words border-b-[4px] border-b-rose-500 relative hover:shadow-md transition-all">
+                          <p className="text-[10px] text-rose-500 font-extrabold uppercase mb-1">Total Tidak Sesuai</p>
+                          <p className="text-xl font-black text-rose-600">
+                            {fornasGrid.reduce((acc, curr) => {
+                               const num = Number(curr.jumlah_resep) || 0;
+                               const ses = Number(curr.jumlah_sesuai) || 0;
+                               return acc + Math.max(0, num - ses);
+                            }, 0)}
+                          </p>
+                        </div>
+                        <div className="bg-white border text-center border-slate-100 p-4 rounded-xl shadow-xs break-words border-b-[4px] border-b-amber-500 relative hover:shadow-md transition-all">
+                          <p className="text-[10px] text-amber-500 font-extrabold uppercase mb-1 z-10">Kepatuhan Bulanan</p>
+                          <p className="text-xl font-black text-amber-600 z-10">
+                            {(() => {
+                               const tNum = fornasGrid.reduce((acc, curr) => acc + (Number(curr.jumlah_sesuai) || 0), 0);
+                               const tDen = fornasGrid.reduce((acc, curr) => acc + (Number(curr.jumlah_resep) || 0), 0) || 1;
+                               const pct = ((tNum / tDen) * 100).toFixed(1);
+                               return `${pct}%`;
+                            })()}
+                          </p>
+                        </div>
+                     </div>
+                  )}
+                </div>
+              )}
+
               {/* C. Fallback Fields For Dynamic Standard Indicators */}
               {!isVisiteDokter &&
                 !isRisikoJatuh &&
                 !isIdentifikasiPasien &&
-                !isWaktuTunggu && (
+                !isWaktuTunggu &&
+                !isFornas && (
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-8 border-t border-emerald-100/10 pt-4">
                     <div className="bg-[#fbFdfC] border border-emerald-50 rounded-3xl p-6 md:p-8 flex flex-col justify-between hover:shadow-xs hover:border-emerald-100 transition-all duration-300">
                       <div>
@@ -2627,6 +2855,54 @@ export default function InputData() {
                 className="px-6 py-2 rounded-xl text-xs font-black bg-emerald-600 hover:bg-emerald-700 text-white transition-colors shadow-md shadow-emerald-500/20"
               >
                 Simpan Unit
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* DELETE CONFIRMATION MODAL FOR KEPATUHAN IDENTIFIKASI PASIEN */}
+      {deleteIdentifikasiId && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-rose-950/45 backdrop-blur-xs p-4 animate-in fade-in duration-300">
+          <div className="bg-white rounded-[28px] border border-rose-100 shadow-2xl w-full max-w-sm overflow-hidden animate-in zoom-in-95 duration-200">
+            <div className="bg-rose-500 p-5 flex items-center justify-between text-white">
+              <h3 className="font-extrabold text-sm md:text-base tracking-wide flex items-center gap-2">
+                <ShieldAlert size={18} />
+                Konfirmasi Hapus Data
+              </h3>
+              <button
+                onClick={() => setDeleteIdentifikasiId(null)}
+                className="text-white/80 hover:text-white hover:bg-white/10 p-1 rounded-lg transition-all"
+              >
+                <X size={16} />
+              </button>
+            </div>
+
+            <div className="p-6 md:p-8 text-center space-y-4">
+              <div className="w-12 h-12 rounded-full bg-rose-50 flex items-center justify-center mx-auto text-rose-500">
+                <Trash2 size={24} />
+              </div>
+              <div className="space-y-1.5">
+                <h4 className="font-extrabold text-slate-800 text-sm md:text-base">
+                  Apakah Anda yakin ingin menghapus form observasi pasien ini?
+                </h4>
+              </div>
+            </div>
+
+            <div className="p-4 md:p-6 bg-slate-50 flex justify-end gap-3 border-t border-slate-100">
+              <button
+                type="button"
+                onClick={() => setDeleteIdentifikasiId(null)}
+                className="px-4 py-2 rounded-xl text-xs font-bold text-slate-550 hover:bg-slate-100 transition-colors"
+              >
+                Batal
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmRemoveIdentifikasi}
+                className="px-5 py-2 rounded-xl text-xs font-black bg-rose-600 hover:bg-rose-700 text-white transition-colors shadow-md shadow-rose-500/20"
+              >
+                Ya, Hapus Data
               </button>
             </div>
           </div>
